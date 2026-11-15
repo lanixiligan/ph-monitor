@@ -13,6 +13,7 @@
     "db:down": "docker compose down",
     "db:psql": "docker compose exec db sh -c 'psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\"'",
     "migrate": "npm run migrate --workspace server",
+    "load-provinces": "npm run load-provinces --workspace server",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {

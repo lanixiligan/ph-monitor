@@ -8,14 +8,18 @@
 // Dates travel between server and browser as text (JSON has no date type),
 // so every time below is an ISO string such as "2026-11-15T10:45:00Z".
 
-/** One province, or one Metro Manila district. */
+/**
+ * One province, or one Metro Manila district ('Dist').
+ * 'Other' covers two areas that are neither: the City of Isabela and
+ * BARMM's Special Geographic Area.
+ */
 export type Province = {
   /** PSGC = Philippine Standard Geographic Code, the official ID for a place. */
   psgc: number;
   name: string;
   regionPsgc: number;
-  // `'Prov' | 'Dist'` is a "union": the value must be exactly one of these.
-  geoLevel: 'Prov' | 'Dist';
+  // This is a "union": the value must be exactly one of these three.
+  geoLevel: 'Prov' | 'Dist' | 'Other';
 };
 
 /** An earthquake, as seen from one province. */

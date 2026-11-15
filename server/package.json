@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "migrate": "tsx scripts/migrate.ts",
+    "load-provinces": "tsx scripts/load-provinces.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

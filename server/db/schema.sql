@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS provinces (
   psgc          BIGINT PRIMARY KEY,            -- official place code (adm2_psgc)
   name          TEXT NOT NULL,
   region_psgc   BIGINT NOT NULL,
-  geo_level     TEXT NOT NULL,                 -- 'Prov' or 'Dist'
+  geo_level     TEXT NOT NULL,                 -- 'Prov', 'Dist' or 'Other'
   geom          geometry(MultiPolygon, 4326) NOT NULL,  -- the province's shape
   weather_point geometry(Point, 4326) NOT NULL          -- where we sample weather
 );
