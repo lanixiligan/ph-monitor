@@ -5,19 +5,17 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import type {
-  Freshness,
   HazardEvent,
   ProvinceDetail,
   ProvinceMapProperties,
 } from '@ph-monitor/shared';
 import { pool } from '../db.ts';
+import { buildFreshness, getLastOk } from '../freshness.ts';
 import { WEIGHTS } from '../scoring/scoring.ts';
 
 export const provincesRouter = Router();
 
 const HOUR_MS = 60 * 60 * 1000;
-/** Data is "stale" when a feed's last successful fetch is older than this. */
-const STALE_AFTER_MS = 1 * HOUR_MS;
 
 // ---------- GET /api/provinces ----------
 
@@ -74,28 +72,6 @@ provincesRouter.get('/', async (_req, res) => {
 
 // The code in the URL is text; it must be a positive whole number.
 const psgcSchema = z.coerce.number().int().positive();
-
-async function getFreshness(): Promise<Freshness> {
-  const runs = await pool.query<{ source: string; last_ok_at: Date }>(
-    'SELECT source, last_ok_at FROM fetch_runs',
-  );
-  const lastOk = new Map(runs.rows.map((row) => [row.source, row.last_ok_at]));
-  const earthquakes = lastOk.get('usgs') ?? null;
-  const weather = lastOk.get('open-meteo') ?? null;
-
-  const oldestAllowed = Date.now() - STALE_AFTER_MS;
-  const isStale =
-    earthquakes === null ||
-    weather === null ||
-    earthquakes.getTime() < oldestAllowed ||
-    weather.getTime() < oldestAllowed;
-
-  return {
-    earthquakesFetchedAt: earthquakes?.toISOString() ?? null,
-    weatherFetchedAt: weather?.toISOString() ?? null,
-    isStale,
-  };
-}
 
 provincesRouter.get('/:psgc', async (req, res) => {
   const parsedPsgc = psgcSchema.safeParse(req.params.psgc);
@@ -186,6 +162,8 @@ provincesRouter.get('/:psgc', async (req, res) => {
     });
   }
 
+  const lastOk = await getLastOk();
+
   const detail: ProvinceDetail = {
     province: {
       psgc: province.psgc,
@@ -204,7 +182,7 @@ provincesRouter.get('/:psgc', async (req, res) => {
         }
       : null,
     events,
-    freshness: await getFreshness(),
+    freshness: buildFreshness(lastOk.earthquakes, lastOk.weather),
   };
   res.json(detail);
 });

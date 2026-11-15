@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import { parseOpenMeteoLocation } from '../src/fetchers/openMeteo.ts';
 import { parseUsgsFeed } from '../src/fetchers/usgs.ts';
 import { heatIndexC } from '../src/heatIndex.ts';
+import { snapToCell } from '../src/pointWeather.ts';
 
 // One real USGS record (trimmed to the fields we read, plus one extra).
 const goodQuake = {
@@ -161,4 +162,13 @@ test('heat index matches the NWS chart', () => {
 test('heat index is close to the air temperature when it is mild', () => {
   const actual = heatIndexC(22, 50);
   assert.ok(Math.abs(actual - 22) < 1.5, `got ${actual}`);
+});
+
+// ---------- Point weather ----------
+
+test('nearby spots snap to the same weather grid cell', () => {
+  assert.equal(snapToCell(10.3157), 10.3);
+  assert.equal(snapToCell(10.3249), 10.3);
+  assert.equal(snapToCell(10.3251), 10.35);
+  assert.equal(snapToCell(123.8854), 123.9);
 });

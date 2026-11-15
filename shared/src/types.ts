@@ -101,3 +101,35 @@ export type ProvinceDetail = {
   events: HazardEvent[];
   freshness: Freshness;
 };
+
+/** A city or municipality. */
+export type Place = {
+  psgc: number;
+  name: string;
+  /** 'City' or 'Mun' (municipality). */
+  geoLevel: string;
+};
+
+/** A score worked out on demand for one exact spot. */
+export type PointScore = {
+  score: number;
+  quakeScore: number;
+  weatherScore: number;
+  reasons: string[];
+  computedAt: string;
+};
+
+/** Everything the status card needs for a clicked spot. Returned by GET /api/point */
+export type PointDetail = {
+  lat: number;
+  lon: number;
+  /** The city or municipality the spot is in, if known. */
+  place: Place | null;
+  province: Province;
+  /** The whole province's score, for comparison. null until the first score run. */
+  provinceScore: number | null;
+  score: PointScore;
+  /** Earthquake distances here are measured from the spot itself. */
+  events: HazardEvent[];
+  freshness: Freshness;
+};

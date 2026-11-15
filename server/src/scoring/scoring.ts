@@ -232,9 +232,12 @@ function nameFor(levels: { from: number; name: string }[], value: number): strin
   return null;
 }
 
-function describeQuake(quake: QuakeInput): string {
-  const where =
-    quake.distanceKm < 1 ? 'inside the province' : `${Math.round(quake.distanceKm)} km away`;
+/** What is being scored: a whole province, or one exact spot. Only changes the wording. */
+export type ScoreTarget = 'province' | 'point';
+
+function describeQuake(quake: QuakeInput, target: ScoreTarget): string {
+  const veryClose = target === 'province' ? 'inside the province' : 'less than 1 km away';
+  const where = quake.distanceKm < 1 ? veryClose : `${Math.round(quake.distanceKm)} km away`;
   const depth = quake.depthKm === null ? 'depth unknown' : `${Math.round(quake.depthKm)} km deep`;
   const hours = Math.round(quake.hoursAgo);
   const when =
@@ -243,7 +246,12 @@ function describeQuake(quake: QuakeInput): string {
 }
 
 /** The short sentences shown on the status card, most important first. */
-export function buildReasons(quakes: QuakeInput[], weather: WeatherInput | null): string[] {
+// `target = 'province'` is a default: callers that leave it out get 'province'.
+export function buildReasons(
+  quakes: QuakeInput[],
+  weather: WeatherInput | null,
+  target: ScoreTarget = 'province',
+): string[] {
   const reasons: string[] = [];
 
   // Quakes that count, strongest first; describe up to three.
@@ -251,14 +259,18 @@ export function buildReasons(quakes: QuakeInput[], weather: WeatherInput | null)
     .filter((quake) => singleQuakeScore(quake) >= 1)
     .sort((a, b) => singleQuakeScore(b) - singleQuakeScore(a));
   for (const quake of counted.slice(0, 3)) {
-    reasons.push(describeQuake(quake));
+    reasons.push(describeQuake(quake, target));
   }
   if (counted.length > 3) {
     reasons.push(`${counted.length - 3} more smaller or older earthquakes nearby.`);
   }
 
   if (weather === null) {
-    reasons.push('No recent weather data for this province.');
+    reasons.push(
+      target === 'province'
+        ? 'No recent weather data for this province.'
+        : 'No recent weather data for this spot.',
+    );
   } else {
     if (rainScore(weather) >= WEIGHTS.minScoreToMention) {
       const level = nameFor(WEIGHTS.rain.oneHourLevels, weather.rain1hMm ?? 0);

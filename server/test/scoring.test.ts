@@ -145,6 +145,19 @@ test('reasons name the quake and the weather that caused the score', () => {
   assert.match(text, /Heat index 43 °C/);
 });
 
+test('for a single spot, the wording talks about the spot, not a province', () => {
+  const reasons = buildReasons(
+    [{ magnitude: 5.2, depthKm: 12, distanceKm: 0.4, hoursAgo: 5 }],
+    null,
+    'point',
+  );
+  const text = reasons.join(' | ');
+
+  assert.match(text, /M5\.2 earthquake less than 1 km away/);
+  assert.match(text, /No recent weather data for this spot/);
+  assert.doesNotMatch(text, /province/);
+});
+
 test('a calm province gets one reassuring reason', () => {
   assert.deepEqual(buildReasons([], calmWeather), [
     'No significant earthquake or weather stress right now.',
