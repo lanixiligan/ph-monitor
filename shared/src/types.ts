@@ -44,8 +44,10 @@ export type WeatherEvent = {
   /** The time this modelled value is valid for. */
   validAt: string;
   tempC: number | null;
-  /** "Feels like" temperature. */
-  apparentTempC: number | null;
+  /** Relative humidity, 0 to 100. */
+  humidityPct: number | null;
+  /** "Feels like" temperature, computed from temperature and humidity. */
+  heatIndexC: number | null;
   rain1hMm: number | null;
   rain24hMm: number | null;
 };

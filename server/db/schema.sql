@@ -44,12 +44,18 @@ CREATE TABLE IF NOT EXISTS weather_readings (
   province_psgc   BIGINT REFERENCES provinces,
   valid_at        TIMESTAMPTZ NOT NULL,        -- time the modelled value is valid for
   temp_c          REAL,
-  apparent_temp_c REAL,                        -- "feels like"
+  humidity_pct    REAL,                        -- relative humidity, 0 to 100
+  heat_index_c    REAL,                        -- "feels like", computed by us (see heatIndex.ts)
   rain_1h_mm      REAL,
   rain_24h_mm     REAL,
   fetched_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (province_psgc, valid_at)
 );
+-- For databases created before the heat index change: swap the old
+-- "feels like" column for the two new ones. Does nothing on a fresh database.
+ALTER TABLE weather_readings DROP COLUMN IF EXISTS apparent_temp_c;
+ALTER TABLE weather_readings ADD COLUMN IF NOT EXISTS humidity_pct REAL;
+ALTER TABLE weather_readings ADD COLUMN IF NOT EXISTS heat_index_c REAL;
 
 -- The latest score for each province (one row per province).
 CREATE TABLE IF NOT EXISTS province_scores (

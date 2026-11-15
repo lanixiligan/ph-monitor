@@ -1,14 +1,17 @@
 // Runs one job by hand, once. Examples:
 //   npm run ingest:earthquakes
+//   npm run ingest:weather
 // (The running server does the same jobs on a timer.)
 
 import { pool } from '../src/db.ts';
 import { ingestEarthquakes } from '../src/jobs/ingestEarthquakes.ts';
+import { ingestWeather } from '../src/jobs/ingestWeather.ts';
 
 // A lookup table from job name to the function that runs it.
 // `Record<string, X>` means "an object whose values are all X".
 const jobs: Record<string, () => Promise<void>> = {
   earthquakes: ingestEarthquakes,
+  weather: ingestWeather,
 };
 
 // process.argv holds the words typed on the command line; [2] is the first
