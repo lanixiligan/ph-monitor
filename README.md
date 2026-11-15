@@ -49,3 +49,7 @@ The build plan is in [PLAN.md](PLAN.md).
 | Basemap (off by default; see `web/src/mapSettings.ts`) | [OpenFreeMap](https://openfreemap.org/), © OpenMapTiles, data © OpenStreetMap contributors | ODbL (OpenStreetMap data) |
 
 This is not an official warning service. For warnings, follow PAGASA and PHIVOLCS.
+
+## Licence
+
+The code is under the [MIT licence](LICENSE). The data keeps its own licences, listed above.

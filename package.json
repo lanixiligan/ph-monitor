@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "Philippines real-time risk dashboard",
+  "license": "MIT",
   "type": "module",
   "workspaces": [
     "shared",
