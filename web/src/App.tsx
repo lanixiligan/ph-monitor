@@ -8,6 +8,7 @@ import type { ProvinceCollection } from './api.ts';
 import { Legend } from './components/Legend.tsx';
 import { ProvinceMap } from './components/ProvinceMap.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
+import { SHOW_BASEMAP } from './mapSettings.ts';
 
 // How often the map asks the server for new scores.
 const REFRESH_MS = 5 * 60 * 1000;
@@ -65,9 +66,15 @@ export function App() {
         <a href="https://open-meteo.com/">Open-Meteo</a>, CC BY 4.0. Boundaries: NAMRIA and PSA via
         OCHA, CC BY 3.0 IGO, from{' '}
         <a href="https://github.com/faeldon/philippines-json-maps">philippines-json-maps</a>.
-        Basemap: <a href="https://openfreemap.org/">OpenFreeMap</a>, ©{' '}
-        <a href="https://www.openmaptiles.org/">OpenMapTiles</a>, data ©{' '}
-        <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
+        {/* The basemap credit is only needed when the basemap is shown. */}
+        {SHOW_BASEMAP && (
+          <>
+            {' '}
+            Basemap: <a href="https://openfreemap.org/">OpenFreeMap</a>, ©{' '}
+            <a href="https://www.openmaptiles.org/">OpenMapTiles</a>, data ©{' '}
+            <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
+          </>
+        )}
       </footer>
     </div>
   );

@@ -13,6 +13,7 @@ import type { StyleSpecification } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useEffect, useRef, useState } from 'react';
 import type { ProvinceCollection } from '../api.ts';
+import { MAX_BOUNDS, PH_BOUNDS, SHOW_BASEMAP } from '../mapSettings.ts';
 import { bandFor, NO_DATA_COLOR } from '../scoreScale.ts';
 
 maplibregl.setWorkerUrl(workerUrl);
@@ -20,18 +21,13 @@ maplibregl.setWorkerUrl(workerUrl);
 // Free basemap, no key needed (OpenFreeMap).
 const BASEMAP_URL = 'https://tiles.openfreemap.org/styles/positron';
 
-// Used when the basemap can't be reached: a plain background, shapes only.
+// A plain background with the province shapes only. Used when SHOW_BASEMAP
+// is off, and as a fallback when the basemap can't be reached.
 const PLAIN_STYLE: StyleSpecification = {
   version: 8,
   sources: {},
   layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#eef1f3' } }],
 };
-
-// The box the map opens on: [west, south] to [east, north].
-const PH_BOUNDS: [[number, number], [number, number]] = [
-  [116.5, 4.5],
-  [127, 21.2],
-];
 
 /**
  * Returns a copy of the data where every province also carries the colour it
@@ -50,6 +46,7 @@ function withColors(data: ProvinceCollection) {
 }
 
 async function pickStyle(): Promise<string | StyleSpecification> {
+  if (!SHOW_BASEMAP) return PLAIN_STYLE;
   try {
     const response = await fetch(BASEMAP_URL);
     if (response.ok) return BASEMAP_URL;
@@ -90,6 +87,8 @@ export function ProvinceMap({ data, selectedPsgc, onSelect }: Props) {
         style,
         bounds: PH_BOUNDS,
         fitBoundsOptions: { padding: 24 },
+        // Stops the reader from panning or zooming out to the rest of the world.
+        maxBounds: MAX_BOUNDS,
       });
       const theMap = map;
       mapRef.current = theMap;
