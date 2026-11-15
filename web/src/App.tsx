@@ -1,4 +1,5 @@
-// The whole page: a header, the map with its legend, and the credits line.
+// The whole page: a header, the map with its legend, the status card for
+// the selected province, and the credits line.
 
 import { useEffect, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
@@ -6,15 +7,26 @@ import { fetchProvinces } from './api.ts';
 import type { ProvinceCollection } from './api.ts';
 import { Legend } from './components/Legend.tsx';
 import { ProvinceMap } from './components/ProvinceMap.tsx';
+import { StatusCard } from './components/StatusCard.tsx';
 
 // How often the map asks the server for new scores.
 const REFRESH_MS = 5 * 60 * 1000;
+
+/**
+ * Lets a link open a province straight away: /?province=702200000
+ * Returns null when the address has no (valid) province code.
+ */
+function provinceFromAddress(): number | null {
+  const text = new URLSearchParams(window.location.search).get('province');
+  const psgc = Number(text);
+  return text !== null && Number.isInteger(psgc) && psgc > 0 ? psgc : null;
+}
 
 export function App() {
   // `useState` remembers a value between re-draws of the page.
   const [provinces, setProvinces] = useState<ProvinceCollection | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPsgc, setSelectedPsgc] = useState<number | null>(null);
+  const [selectedPsgc, setSelectedPsgc] = useState<number | null>(provinceFromAddress);
 
   // Load the provinces now, then again every few minutes.
   useEffect(() => {
@@ -43,6 +55,9 @@ export function App() {
       <main>
         <ProvinceMap data={provinces} selectedPsgc={selectedPsgc} onSelect={setSelectedPsgc} />
         <Legend />
+        {selectedPsgc !== null && (
+          <StatusCard psgc={selectedPsgc} onClose={() => setSelectedPsgc(null)} />
+        )}
       </main>
 
       <footer>
