@@ -14,6 +14,8 @@
 
     // Only check types; don't write .js files. tsx and Vite run the code.
     "noEmit": true,
+    // Let imports name the real file: `import { pool } from './db.ts'`.
+    "allowImportingTsExtensions": true,
 
     "esModuleInterop": true,
     "resolveJsonModule": true,
