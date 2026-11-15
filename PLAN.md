@@ -1,5 +1,9 @@
 # PH Monitor — Phase 1 plan
 
+> **Historical Phase 1 plan, kept for reference.** It was written before the code and has not
+> been kept up to date. Where it differs, [README.md](README.md),
+> [METHODOLOGY.md](METHODOLOGY.md) and the code are correct.
+
 ## Amendments (2026-11-15, after step 1)
 
 These override the original text below where they differ.
@@ -11,8 +15,7 @@ These override the original text below where they differ.
 - **Identity**: no branding yet. "PH Monitor" is a placeholder kept in one constant
   (`shared/src/appInfo.ts`). Plain, neutral UI: no logo, no custom fonts, no colour theme beyond
   the score scale.
-- **Git**: local commits only, one per step, with Conventional Commits messages. No remote,
-  no push.
+- **Git**: one commit per step, with Conventional Commits messages.
 - **Docs**: add a short `CLAUDE.md` for future Claude sessions; keep README brief.
 
 ## After Phase 1
@@ -26,8 +29,8 @@ These override the original text below where they differ.
 PH Monitor is a Philippines real-time risk dashboard. Phase 1 delivers one thing: a map of
 provinces coloured by a 0–100 "stress right now" score built from earthquakes (USGS) and weather
 stress (Open-Meteo), with a status card on click showing the score, the reasons and the raw events.
-The project folder is empty, so everything is new. The owner is a beginner developer and new to TypeScript: code is TypeScript everywhere with simple types,
-small files, short comments, and each step is runnable on its own.
+The project folder is empty, so everything is new. Code is TypeScript everywhere with simple
+types, small files, short comments, and each step is runnable on its own.
 
 Out of scope: news, AI briefs, typhoon tracks, hazard maps, "my city" view, user accounts.
 
@@ -43,9 +46,8 @@ Out of scope: news, AI briefs, typhoon tracks, hazard maps, "my city" view, user
   `adm2_psgc`, `adm2_en`, `adm1_psgc`, `geo_level`. Coordinates are WGS84 (EPSG:4326).
   Repo is MIT; boundaries are CC BY 3.0 IGO (NAMRIA + PSA via OCHA COD-AB) — credit required.
   Metro Manila appears as districts, not a province.
-- **Machine**: Node 24, npm 11, Docker 29 with `postgis/postgis:17-3.5` already pulled. Local
-  PostgreSQL 18 is running on 5432 but has no PostGIS, so the project database runs in Docker on
-  port **5433**.
+- **Database**: PostgreSQL with PostGIS (`postgis/postgis:17-3.5`) runs in Docker on port
+  **5433**, so it cannot clash with a PostgreSQL already installed on 5432.
 
 ## Decisions
 
@@ -67,10 +69,9 @@ Out of scope: news, AI briefs, typhoon tracks, hazard maps, "my city" view, user
 - **Freshness**: the status card shows "last updated"; data older than 1 hour is marked stale.
   Earthquake freshness is the time of the last successful USGS fetch (a quiet day with no quakes
   is not stale), so the API reports `lastFetch` times alongside `computedAt`.
-- **Root folder is renamed `typhoon/` → `ph-monitor/`.** Done as the last action of step 0;
-  the VS Code window then needs reopening on the new folder. `docker-compose.yml` sets
-  `name: ph-monitor` at the top, so Docker names the project (and its database volume) from
-  that line instead of the folder name, and the rename doesn't orphan the data.
+- **`docker-compose.yml` sets `name: ph-monitor` at the top**, so Docker names the project (and
+  its database volume) from that line instead of the folder name; renaming the folder doesn't
+  orphan the data.
 - **Schedule**: earthquakes every 15 min, weather every 30 min (~4,200 Open-Meteo calls/day),
   scores recomputed after each fetch.
 - **Combining signals**: strongest signal counts in full, the other adds a fraction, capped at
@@ -267,7 +268,6 @@ Initial threshold numbers are starting guesses, documented in METHODOLOGY.md as 
    `package.json`, `tsconfig.base.json` (strict), and the `shared/` types.
    Check: `docker compose up -d`, then `SELECT postgis_version();` returns a version;
    `npm run typecheck` (runs `tsc --noEmit`, which checks types without producing files) passes.
-   Last action: rename the folder to `ph-monitor/`; reopen VS Code on it before step 1.
 1. **Schema**: `schema.sql` + `migrate.ts`. Check: `\dt` lists the seven tables.
 2. **Provinces**: `load-provinces.ts` (zod-checks each boundary feature's properties).
    Check: row count (~80+ provinces and NCR districts), and a query that a Cebu City coordinate
