@@ -63,16 +63,14 @@ npm run ingest:earthquakes | ingest:weather | compute:scores   one job by hand
 - The "not an official warning service" notice must stay on the page footer, the status card
   (`web/src/components/Disclaimer.tsx`), the README and METHODOLOGY.
 
-## Working with the owner
+## Working style
 
-- Beginner developer, new to TypeScript: explain in plain language, keep it short.
+- Explain in plain language and keep it short.
 - Work in small steps; after each one say what to run and what should appear.
 - Run the checks yourself and show the output before claiming something works.
-- Prefers short docs.
+- Keep docs short.
 
 ## Git
-
-Local commits only. **No remote yet: do not create a GitHub repository, add a remote, or push.**
 
 Commit messages: Conventional Commits subject under 72 characters, e.g.
 `feat(db): add PostGIS schema with 7 tables`, then a blank line and 2–4 bullets saying what
