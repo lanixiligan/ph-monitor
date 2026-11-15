@@ -6,13 +6,9 @@
 // via OCHA, CC BY 3.0 IGO). One file per region; each holds that region's
 // provinces. Metro Manila comes as four districts instead of a province.
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { z } from 'zod';
 import { pool } from '../src/db.ts';
-
-const BASE_URL =
-  'https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/latest/geojson/regions/medres';
+import { getBoundaryFile } from './boundaryFiles.ts';
 
 // The 18 region codes (PSGC). Each one is a file to download.
 const REGION_CODES = [
@@ -20,9 +16,6 @@ const REGION_CODES = [
   800000000, 900000000, 1000000000, 1100000000, 1200000000, 1300000000,
   1400000000, 1600000000, 1700000000, 1800000000, 1900000000,
 ];
-
-// Downloaded files are kept here (git-ignored) so a second run is instant.
-const dataDir = path.resolve(import.meta.dirname, '../../data/boundaries');
 
 // What one province must look like in the file. Anything else is skipped.
 const featureSchema = z.object({
@@ -43,34 +36,13 @@ const featureSchema = z.object({
 
 const fileSchema = z.object({ features: z.array(z.unknown()) });
 
-/** Returns the file's text, downloading it first if we don't have it yet. */
-async function getRegionFile(code: number): Promise<string> {
-  const fileName = `provdists-region-${code}.0.01.json`;
-  const localPath = path.join(dataDir, fileName);
-
-  try {
-    return await readFile(localPath, 'utf8');
-  } catch {
-    // Not downloaded yet: fall through and fetch it.
-  }
-
-  const response = await fetch(`${BASE_URL}/${fileName}`);
-  if (!response.ok) {
-    throw new Error(`Download failed for ${fileName}: HTTP ${response.status}`);
-  }
-  const text = await response.text();
-  await writeFile(localPath, text);
-  return text;
-}
-
 try {
-  await mkdir(dataDir, { recursive: true });
-
   let saved = 0;
   let skipped = 0;
 
   for (const code of REGION_CODES) {
-    const file = fileSchema.parse(JSON.parse(await getRegionFile(code)));
+    const text = await getBoundaryFile('regions/medres', `provdists-region-${code}.0.01.json`);
+    const file = fileSchema.parse(JSON.parse(text));
 
     for (const rawFeature of file.features) {
       // `safeParse` doesn't throw: it reports success or failure.

@@ -81,3 +81,14 @@ CREATE TABLE IF NOT EXISTS fetch_runs (
   source      TEXT PRIMARY KEY,                -- 'usgs' or 'open-meteo'
   last_ok_at  TIMESTAMPTZ NOT NULL
 );
+
+-- Cities and municipalities. Used to name the spot a reader clicks on.
+-- Loaded by `npm run load-places`.
+CREATE TABLE IF NOT EXISTS places (
+  psgc          BIGINT PRIMARY KEY,            -- official place code (adm3_psgc)
+  name          TEXT NOT NULL,
+  province_psgc BIGINT NOT NULL REFERENCES provinces,
+  geo_level     TEXT NOT NULL,                 -- 'City', 'Mun', ...
+  geom          geometry(MultiPolygon, 4326) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS places_geom_idx ON places USING GIST (geom);

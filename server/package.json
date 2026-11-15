@@ -9,6 +9,7 @@
     "start": "tsx src/index.ts",
     "migrate": "tsx scripts/migrate.ts",
     "load-provinces": "tsx scripts/load-provinces.ts",
+    "load-places": "tsx scripts/load-places.ts",
     "ingest:earthquakes": "tsx scripts/run-job.ts earthquakes",
     "ingest:weather": "tsx scripts/run-job.ts weather",
     "compute:scores": "tsx scripts/run-job.ts scores",
