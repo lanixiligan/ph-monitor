@@ -80,10 +80,24 @@ export type Freshness = {
   isStale: boolean;
 };
 
+/**
+ * What the map knows about each province shape.
+ * These are the `properties` of every feature in GET /api/provinces (GeoJSON).
+ * Scores are null until the first score run has finished.
+ */
+export type ProvinceMapProperties = {
+  psgc: number;
+  name: string;
+  score: number | null;
+  quake_score: number | null;
+  weather_score: number | null;
+};
+
 /** Everything the status card needs. Returned by GET /api/provinces/:psgc */
 export type ProvinceDetail = {
   province: Province;
-  score: ProvinceScore;
+  /** null until the first score run has finished. */
+  score: ProvinceScore | null;
   events: HazardEvent[];
   freshness: Freshness;
 };

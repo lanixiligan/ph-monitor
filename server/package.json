@@ -5,6 +5,8 @@
   "description": "Backend: fetches feeds, computes scores, serves the API",
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
     "migrate": "tsx scripts/migrate.ts",
     "load-provinces": "tsx scripts/load-provinces.ts",
     "ingest:earthquakes": "tsx scripts/run-job.ts earthquakes",
@@ -14,11 +16,14 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^24.19.2",
     "@types/pg": "^8.23.1",
     "tsx": "^4.23.15"
   },
   "dependencies": {
+    "express": "^5.3.0",
+    "node-cron": "^4.6.0",
     "pg": "^8.23.1",
     "zod": "^4.6.7"
   }
