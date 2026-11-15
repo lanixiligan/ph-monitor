@@ -7,6 +7,8 @@
   "scripts": {
     "migrate": "tsx scripts/migrate.ts",
     "load-provinces": "tsx scripts/load-provinces.ts",
+    "ingest:earthquakes": "tsx scripts/run-job.ts earthquakes",
+    "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
