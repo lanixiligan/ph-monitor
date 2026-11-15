@@ -11,7 +11,8 @@ These override the original text below where they differ.
 - **Identity**: no branding yet. "PH Monitor" is a placeholder kept in one constant
   (`shared/src/appInfo.ts`). Plain, neutral UI: no logo, no custom fonts, no colour theme beyond
   the score scale.
-- **Git**: local commits only, one per step ("step N: ..."). No remote, no push.
+- **Git**: local commits only, one per step, with Conventional Commits messages. No remote,
+  no push.
 - **Docs**: add a short `CLAUDE.md` for future Claude sessions; keep README brief.
 
 ## Context
