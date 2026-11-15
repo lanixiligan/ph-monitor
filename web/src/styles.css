@@ -1,0 +1,230 @@
+/* Plain, neutral styling: system font, greys, no theme.
+   The only colours with meaning are the score scale (see scoreScale.ts). */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #1f1f1f;
+  background: #ffffff;
+}
+
+a {
+  color: inherit;
+}
+
+.muted {
+  color: #6b6b6b;
+}
+
+/* Page layout: header on top, map filling the middle, credits at the bottom. */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #d9d9d9;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+header p {
+  margin: 0;
+  color: #6b6b6b;
+}
+
+main {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+}
+
+footer {
+  padding: 6px 16px;
+  border-top: 1px solid #d9d9d9;
+  font-size: 12px;
+  color: #6b6b6b;
+}
+
+.error {
+  padding: 8px 16px;
+  background: #f3f3f3;
+  border-bottom: 1px solid #d9d9d9;
+  font-weight: 600;
+}
+
+/* Boxes that float over the map. */
+.legend,
+.card {
+  position: absolute;
+  background: #ffffff;
+  border: 1px solid #c9c9c9;
+  border-radius: 4px;
+}
+
+.legend {
+  left: 12px;
+  bottom: 12px;
+  padding: 8px 10px;
+}
+
+.legend-title {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.legend ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #8a8a8a;
+  flex: none;
+}
+
+/* The status card. On a wide screen it sits on the right of the map. */
+.card {
+  top: 12px;
+  right: 12px;
+  width: 340px;
+  max-width: calc(100% - 24px);
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  padding: 12px 14px;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.card h3 {
+  margin: 14px 0 4px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b6b6b;
+}
+
+.card ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.card li {
+  margin-bottom: 4px;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-close {
+  border: 1px solid #c9c9c9;
+  border-radius: 4px;
+  background: #ffffff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.score-number {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.score-row .swatch {
+  width: 18px;
+  height: 18px;
+}
+
+.stale {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid #1f1f1f;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.card td {
+  padding: 2px 0;
+}
+
+.card td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* On a narrow screen the card becomes a sheet along the bottom. */
+@media (max-width: 640px) {
+  .card {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-width: none;
+    max-height: 60%;
+    border-radius: 0;
+  }
+
+  .legend {
+    top: 12px;
+    right: 12px;
+    bottom: auto;
+    left: auto;
+  }
+}

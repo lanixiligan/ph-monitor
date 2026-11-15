@@ -6,13 +6,16 @@
   "type": "module",
   "workspaces": [
     "shared",
-    "server"
+    "server",
+    "web"
   ],
   "scripts": {
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
     "db:psql": "docker compose exec db sh -c 'psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\"'",
     "dev:server": "npm run dev --workspace server",
+    "dev:web": "npm run dev --workspace web",
+    "build": "npm run build --workspace web",
     "migrate": "npm run migrate --workspace server",
     "load-provinces": "npm run load-provinces --workspace server",
     "ingest:earthquakes": "npm run ingest:earthquakes --workspace server",

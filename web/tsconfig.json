@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    // Lets us write HTML-like tags (JSX) inside .tsx files, the React way.
+    "jsx": "react-jsx",
+    // DOM = the browser's own types (document, window, ...).
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // Vite's extras, e.g. importing a .css file from code.
+    "types": ["vite/client"]
+  },
+  "include": ["src", "vite.config.ts"]
+}
