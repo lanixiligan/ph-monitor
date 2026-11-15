@@ -17,6 +17,7 @@ export async function ingestEarthquakes(): Promise<void> {
   // "transaction": either everything is saved, or (on error) nothing is.
   const client = await pool.connect();
   let links = 0;
+  let removed = 0;
   try {
     await client.query('BEGIN');
 
@@ -74,6 +75,17 @@ export async function ingestEarthquakes(): Promise<void> {
       links += inserted.rowCount ?? 0;
     }
 
+    // Remove quakes that USGS no longer lists: it withdraws false alarms and
+    // sometimes lowers a magnitude below our minimum. We only look at the
+    // period we just asked about, so older history is left alone. Their
+    // province links go too (ON DELETE CASCADE in schema.sql).
+    // `<> ALL($2)` means "not equal to any id in this list".
+    const removedRows = await client.query(
+      'DELETE FROM earthquakes WHERE occurred_at >= $1 AND id <> ALL($2::text[])',
+      [since, quakes.map((quake) => quake.id)],
+    );
+    removed = removedRows.rowCount ?? 0;
+
     // Remember that the fetch worked, even if it found no quakes.
     await client.query(
       `INSERT INTO fetch_runs (source, last_ok_at) VALUES ('usgs', now())
@@ -90,6 +102,6 @@ export async function ingestEarthquakes(): Promise<void> {
   }
 
   console.log(
-    `Earthquakes: saved ${quakes.length}, skipped ${skipped}, linked to provinces ${links} times.`,
+    `Earthquakes: saved ${quakes.length}, skipped ${skipped}, removed ${removed}, linked to provinces ${links} times.`,
   );
 }
