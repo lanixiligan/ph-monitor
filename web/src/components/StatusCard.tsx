@@ -42,7 +42,11 @@ export function StatusCard({ spot, onClose }: Props) {
     async function load() {
       try {
         const result = await fetchPointDetail(spot);
-        if (!cancelled) setDetail(result);
+        if (!cancelled) {
+          setDetail(result);
+          // Clear any earlier error, so one failed refresh doesn't stick.
+          setError(null);
+        }
       } catch {
         if (!cancelled) {
           setError('Could not load this spot. It may be off the coast, or the server is not running.');
