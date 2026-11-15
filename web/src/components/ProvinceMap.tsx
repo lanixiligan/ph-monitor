@@ -49,10 +49,11 @@ function withColors(data: ProvinceCollection) {
 async function pickStyle(): Promise<string | StyleSpecification> {
   if (!SHOW_BASEMAP) return PLAIN_STYLE;
   try {
-    const response = await fetch(BASEMAP_URL);
+    // Give up after 4 seconds, so a slow basemap never holds up our own map.
+    const response = await fetch(BASEMAP_URL, { signal: AbortSignal.timeout(4000) });
     if (response.ok) return BASEMAP_URL;
   } catch {
-    // Offline or blocked: fall through to the plain style.
+    // Offline, blocked or too slow: fall through to the plain style.
   }
   return PLAIN_STYLE;
 }
