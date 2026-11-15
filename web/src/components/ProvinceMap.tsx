@@ -18,7 +18,8 @@ import { bandFor, NO_DATA_COLOR } from '../scoreScale.ts';
 
 maplibregl.setWorkerUrl(workerUrl);
 
-// Free basemap, no key needed (OpenFreeMap).
+// Free basemap, no key needed (OpenFreeMap). "positron" is its grey style
+// with roads and place names; grey keeps the score colours easy to read.
 const BASEMAP_URL = 'https://tiles.openfreemap.org/styles/positron';
 
 // A plain background with the province shapes only. Used when SHOW_BASEMAP
@@ -103,18 +104,35 @@ export function ProvinceMap({ data, spot, onSelect }: Props) {
           data: { type: 'FeatureCollection', features: [] },
         });
 
-        // Put our shapes underneath the basemap's place names, if it has any.
-        const firstLabel = theMap.getStyle().layers.find((layer) => layer.type === 'symbol')?.id;
+        // A basemap is a stack of layers: land and water at the bottom, then
+        // roads, then place names on top. We slot the province colours in
+        // just under the roads, and the province outlines just under the
+        // names, so roads and names stay readable. (With the plain style
+        // neither exists, and our layers simply go on top.)
+        const layers = theMap.getStyle().layers;
+        const firstRoad = layers.find(
+          (layer) => 'source-layer' in layer && layer['source-layer'] === 'transportation',
+        )?.id;
+        const firstLabel = layers.find((layer) => layer.type === 'symbol')?.id;
+        const hasBasemap = firstLabel !== undefined;
 
         theMap.addLayer(
           {
             id: 'province-fill',
             type: 'fill',
             source: 'provinces',
-            // ['get', 'color'] means "read this province's own color property".
-            paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.85 },
+            paint: {
+              // ['get', 'color'] means "read this province's own color property".
+              'fill-color': ['get', 'color'],
+              // Over a basemap the colour gets more see-through as you zoom
+              // in (zoom 5 = whole country, 10 = one city), so the towns and
+              // land underneath show through.
+              'fill-opacity': hasBasemap
+                ? ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 0.45]
+                : 0.85,
+            },
           },
-          firstLabel,
+          firstRoad ?? firstLabel,
         );
         theMap.addLayer(
           {

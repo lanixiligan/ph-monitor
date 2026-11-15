@@ -1,11 +1,13 @@
 // Settings for how the map looks and how far it can move.
 
 /**
- * false = show ONLY the Philippines: province shapes on a plain background.
- * true  = draw the provinces on top of a world basemap (seas, neighbouring
- *         countries, city names) from OpenFreeMap.
+ * true  = draw the provinces on top of a grey basemap from OpenFreeMap:
+ *         roads, towns and place names.
+ *         Neighbouring countries are visible at the edges.
+ * false = show ONLY the Philippines: province shapes on a plain background,
+ *         with no roads or names.
  */
-export const SHOW_BASEMAP = false;
+export const SHOW_BASEMAP = true;
 
 // A box is written as [[west, south], [east, north]] in degrees.
 type Box = [[number, number], [number, number]];
