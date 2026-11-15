@@ -78,6 +78,20 @@ counts in full.
 
 On the map: 0–19 calm, 20–39 low, 40–59 moderate, 60–79 high, 80–100 severe.
 
+## Score for one spot
+
+Clicking the map scores that exact spot with the same formulas, worked out on demand and not
+saved:
+
+- **Earthquakes:** distance is measured from the spot itself instead of the province boundary.
+  A spot far from a quake can score lower than its province, whose score uses the nearest edge.
+- **Weather:** fetched from Open-Meteo for the spot, snapped to a 0.05° grid (about 5 km) and
+  reused for 30 minutes. This is finer than the weather model itself, so nothing is lost.
+- **Place name:** the city or municipality containing the spot. A click up to 2 km outside a
+  boundary still counts as the nearest one, because the drawn shapes are simplified.
+
+The card also shows the whole province's score for comparison.
+
 ## Freshness
 
 Earthquakes are fetched every 15 minutes, weather every 30. The card shows when each feed was

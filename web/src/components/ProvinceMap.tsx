@@ -1,5 +1,5 @@
-// The map: provinces coloured by score. Hover shows the name and score;
-// a click selects the province.
+// The map: provinces coloured by score. Hover shows the province's name and
+// score; a click picks the exact spot under the pointer.
 //
 // MapLibre draws the map itself (outside React), so this component's job is
 // to create it once and then pass along changes: new data, new selection.
@@ -12,7 +12,7 @@ import type { StyleSpecification } from 'maplibre-gl';
 // address, which we then hand to MapLibre.
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useEffect, useRef, useState } from 'react';
-import type { ProvinceCollection } from '../api.ts';
+import type { ProvinceCollection, Spot } from '../api.ts';
 import { MAX_BOUNDS, PH_BOUNDS, SHOW_BASEMAP } from '../mapSettings.ts';
 import { bandFor, NO_DATA_COLOR } from '../scoreScale.ts';
 
@@ -59,17 +59,20 @@ async function pickStyle(): Promise<string | StyleSpecification> {
 // `type Props` lists what the parent must pass to this component.
 type Props = {
   data: ProvinceCollection | null;
-  selectedPsgc: number | null;
-  // A function the map calls when a province is clicked.
-  onSelect: (psgc: number) => void;
+  /** The spot the reader picked, marked with a dot. null = none. */
+  spot: Spot | null;
+  // A function the map calls when the reader clicks on land.
+  onSelect: (spot: Spot) => void;
 };
 
-export function ProvinceMap({ data, selectedPsgc, onSelect }: Props) {
+export function ProvinceMap({ data, spot, onSelect }: Props) {
   // A "ref" holds a value that survives re-renders without causing one.
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const spotRef = useRef(spot);
+  spotRef.current = spot;
 
   // Becomes true once the map has loaded and our layers exist.
   const [ready, setReady] = useState(false);
@@ -122,17 +125,30 @@ export function ProvinceMap({ data, selectedPsgc, onSelect }: Props) {
           },
           firstLabel,
         );
-        // A thick outline, shown only for the selected province (none at first).
+        // A dot marking the picked spot (empty until the reader clicks).
+        theMap.addSource('spot', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
         theMap.addLayer({
-          id: 'province-selected',
-          type: 'line',
-          source: 'provinces',
-          paint: { 'line-color': '#111111', 'line-width': 2.5 },
-          filter: ['==', ['get', 'psgc'], -1],
+          id: 'spot-dot',
+          type: 'circle',
+          source: 'spot',
+          paint: {
+            'circle-radius': 6,
+            'circle-color': '#ffffff',
+            'circle-stroke-color': '#111111',
+            'circle-stroke-width': 3,
+          },
         });
 
         // Hover: a small label with the name and score.
-        const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+        const popup = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          // Sit a little away from the pointer so it doesn't cover the dot.
+          offset: 14,
+        });
         theMap.on('mousemove', 'province-fill', (event) => {
           const properties = event.features?.[0]?.properties;
           if (!properties) return;
@@ -148,9 +164,22 @@ export function ProvinceMap({ data, selectedPsgc, onSelect }: Props) {
           popup.remove();
         });
 
+        // A click on any province shape picks the exact spot under the pointer.
+        // 4 decimals is about 11 m, plenty for our purposes and tidy in links.
         theMap.on('click', 'province-fill', (event) => {
-          const psgc = event.features?.[0]?.properties?.psgc;
-          if (typeof psgc === 'number') onSelectRef.current(psgc);
+          onSelectRef.current({
+            lat: Number(event.lngLat.lat.toFixed(4)),
+            lon: Number(event.lngLat.lng.toFixed(4)),
+          });
+        });
+
+        // On a small screen the map shrinks when the card opens. If that
+        // pushes the picked spot out of view, slide the map to bring it back.
+        theMap.on('resize', () => {
+          const picked = spotRef.current;
+          if (picked && !theMap.getBounds().contains([picked.lon, picked.lat])) {
+            theMap.easeTo({ center: [picked.lon, picked.lat] });
+          }
         });
 
         setReady(true);
@@ -173,11 +202,24 @@ export function ProvinceMap({ data, selectedPsgc, onSelect }: Props) {
     source?.setData(withColors(data));
   }, [ready, data]);
 
-  // Whenever the selection changes, move the thick outline.
+  // Whenever the picked spot changes, move the dot (or remove it).
   useEffect(() => {
     if (!ready) return;
-    mapRef.current?.setFilter('province-selected', ['==', ['get', 'psgc'], selectedPsgc ?? -1]);
-  }, [ready, selectedPsgc]);
+    const source = mapRef.current?.getSource('spot') as maplibregl.GeoJSONSource | undefined;
+    source?.setData({
+      type: 'FeatureCollection',
+      features: spot
+        ? [
+            {
+              type: 'Feature',
+              properties: {},
+              // GeoJSON wants longitude first, then latitude.
+              geometry: { type: 'Point', coordinates: [spot.lon, spot.lat] },
+            },
+          ]
+        : [],
+    });
+  }, [ready, spot]);
 
   return <div ref={containerRef} className="map" />;
 }

@@ -127,6 +127,8 @@ footer {
 
 /* The status card. On a wide screen it sits on the right of the map. */
 .card {
+  /* Above the map's own small controls, so they never cover the text. */
+  z-index: 3;
   top: 12px;
   right: 12px;
   width: 340px;
@@ -156,6 +158,10 @@ footer {
 
 .card li {
   margin-bottom: 4px;
+}
+
+.card-where {
+  margin: 2px 0 0;
 }
 
 .card-head {
@@ -214,23 +220,49 @@ footer {
   font-variant-numeric: tabular-nums;
 }
 
-/* On a narrow screen the card becomes a sheet along the bottom. */
+/* On a narrow screen the card sits BELOW the map instead of on top of it:
+   the map shrinks to make room, so nothing is hidden behind the card. */
 @media (max-width: 640px) {
+  main {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .map {
+    position: relative;
+    inset: auto;
+    flex: 1;
+    min-height: 0;
+  }
+
   .card {
-    top: auto;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    position: static;
+    flex: none;
     width: auto;
     max-width: none;
-    max-height: 60%;
+    /* vh = percent of the screen's height. */
+    max-height: 50vh;
+    border-width: 1px 0 0;
     border-radius: 0;
   }
 
+  /* The legend becomes a compact strip above the map, so it covers nothing. */
   .legend {
-    top: 12px;
-    right: 12px;
-    bottom: auto;
-    left: auto;
+    position: static;
+    order: -1;
+    padding: 6px 16px;
+    border-width: 0 0 1px;
+    border-radius: 0;
+    font-size: 12px;
+  }
+
+  .legend-title {
+    margin-bottom: 2px;
+  }
+
+  .legend ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
   }
 }

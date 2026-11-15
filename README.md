@@ -1,8 +1,8 @@
 # PH Monitor
 
 A map of the Philippines where each province is coloured by a 0–100 "stress right now" score,
-built from recent earthquakes and current weather. Click a province to see its score, the
-reasons, and the raw events behind it.
+built from recent earthquakes and current weather. Click anywhere on land to get a score for
+that exact spot, with the reasons and the raw events behind it.
 
 > **Not an official warning service.** Scores are unofficial estimates from public data and
 > untuned starting weights. For official warnings, follow [PAGASA](https://www.pagasa.dost.gov.ph/)
@@ -20,12 +20,16 @@ npm install               # first time only
 npm run db:up             # start the database (PostGIS in Docker, port 5433)
 npm run migrate           # create the tables
 npm run load-provinces    # download province boundaries (first time only)
+npm run load-places       # download city and municipality boundaries (first time only)
 
 npm run dev:server        # terminal 1: API + data fetching, http://localhost:3001
 npm run dev:web           # terminal 2: the map, http://localhost:5173
 ```
 
 The server fetches earthquakes every 15 minutes and weather every 30 minutes, and once at startup.
+Weather for a clicked spot is fetched when you click, and reused for 30 minutes.
+
+A link can open a spot directly: `http://localhost:5173/?lat=10.3157&lon=123.8854`.
 
 ## Other commands
 

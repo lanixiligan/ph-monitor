@@ -2,7 +2,7 @@
 // or Open-Meteo itself: everything goes through /api.
 
 import type { FeatureCollection, Geometry } from 'geojson';
-import type { ProvinceDetail, ProvinceMapProperties } from '@ph-monitor/shared';
+import type { PointDetail, ProvinceMapProperties } from '@ph-monitor/shared';
 
 /** All province shapes with their scores, as GeoJSON. */
 export type ProvinceCollection = FeatureCollection<Geometry, ProvinceMapProperties>;
@@ -22,6 +22,10 @@ export async function fetchProvinces(): Promise<ProvinceCollection> {
   return (await getJson('/api/provinces')) as ProvinceCollection;
 }
 
-export async function fetchProvinceDetail(psgc: number): Promise<ProvinceDetail> {
-  return (await getJson(`/api/provinces/${psgc}`)) as ProvinceDetail;
+/** One exact place on the map: latitude and longitude in degrees. */
+export type Spot = { lat: number; lon: number };
+
+/** The score and details for one spot. */
+export async function fetchPointDetail(spot: Spot): Promise<PointDetail> {
+  return (await getJson(`/api/point?lat=${spot.lat}&lon=${spot.lon}`)) as PointDetail;
 }

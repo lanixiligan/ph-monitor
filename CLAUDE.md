@@ -3,7 +3,8 @@
 ## What this is
 
 A Philippines real-time risk dashboard. Phase 1: a map of provinces coloured by a 0–100 "stress
-right now" score from earthquakes (USGS) and weather (Open-Meteo), with a status card on click.
+right now" score from earthquakes (USGS) and weather (Open-Meteo). Clicking the map shows a
+status card with a score worked out for that exact spot.
 Non-commercial. Plan and decisions: `PLAN.md`. Score formula: `METHODOLOGY.md`.
 
 ## Stack
@@ -18,14 +19,15 @@ TypeScript is pinned to 5.9.3 on purpose (do not move to 7 without asking).
 ```
 shared/src/        types.ts (shared types), appInfo.ts (APP_NAME)
 server/db/         schema.sql (all tables; re-runnable)
-server/scripts/    migrate.ts, load-provinces.ts, run-job.ts
-server/src/        index.ts, config.ts, db.ts, heatIndex.ts
+server/scripts/    migrate.ts, load-provinces.ts, load-places.ts, run-job.ts
+server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
+                   pointWeather.ts (on-demand weather for one spot)
   fetchers/        usgs.ts, openMeteo.ts (fetch + zod schema)
   jobs/            ingestEarthquakes, ingestWeather, computeScores, scheduler
   scoring/         scoring.ts (WEIGHTS + all formulas)
-  routes/          provinces.ts
+  routes/          provinces.ts (map data), point.ts (score for one spot)
 server/test/       scoring.test.ts, fetchers.test.ts
-web/src/           App.tsx, api.ts, scoreScale.ts, components/
+web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, components/
 data/              downloaded boundary files (git-ignored)
 ```
 
@@ -35,6 +37,7 @@ data/              downloaded boundary files (git-ignored)
 npm run db:up            start the database
 npm run migrate          apply schema.sql
 npm run load-provinces   load province boundaries
+npm run load-places      load city and municipality boundaries
 npm run dev:server       API + scheduler on :3001
 npm run dev:web          map on :5173
 npm test                 tests

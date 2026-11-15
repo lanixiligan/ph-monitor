@@ -15,6 +15,12 @@ These override the original text below where they differ.
   no push.
 - **Docs**: add a short `CLAUDE.md` for future Claude sessions; keep README brief.
 
+## After Phase 1
+
+- **Spot scores** (the "my city" idea, first part): cities and municipalities are loaded into a
+  `places` table, `GET /api/point?lat=&lon=` scores one exact spot on demand, and a map click
+  opens the card for that spot. A place-name search box is the planned next step.
+
 ## Context
 
 PH Monitor is a Philippines real-time risk dashboard. Phase 1 delivers one thing: a map of
