@@ -6,6 +6,9 @@ two signals: recent earthquakes and current weather. Every number below is a con
 
 **All thresholds are starting guesses, not calibrated values.** They are meant to be tuned.
 
+**The score is not a forecast or an official warning.** It has not been checked against past
+events. For official warnings, follow PAGASA (weather) and PHIVOLCS (earthquakes).
+
 ## Earthquake score
 
 Source: USGS, magnitude 4.0 and above, last 72 hours.

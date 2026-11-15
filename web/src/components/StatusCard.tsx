@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { EarthquakeEvent, ProvinceDetail, WeatherEvent } from '@ph-monitor/shared';
 import { fetchProvinceDetail } from '../api.ts';
 import { bandFor } from '../scoreScale.ts';
+import { Disclaimer } from './Disclaimer.tsx';
 
 // How often an open card asks the server again.
 const REFRESH_MS = 5 * 60 * 1000;
@@ -193,6 +194,10 @@ export function StatusCard({ psgc, onClose }: Props) {
           </tr>
         </tbody>
       </table>
+
+      <p className="muted">
+        <Disclaimer />
+      </p>
     </aside>
   );
 }

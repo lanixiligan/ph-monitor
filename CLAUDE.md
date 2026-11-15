@@ -57,6 +57,8 @@ npm run ingest:earthquakes | ingest:weather | compute:scores   one job by hand
 - The web app talks only to our own `/api`; `.env` is server-only and never committed.
 - Data credits (USGS, Open-Meteo CC BY 4.0, NAMRIA/PSA via OCHA CC BY 3.0 IGO, OpenStreetMap)
   must stay visible in the UI and README.
+- The "not an official warning service" notice must stay on the page footer, the status card
+  (`web/src/components/Disclaimer.tsx`), the README and METHODOLOGY.
 
 ## Working with the owner
 

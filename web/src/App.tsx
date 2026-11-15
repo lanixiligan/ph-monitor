@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
 import { fetchProvinces } from './api.ts';
 import type { ProvinceCollection } from './api.ts';
+import { Disclaimer } from './components/Disclaimer.tsx';
 import { Legend } from './components/Legend.tsx';
 import { ProvinceMap } from './components/ProvinceMap.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
@@ -62,6 +63,7 @@ export function App() {
       </main>
 
       <footer>
+        <Disclaimer />{' '}
         Earthquakes: <a href="https://earthquake.usgs.gov/">USGS</a>. Weather (modelled):{' '}
         <a href="https://open-meteo.com/">Open-Meteo</a>, CC BY 4.0. Boundaries: NAMRIA and PSA via
         OCHA, CC BY 3.0 IGO, from{' '}
