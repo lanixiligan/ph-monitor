@@ -1,0 +1,19 @@
+{
+  "name": "ph-monitor",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Philippines real-time risk dashboard",
+  "type": "module",
+  "workspaces": [
+    "shared"
+  ],
+  "scripts": {
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:psql": "docker compose exec db sh -c 'psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\"'",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

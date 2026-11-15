@@ -1,0 +1,34 @@
+# Runs the project's database: PostgreSQL with the PostGIS extension
+# (PostGIS adds map/geometry features, e.g. "is this point inside this province?").
+#
+# Start:  docker compose up -d
+# Stop:   docker compose down        (data is kept)
+# Wipe:   docker compose down -v     (deletes the data too)
+
+# Fixed project name. Without it Docker would name things after the folder,
+# and renaming the folder would leave the old database volume behind.
+name: ph-monitor
+
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      # These ${...} values are read from the .env file next to this file.
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      # 127.0.0.1 = only this computer can connect, not the rest of the network.
+      - "127.0.0.1:${DB_PORT}:5432"
+    volumes:
+      # A named volume: where Docker keeps the database files between restarts.
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db-data:

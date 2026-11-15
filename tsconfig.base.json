@@ -1,0 +1,24 @@
+{
+  // TypeScript settings shared by shared/, server/ and web/.
+  // Each of those has its own small tsconfig.json that "extends" this one.
+  "compilerOptions": {
+    // strict = turn on all the safety checks (e.g. you must handle null).
+    "strict": true,
+    // Also flag array/object lookups that might be undefined.
+    "noUncheckedIndexedAccess": true,
+
+    // Modern JavaScript output and modern import/export syntax.
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+
+    // Only check types; don't write .js files. tsx and Vite run the code.
+    "noEmit": true,
+
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    // Don't type-check the insides of installed packages (faster).
+    "skipLibCheck": true
+  }
+}

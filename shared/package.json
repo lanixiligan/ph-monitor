@@ -1,0 +1,11 @@
+{
+  "name": "@ph-monitor/shared",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Types used by both the server and the web app",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

@@ -1,0 +1,17 @@
+# Installed packages (recreated by `npm install`)
+node_modules/
+
+# Local settings and secrets: never commit these
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+
+# Downloaded boundary files (recreated by `npm run load-provinces`)
+data/
+
+# Editor and OS clutter
+.DS_Store
+*.log
