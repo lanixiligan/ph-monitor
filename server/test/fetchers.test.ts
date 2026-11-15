@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { parseOpenMeteoLocation } from '../src/fetchers/openMeteo.ts';
-import { parseUsgsFeed } from '../src/fetchers/usgs.ts';
+import { parseUsgsFeed, QUAKE_BOX } from '../src/fetchers/usgs.ts';
 import { heatIndexC } from '../src/heatIndex.ts';
 import { snapToCell } from '../src/pointWeather.ts';
 
@@ -64,6 +64,24 @@ test('USGS: broken records are skipped, good ones are kept', () => {
   assert.equal(result.quakes.length, 1);
   assert.equal(result.quakes[0]?.id, 'us7000ty9v');
   assert.equal(result.skipped, 4);
+});
+
+test('USGS: the search area includes strong quakes just outside the country', () => {
+  // Each of these is outside the Philippines but within 400 km of a province.
+  const nearby = [
+    { name: 'Talaud Islands, Indonesia', lat: 3.9, lon: 126.8 },
+    { name: 'southern Taiwan', lat: 22.5, lon: 120.7 },
+    { name: 'east of the Philippine Trench', lat: 8.0, lon: 129.5 },
+    { name: 'off northern Borneo', lat: 6.5, lon: 114.5 },
+  ];
+  for (const place of nearby) {
+    const inside =
+      place.lat >= QUAKE_BOX.minLat &&
+      place.lat <= QUAKE_BOX.maxLat &&
+      place.lon >= QUAKE_BOX.minLon &&
+      place.lon <= QUAKE_BOX.maxLon;
+    assert.ok(inside, `${place.name} should be inside the search area`);
+  }
 });
 
 test('USGS: a response that is not a feed at all throws', () => {

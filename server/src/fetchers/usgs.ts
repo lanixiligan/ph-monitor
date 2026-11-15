@@ -5,8 +5,21 @@ import { z } from 'zod';
 
 const USGS_URL = 'https://earthquake.usgs.gov/fdsnws/event/1/query';
 
-// A box around the Philippines, including nearby sea.
+// A box around the Philippines' land and nearby sea.
 const PH_BOX = { minLat: 4.5, maxLat: 21.5, minLon: 116, maxLon: 127 };
+
+// A strong quake is felt up to 400 km away (about 3.6 degrees), so we also
+// ask for quakes up to 4 degrees outside that box. Without this, a big quake
+// just across the border would be missed.
+const REACH_DEG = 4;
+
+/** The area we ask USGS about. `export` lets the tests read it. */
+export const QUAKE_BOX = {
+  minLat: PH_BOX.minLat - REACH_DEG,
+  maxLat: PH_BOX.maxLat + REACH_DEG,
+  minLon: PH_BOX.minLon - REACH_DEG,
+  maxLon: PH_BOX.maxLon + REACH_DEG,
+};
 
 // What one earthquake in the feed must look like. Extra fields are ignored.
 const featureSchema = z.object({
@@ -92,10 +105,10 @@ export async function fetchUsgsQuakes(
     eventtype: 'earthquake',
     starttime: since.toISOString(),
     minmagnitude: String(minMagnitude),
-    minlatitude: String(PH_BOX.minLat),
-    maxlatitude: String(PH_BOX.maxLat),
-    minlongitude: String(PH_BOX.minLon),
-    maxlongitude: String(PH_BOX.maxLon),
+    minlatitude: String(QUAKE_BOX.minLat),
+    maxlatitude: String(QUAKE_BOX.maxLat),
+    minlongitude: String(QUAKE_BOX.minLon),
+    maxlongitude: String(QUAKE_BOX.maxLon),
   });
 
   // Give up after 30 seconds instead of waiting forever.
