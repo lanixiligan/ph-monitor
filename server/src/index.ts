@@ -29,7 +29,16 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // 127.0.0.1 = only this computer can connect.
-app.listen(config.serverPort, '127.0.0.1', () => {
+// Express also calls this function with an error when it cannot start, most
+// often because another copy is already using the port. Then we stop, so a
+// second copy never runs the fetch jobs a second time.
+// `error?: Error` means the argument is optional: it is only there on failure.
+app.listen(config.serverPort, '127.0.0.1', (error?: Error) => {
+  if (error) {
+    console.error(`Could not start on port ${config.serverPort}: ${error.message}`);
+    console.error('Is the server already running in another terminal?');
+    process.exit(1);
+  }
   console.log(`${APP_NAME} server: http://localhost:${config.serverPort}/api/health`);
   startScheduler();
 });
