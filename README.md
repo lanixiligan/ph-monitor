@@ -8,6 +8,9 @@ that exact spot, with the reasons and the raw events behind it.
 > untuned starting weights. For official warnings, follow [PAGASA](https://www.pagasa.dost.gov.ph/)
 > and [PHIVOLCS](https://www.phivolcs.dost.gov.ph/).
 
+**Status: work in progress.** Phase 1 only (earthquakes and weather). Expect rough edges, and
+scores that change as the formula is tuned.
+
 "PH Monitor" is a placeholder name (set in `shared/src/appInfo.ts`). Non-commercial project.
 
 ## Run it
@@ -53,7 +56,7 @@ The build plan is in [PLAN.md](PLAN.md).
 |---|---|---|
 | Earthquakes | [USGS Earthquake Catalog](https://earthquake.usgs.gov/fdsnws/event/1/) | Public domain |
 | Weather (modelled) | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0; free tier is non-commercial only |
-| Province boundaries | NAMRIA and PSA via OCHA, from [faeldon/philippines-json-maps](https://github.com/faeldon/philippines-json-maps) | Boundaries CC BY 3.0 IGO; repository MIT |
+| Province, city and municipality boundaries (simplified) | NAMRIA and PSA via OCHA, from [faeldon/philippines-json-maps](https://github.com/faeldon/philippines-json-maps) | Boundaries CC BY 3.0 IGO; repository MIT |
 | Basemap: roads and place names (switch in `web/src/mapSettings.ts`) | [OpenFreeMap](https://openfreemap.org/), © OpenMapTiles, data © OpenStreetMap contributors | ODbL (OpenStreetMap data) |
 
 ## Licence
