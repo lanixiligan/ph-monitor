@@ -16,6 +16,7 @@
     "load-provinces": "npm run load-provinces --workspace server",
     "ingest:earthquakes": "npm run ingest:earthquakes --workspace server",
     "ingest:weather": "npm run ingest:weather --workspace server",
+    "compute:scores": "npm run compute:scores --workspace server",
     "test": "npm test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

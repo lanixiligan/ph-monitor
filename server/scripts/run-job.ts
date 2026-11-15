@@ -1,9 +1,11 @@
 // Runs one job by hand, once. Examples:
 //   npm run ingest:earthquakes
 //   npm run ingest:weather
+//   npm run compute:scores
 // (The running server does the same jobs on a timer.)
 
 import { pool } from '../src/db.ts';
+import { computeScores } from '../src/jobs/computeScores.ts';
 import { ingestEarthquakes } from '../src/jobs/ingestEarthquakes.ts';
 import { ingestWeather } from '../src/jobs/ingestWeather.ts';
 
@@ -12,6 +14,7 @@ import { ingestWeather } from '../src/jobs/ingestWeather.ts';
 const jobs: Record<string, () => Promise<void>> = {
   earthquakes: ingestEarthquakes,
   weather: ingestWeather,
+  scores: computeScores,
 };
 
 // process.argv holds the words typed on the command line; [2] is the first

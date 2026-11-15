@@ -9,6 +9,7 @@
     "load-provinces": "tsx scripts/load-provinces.ts",
     "ingest:earthquakes": "tsx scripts/run-job.ts earthquakes",
     "ingest:weather": "tsx scripts/run-job.ts weather",
+    "compute:scores": "tsx scripts/run-job.ts scores",
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
