@@ -7,7 +7,8 @@ right now" score from earthquakes (USGS) and weather (Open-Meteo). Clicking the 
 status card with a score worked out for that exact spot.
 Phase 2 (in progress, see `PLAN.md`): the server also collects disaster events (GDACS, EONET;
 GDACS alert levels count in the score), storm tracks (JMA, JTWC), a 7-day outlook, disaster news
-and YouTube stream links. The page does not show these yet.
+and YouTube stream links. The page shows them as map layers, extra status card sections, a
+headlines panel and a live streams panel.
 Non-commercial. Plan and decisions: `PLAN.md`. Score formula: `METHODOLOGY.md`.
 
 ## Stack
@@ -38,7 +39,9 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
   routes/          provinces.ts (map data), point.ts (score for one spot),
                    conditions.ts (events, storms, news, streams, bulletins)
 server/test/       one test file per area, real feed samples in fixtures/
-web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, components/
+web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (time, number
+                   and link helpers), mapOverlays.ts + stormGeo.ts (event markers and
+                   storm tracks), components/
 data/              downloaded boundary files (git-ignored)
 ```
 
@@ -71,8 +74,10 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
 - The app name appears in the UI only through `APP_NAME` (`shared/src/appInfo.ts`).
 - UI stays plain and neutral: no logo, no custom fonts, no colours beyond the score scale
   (`web/src/scoreScale.ts`).
-- The web app talks only to our own `/api`, with one exception: the basemap tiles come straight
-  from OpenFreeMap (switch: `SHOW_BASEMAP` in `web/src/mapSettings.ts`).
+- The web app talks only to our own `/api`, with two exceptions: the basemap tiles come straight
+  from OpenFreeMap (switch: `SHOW_BASEMAP` in `web/src/mapSettings.ts`), and a video plays in
+  YouTube's own player, embedded from `youtube-nocookie.com` only after the reader clicks Play.
+  Raw TV feeds (`.m3u8`) are never re-streamed.
 - `.env` is server-only and never committed. `YOUTUBE_API_KEY` is optional and never reaches
   the browser. The YouTube checker uses only 1-unit API calls (never `search.list`).
 - Every news feed and stream link lives in `server/src/sources.ts`.

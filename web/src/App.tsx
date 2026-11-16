@@ -1,5 +1,6 @@
 // The whole page: a header, the map with its legend, the status card for
-// the clicked spot, and the credits line.
+// the clicked spot, the headlines and live streams below the map, and the
+// credits line.
 
 import { useEffect, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
@@ -7,8 +8,10 @@ import { fetchProvinces } from './api.ts';
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
 import { Legend } from './components/Legend.tsx';
+import { NewsPanel } from './components/NewsPanel.tsx';
 import { ProvinceMap } from './components/ProvinceMap.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
+import { StreamsPanel } from './components/StreamsPanel.tsx';
 import { SHOW_BASEMAP } from './mapSettings.ts';
 
 // How often the map asks the server for new scores.
@@ -69,7 +72,14 @@ export function App() {
     <div className="app">
       <header>
         <h1>{APP_NAME}</h1>
-        <p>Stress right now from earthquakes and weather. Click anywhere on land for that spot.</p>
+        <p>
+          Stress right now from earthquakes, weather and disaster events. Click anywhere on land
+          for that spot.
+        </p>
+        {/* Links that jump down the page; `#news-title` is the id of a heading. */}
+        <nav>
+          <a href="#news-title">Headlines</a> · <a href="#streams-title">Live streams</a>
+        </nav>
       </header>
 
       {error && <div className="error">{error}</div>}
@@ -79,6 +89,11 @@ export function App() {
         <Legend />
         {spot !== null && <StatusCard spot={spot} onClose={() => setSpot(null)} />}
       </main>
+
+      <div className="below-map">
+        <NewsPanel />
+        <StreamsPanel />
+      </div>
 
       <footer>
         <Disclaimer />{' '}
@@ -97,6 +112,8 @@ export function App() {
         <a href="https://open-meteo.com/en/docs/flood-api">GloFAS via Open-Meteo</a>, CC BY 4.0.
         {' '}
         News headlines: the outlets named beside each headline, some found through Google News.
+        {' '}
+        Video: <a href="https://www.youtube.com/">YouTube</a>, from each outlet's own channel.
         {/* The basemap credit is only needed when the basemap is shown. */}
         {SHOW_BASEMAP && (
           <>

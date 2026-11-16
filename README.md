@@ -8,10 +8,11 @@ that exact spot, with the reasons and the raw events behind it.
 > untuned starting weights. For official warnings, follow [PAGASA](https://www.pagasa.dost.gov.ph/)
 > and [PHIVOLCS](https://www.phivolcs.dost.gov.ph/).
 
-**Status: work in progress.** The map and score use earthquakes and weather. The server also
-collects disaster events, storm tracks, a 7-day outlook, news headlines and stream links
-(`/api/events`, `/api/storms`, `/api/news`, `/api/streams`), but the page does not show them
-yet. Expect rough edges, and scores that change as the formula is tuned.
+**Status: work in progress.** The map and score use earthquakes, weather and disaster event
+alert levels. The page also shows disaster events and storm tracks on the map, a 7-day outlook
+and links to official bulletins on the status card, disaster headlines, and live streams or
+latest videos from news channels. Expect rough edges, and scores that change as the formula is
+tuned.
 
 "PH Monitor" is a placeholder name (set in `shared/src/appInfo.ts`). Non-commercial project.
 
@@ -74,7 +75,7 @@ The build plan is in [PLAN.md](PLAN.md).
 | 7-day outlook: rain and wind gusts (modelled) | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0; free tier is non-commercial only |
 | 7-day outlook: river flow (modelled) | [Open-Meteo Flood API](https://open-meteo.com/en/docs/flood-api), from GloFAS (Copernicus Emergency Management Service) | CC BY 4.0 |
 | News headlines (headline, outlet, time and link only) | RSS feeds of the outlets listed in `server/src/sources.ts`, and [Google News](https://news.google.com/) search | Headlines belong to their outlets; each links to the original article |
-| Live streams and latest videos (planned for the page) | [YouTube](https://www.youtube.com/) channels listed in `server/src/sources.ts` | Shown only in YouTube's own player |
+| Live streams and latest videos | [YouTube](https://www.youtube.com/) channels listed in `server/src/sources.ts` | Shown only in YouTube's own player |
 | Basemap: roads and place names (switch in `web/src/mapSettings.ts`) | [OpenFreeMap](https://openfreemap.org/), © OpenMapTiles, data © OpenStreetMap contributors | ODbL (OpenStreetMap data) |
 
 ## Licence
