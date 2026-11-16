@@ -83,7 +83,24 @@ export const WEIGHTS = {
     maxAgeHours: 3,
   },
 
-  /** When combining, the weaker signal adds this share of its score. */
+  event: {
+    // Disaster events with an alert level (GDACS: Green, Orange, Red).
+    /** Points for an ongoing event right at the province, by alert level. */
+    levelScore: { green: 10, orange: 50, red: 80 },
+    /** How far an event of each level reaches, in km. */
+    reachKm: { green: 100, orange: 200, red: 300 },
+    /** Share of the points left at the very edge of the reach (1 = no fading). */
+    edgeFade: 0.25,
+    /** After an event ends, its points fall to 0 over this many hours. */
+    endedFadeHours: 48,
+    /**
+     * The kinds of event that count. Earthquakes are left out because they
+     * are already scored from USGS; droughts because they are slow and wide.
+     */
+    kinds: ['typhoon', 'flood', 'volcano', 'wildfire'],
+  },
+
+  /** When combining, each signal that is not the strongest adds this share of its score. */
   secondaryWeight: 0.25,
 
   /** Rain or heat is only mentioned in the reasons once it scores this much. */
@@ -105,6 +122,18 @@ export type WeatherInput = {
   rain1hMm: number | null;
   rain24hMm: number | null;
   heatIndexC: number | null;
+};
+
+/** One disaster event as seen from one province or spot. */
+export type EventInput = {
+  /** 'typhoon', 'flood', 'volcano'... Only the kinds in WEIGHTS.event.kinds count. */
+  kind: string;
+  /** null = the source gave no alert level; such an event does not score. */
+  alertLevel: 'green' | 'orange' | 'red' | null;
+  /** From the event to the province's edge (or to the spot); 0 if inside. */
+  distanceKm: number;
+  /** null = still going on. */
+  hoursSinceEnd: number | null;
 };
 
 type Step = { at: number; score: number };
@@ -210,16 +239,48 @@ export function weatherScore(weather: WeatherInput | null): number {
   return Math.max(rainScore(weather), heatScore(weather));
 }
 
+// ---------- Disaster events ----------
+
+/**
+ * Points (0–100, not rounded) for one event:
+ * alert level strength × distance fade × "has it ended?" fade.
+ */
+export function singleEventScore(event: EventInput): number {
+  const e = WEIGHTS.event;
+  if (event.alertLevel === null) return 0;
+  if (!e.kinds.includes(event.kind)) return 0;
+
+  const reach = e.reachKm[event.alertLevel];
+  if (event.distanceKm > reach) return 0;
+
+  // Distance: 1 at the event, down to edgeFade at the edge of its reach.
+  const distanceFade = 1 - (1 - e.edgeFade) * (event.distanceKm / reach);
+
+  // Ended: 1 while it is going on, down to 0 at endedFadeHours after the end.
+  const hoursSinceEnd = Math.max(0, event.hoursSinceEnd ?? 0);
+  if (hoursSinceEnd > e.endedFadeHours) return 0;
+  const endedFade = 1 - hoursSinceEnd / e.endedFadeHours;
+
+  return e.levelScore[event.alertLevel] * distanceFade * endedFade;
+}
+
+/** Event score (0–100) for a province: its strongest event. */
+export function eventScore(events: EventInput[]): number {
+  return Math.min(100, Math.round(Math.max(0, ...events.map(singleEventScore))));
+}
+
 // ---------- Combining ----------
 
 /**
- * Overall score: the stronger signal counts in full, the weaker one adds a
+ * Overall score: the strongest signal counts in full, each other one adds a
  * share. (An average would hide a severe earthquake behind calm weather.)
  */
-export function totalScore(quake: number, weather: number): number {
-  const stronger = Math.max(quake, weather);
-  const weaker = Math.min(quake, weather);
-  return Math.min(100, Math.round(stronger + WEIGHTS.secondaryWeight * weaker));
+// `event = 0` is a default: callers that leave it out get 0.
+export function totalScore(quake: number, weather: number, event = 0): number {
+  // Sort a copy from strongest to weakest.
+  const [strongest = 0, ...others] = [quake, weather, event].sort((a, b) => b - a);
+  const extra = others.reduce((sum, score) => sum + WEIGHTS.secondaryWeight * score, 0);
+  return Math.min(100, Math.round(strongest + extra));
 }
 
 // ---------- Reasons ----------
@@ -245,14 +306,32 @@ function describeQuake(quake: QuakeInput, target: ScoreTarget): string {
   return `M${quake.magnitude.toFixed(1)} earthquake ${where} (${depth}), ${when}.`;
 }
 
+function describeEvent(event: EventInput, target: ScoreTarget): string {
+  const veryClose = target === 'province' ? 'in or beside the province' : 'less than 1 km away';
+  const where = event.distanceKm < 1 ? veryClose : `${Math.round(event.distanceKm)} km away`;
+  // 'orange' → 'Orange'
+  const level = event.alertLevel ? event.alertLevel[0]?.toUpperCase() + event.alertLevel.slice(1) : '';
+  const ended = event.hoursSinceEnd !== null && event.hoursSinceEnd > 0 ? ' (now ended)' : '';
+  return `GDACS ${level} alert: ${event.kind} ${where}${ended}.`;
+}
+
 /** The short sentences shown on the status card, most important first. */
-// `target = 'province'` is a default: callers that leave it out get 'province'.
+// `target = 'province'` and `events = []` are defaults for callers that leave them out.
 export function buildReasons(
   quakes: QuakeInput[],
   weather: WeatherInput | null,
   target: ScoreTarget = 'province',
+  events: EventInput[] = [],
 ): string[] {
   const reasons: string[] = [];
+
+  // Events that count, strongest first; describe up to three.
+  const countedEvents = events
+    .filter((event) => singleEventScore(event) >= 1)
+    .sort((a, b) => singleEventScore(b) - singleEventScore(a));
+  for (const event of countedEvents.slice(0, 3)) {
+    reasons.push(describeEvent(event, target));
+  }
 
   // Quakes that count, strongest first; describe up to three.
   const counted = quakes
@@ -287,7 +366,7 @@ export function buildReasons(
   }
 
   if (reasons.length === 0) {
-    reasons.push('No significant earthquake or weather stress right now.');
+    reasons.push('No significant earthquake, weather or disaster event stress right now.');
   }
   return reasons;
 }

@@ -67,6 +67,9 @@ CREATE TABLE IF NOT EXISTS province_scores (
   computed_at   TIMESTAMPTZ NOT NULL
 );
 
+-- Phase 2: the share of the score that comes from disaster event alert levels.
+ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS event_score SMALLINT NOT NULL DEFAULT 0;
+
 -- Every past score (one row per province per recompute).
 CREATE TABLE IF NOT EXISTS province_score_history (
   province_psgc BIGINT REFERENCES provinces,

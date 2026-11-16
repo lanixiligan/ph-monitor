@@ -66,6 +66,8 @@ export type ProvinceScore = {
   score: number;
   quakeScore: number;
   weatherScore: number;
+  /** From disaster events with an alert level (GDACS). */
+  eventScore: number;
   /** Short sentences explaining the score. `string[]` means "a list of strings". */
   reasons: string[];
   computedAt: string;
@@ -91,6 +93,7 @@ export type ProvinceMapProperties = {
   score: number | null;
   quake_score: number | null;
   weather_score: number | null;
+  event_score: number | null;
 };
 
 /** Everything the status card needs. Returned by GET /api/provinces/:psgc */
@@ -117,6 +120,7 @@ export type PointScore = {
   score: number;
   quakeScore: number;
   weatherScore: number;
+  eventScore: number;
   reasons: string[];
   computedAt: string;
 };

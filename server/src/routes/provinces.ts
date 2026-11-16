@@ -49,7 +49,8 @@ provincesRouter.get('/', async (_req, res) => {
     score: number;
     quake_score: number;
     weather_score: number;
-  }>('SELECT province_psgc, score, quake_score, weather_score FROM province_scores');
+    event_score: number;
+  }>('SELECT province_psgc, score, quake_score, weather_score, event_score FROM province_scores');
 
   const scoreByPsgc = new Map(scores.rows.map((row) => [row.province_psgc, row]));
 
@@ -62,6 +63,7 @@ provincesRouter.get('/', async (_req, res) => {
       score: score?.score ?? null,
       quake_score: score?.quake_score ?? null,
       weather_score: score?.weather_score ?? null,
+      event_score: score?.event_score ?? null,
     };
     return { type: 'Feature', id: shape.psgc, properties, geometry: shape.geometry };
   });
@@ -98,10 +100,11 @@ provincesRouter.get('/:psgc', async (req, res) => {
     score: number;
     quake_score: number;
     weather_score: number;
+    event_score: number;
     reasons: string[];
     computed_at: Date;
   }>(
-    `SELECT score, quake_score, weather_score, reasons, computed_at
+    `SELECT score, quake_score, weather_score, event_score, reasons, computed_at
      FROM province_scores WHERE province_psgc = $1`,
     [psgc],
   );
@@ -178,6 +181,7 @@ provincesRouter.get('/:psgc', async (req, res) => {
           score: score.score,
           quakeScore: score.quake_score,
           weatherScore: score.weather_score,
+          eventScore: score.event_score,
           reasons: score.reasons,
           computedAt: score.computed_at.toISOString(),
         }
