@@ -34,6 +34,22 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [spot, setSpot] = useState<Spot | null>(spotFromAddress);
 
+  // Keep the address in step with the chosen spot, so it can be copied and
+  // shared: /?lat=10.3157&lon=123.8854. `replaceState` changes the address
+  // without reloading the page or adding a step to the Back button.
+  useEffect(() => {
+    const address = new URL(window.location.href);
+    if (spot === null) {
+      address.searchParams.delete('lat');
+      address.searchParams.delete('lon');
+    } else {
+      // 4 decimals is about 10 metres, plenty for a spot on the map.
+      address.searchParams.set('lat', spot.lat.toFixed(4));
+      address.searchParams.set('lon', spot.lon.toFixed(4));
+    }
+    window.history.replaceState(null, '', address);
+  }, [spot]);
+
   // Load the provinces now, then again every few minutes.
   useEffect(() => {
     async function load() {
