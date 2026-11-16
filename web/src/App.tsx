@@ -70,6 +70,9 @@ export function App() {
         <a href="https://open-meteo.com/">Open-Meteo</a>, CC BY 4.0. Boundaries: NAMRIA and PSA via
         OCHA, CC BY 3.0 IGO, from{' '}
         <a href="https://github.com/faeldon/philippines-json-maps">philippines-json-maps</a>.
+        {' '}
+        Disaster events: <a href="https://www.gdacs.org/">GDACS</a>, © European Union, CC BY 4.0, and{' '}
+        <a href="https://eonet.gsfc.nasa.gov/">NASA EONET</a>.
         {/* The basemap credit is only needed when the basemap is shown. */}
         {SHOW_BASEMAP && (
           <>

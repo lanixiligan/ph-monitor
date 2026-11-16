@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "bbox": [126.2, 9.7595, 126.2, 9.7595],
+      "geometry": { "type": "Point", "coordinates": [126.2, 9.7595] },
+      "properties": {
+        "eventtype": "EQ",
+        "eventid": 1577487,
+        "episodeid": 1746763,
+        "eventname": "",
+        "name": "Green earthquake (Magnitude 5.5M, Depth:9.971km) in Philippines 15/11/2026 13:41 UTC",
+        "alertlevel": "Green",
+        "alertscore": 0.73647094592207,
+        "iscurrent": "true",
+        "country": "Philippines",
+        "iso3": "PHL",
+        "fromdate": "2026-11-15T13:41:35",
+        "todate": "2026-11-15T13:41:35",
+        "url": {
+          "geometry": "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=EQ&eventid=1577487&episodeid=1746763",
+          "report": "https://www.gdacs.org/report.aspx?eventtype=EQ&eventid=1577487",
+          "details": "https://www.gdacs.org/gdacsapi/api/events/geteventdata?eventtype=EQ&eventid=1577487"
+        }
+      }
+    }
+  ]
+}

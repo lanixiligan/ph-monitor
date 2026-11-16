@@ -1,0 +1,123 @@
+{
+ "title": "EONET Events",
+ "description": "Natural events from EONET.",
+ "link": "https://eonet.gsfc.nasa.gov/api/v3/events",
+ "events": [
+  {
+   "id": "EONET_25989",
+   "title": "Flood in Philippines 1104266",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25989",
+   "closed": "2026-11-02T00:00:00Z",
+   "categories": [
+    {
+     "id": "floods",
+     "title": "Floods"
+    }
+   ],
+   "sources": [
+    {
+     "id": "GDACS",
+     "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104266"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-10-28T20:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        123.8845037,
+        6.5226982
+       ],
+       [
+        123.8846372,
+        6.5172675
+       ],
+       [
+        123.8849907,
+        6.5118466
+       ],
+       [
+        123.8855635,
+        6.5064442
+       ],
+       [
+        123.8863548,
+        6.5010691
+       ],
+       [
+        123.8845037,
+        6.5226982
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_25339",
+   "title": "Super Typhoon Champi",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25339",
+   "closed": "2026-10-30T00:00:00Z",
+   "categories": [
+    {
+     "id": "severeStorms",
+     "title": "Severe Storms"
+    }
+   ],
+   "sources": [
+    {
+     "id": "JTWC",
+     "url": "https://www.metoc.navy.mil/jtwc/products/wp2926.tcw"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": 35.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-15T12:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      157.4,
+      11
+     ]
+    },
+    {
+     "magnitudeValue": 40.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-15T18:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      155.7,
+      11.2
+     ]
+    },
+    {
+     "magnitudeValue": 45.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-16T00:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      153.8,
+      11.3
+     ]
+    },
+    {
+     "magnitudeValue": 35.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-25T18:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      127.4,
+      31.2
+     ]
+    }
+   ]
+  }
+ ]
+}
