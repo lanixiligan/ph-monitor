@@ -1,5 +1,6 @@
 // The whole page: a header, the map with its legend, the status card for
-// the clicked spot, and the credits line.
+// the clicked spot, the headlines and live streams below the map, and the
+// credits line.
 
 import { useEffect, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
@@ -7,8 +8,11 @@ import { fetchProvinces } from './api.ts';
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
 import { Legend } from './components/Legend.tsx';
+import { NewsPanel } from './components/NewsPanel.tsx';
 import { ProvinceMap } from './components/ProvinceMap.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
+import { StreamsPanel } from './components/StreamsPanel.tsx';
+import { LanguageSwitch, useStrings } from './i18n/index.ts';
 import { SHOW_BASEMAP } from './mapSettings.ts';
 
 // How often the map asks the server for new scores.
@@ -29,19 +33,38 @@ function spotFromAddress(): Spot | null {
 }
 
 export function App() {
+  // `t` holds all the words in the current language.
+  const { t } = useStrings();
   // `useState` remembers a value between re-draws of the page.
   const [provinces, setProvinces] = useState<ProvinceCollection | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // true when the last load failed; the message is looked up when drawn.
+  const [failed, setFailed] = useState(false);
   const [spot, setSpot] = useState<Spot | null>(spotFromAddress);
+
+  // Keep the address in step with the chosen spot, so it can be copied and
+  // shared: /?lat=10.3157&lon=123.8854. `replaceState` changes the address
+  // without reloading the page or adding a step to the Back button.
+  useEffect(() => {
+    const address = new URL(window.location.href);
+    if (spot === null) {
+      address.searchParams.delete('lat');
+      address.searchParams.delete('lon');
+    } else {
+      // 4 decimals is about 10 metres, plenty for a spot on the map.
+      address.searchParams.set('lat', spot.lat.toFixed(4));
+      address.searchParams.set('lon', spot.lon.toFixed(4));
+    }
+    window.history.replaceState(null, '', address);
+  }, [spot]);
 
   // Load the provinces now, then again every few minutes.
   useEffect(() => {
     async function load() {
       try {
         setProvinces(await fetchProvinces());
-        setError(null);
+        setFailed(false);
       } catch {
-        setError('Could not load the scores. Is the server running?');
+        setFailed(true);
       }
     }
     void load();
@@ -53,10 +76,16 @@ export function App() {
     <div className="app">
       <header>
         <h1>{APP_NAME}</h1>
-        <p>Stress right now from earthquakes and weather. Click anywhere on land for that spot.</p>
+        <LanguageSwitch />
+        <p>{t.app.intro}</p>
+        {/* Links that jump down the page; `#news-title` is the id of a heading. */}
+        <nav>
+          <a href="#news-title">{t.app.jumpHeadlines}</a> ·{' '}
+          <a href="#streams-title">{t.app.jumpStreams}</a>
+        </nav>
       </header>
 
-      {error && <div className="error">{error}</div>}
+      {failed && <div className="error">{t.app.loadError}</div>}
 
       <main>
         <ProvinceMap data={provinces} spot={spot} onSelect={setSpot} />
@@ -64,19 +93,37 @@ export function App() {
         {spot !== null && <StatusCard spot={spot} onClose={() => setSpot(null)} />}
       </main>
 
+      <div className="below-map">
+        <NewsPanel />
+        <StreamsPanel />
+      </div>
+
       <footer>
         <Disclaimer />{' '}
-        Earthquakes: <a href="https://earthquake.usgs.gov/">USGS</a>. Weather (modelled):{' '}
-        <a href="https://open-meteo.com/">Open-Meteo</a>, CC BY 4.0. Boundaries: NAMRIA and PSA via
-        OCHA, CC BY 3.0 IGO, from{' '}
-        <a href="https://github.com/faeldon/philippines-json-maps">philippines-json-maps</a>.
+        {t.app.creditQuakes} <a href="https://earthquake.usgs.gov/">USGS</a>.{' '}
+        {t.app.creditWeather} <a href="https://open-meteo.com/">Open-Meteo</a>
+        {t.app.creditWeatherEnd} {t.app.creditBoundaries}{' '}
+        <a href="https://github.com/faeldon/philippines-json-maps">philippines-json-maps</a>.{' '}
+        {t.app.creditEvents} <a href="https://www.gdacs.org/">GDACS</a>
+        {t.app.creditEventsMid} <a href="https://eonet.gsfc.nasa.gov/">NASA EONET</a>.{' '}
+        {t.app.creditStorms}{' '}
+        <a href="https://www.jma.go.jp/bosai/map.html#contents=typhoon">JMA</a> {t.app.creditStormsMid}{' '}
+        <a href="https://www.metoc.navy.mil/jtwc/jtwc.html">JTWC</a>.{' '}
+        {t.app.creditOutlook} <a href="https://open-meteo.com/">Open-Meteo</a>
+        {t.app.creditOutlookMid}{' '}
+        <a href="https://open-meteo.com/en/docs/flood-api">GloFAS via Open-Meteo</a>
+        {t.app.creditOutlookEnd} {t.app.creditNews} {t.app.creditVideo}{' '}
+        <a href="https://www.youtube.com/">YouTube</a>
+        {t.app.creditVideoEnd}
         {/* The basemap credit is only needed when the basemap is shown. */}
         {SHOW_BASEMAP && (
           <>
             {' '}
-            Basemap: <a href="https://openfreemap.org/">OpenFreeMap</a>, ©{' '}
-            <a href="https://www.openmaptiles.org/">OpenMapTiles</a>, data ©{' '}
-            <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
+            {t.app.creditBasemap} <a href="https://openfreemap.org/">OpenFreeMap</a>
+            {t.app.creditBasemapMid} <a href="https://www.openmaptiles.org/">OpenMapTiles</a>
+            {t.app.creditBasemapData}{' '}
+            <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>{' '}
+            {t.app.creditBasemapEnd}
           </>
         )}
       </footer>

@@ -1,16 +1,20 @@
-// The map legend: which colour means which score.
+// The map legend: which colour means which score, and what the marks for
+// disaster events and storms mean.
 
-import { NO_DATA_COLOR, SCORE_BANDS } from '../scoreScale.ts';
+import { useStrings } from '../i18n/index.ts';
+import { bandLabel, NO_DATA_COLOR, SCORE_BANDS } from '../scoreScale.ts';
 
 export function Legend() {
+  // `t` holds all the words in the current language.
+  const { t } = useStrings();
   return (
     <div className="legend">
-      <div className="legend-title">Stress score (0–100)</div>
+      <div className="legend-title">{t.legend.title}</div>
       <ul>
         {SCORE_BANDS.map((band) => (
-          <li key={band.label}>
+          <li key={band.id}>
             <span className="swatch" style={{ background: band.color }} />
-            {band.label}
+            {bandLabel(band)}
             <span className="muted">
               {band.from}–{band.to}
             </span>
@@ -18,7 +22,19 @@ export function Legend() {
         ))}
         <li>
           <span className="swatch" style={{ background: NO_DATA_COLOR }} />
-          No score yet
+          {t.legend.noScore}
+        </li>
+        <li>
+          <span className="mark mark-event" />
+          {t.legend.event}
+        </li>
+        <li>
+          <span className="mark mark-storm" />
+          {t.legend.stormPast}
+        </li>
+        <li>
+          <span className="mark mark-forecast" />
+          {t.legend.stormForecast}
         </li>
       </ul>
     </div>

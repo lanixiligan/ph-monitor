@@ -1,0 +1,92 @@
+{
+ "kind": "youtube#videoListResponse",
+ "items": [
+  {
+   "kind": "youtube#video",
+   "id": "6csg_AQ5VJM",
+   "snippet": {
+    "publishedAt": "2026-11-16T05:15:10Z",
+    "channelId": "UCqYw-CTd1dU2yGI71sEyqNw",
+    "title": "Sino si Carmelle Collado, ang grand winner ng Eurovision Song Contest Asia 2026? | GMA News Feed",
+    "channelTitle": "GMA News",
+    "liveBroadcastContent": "live"
+   },
+   "status": {
+    "uploadStatus": "processed",
+    "privacyStatus": "public",
+    "license": "youtube",
+    "embeddable": true,
+    "publicStatsViewable": false,
+    "madeForKids": false
+   },
+   "liveStreamingDetails": {
+    "actualStartTime": "2026-11-16T05:15:10Z",
+    "scheduledStartTime": "2026-11-16T05:15:00Z"
+   }
+  },
+  {
+   "kind": "youtube#video",
+   "id": "Jv7L3w7M6aI",
+   "snippet": {
+    "publishedAt": "2026-11-16T05:16:12Z",
+    "channelId": "UCqYw-CTd1dU2yGI71sEyqNw",
+    "title": "Kim Atienza at GMA Public Affairs Senior Program Manager JC Rubio, dumalo... | Balitanghali",
+    "channelTitle": "GMA News",
+    "liveBroadcastContent": "none"
+   },
+   "status": {
+    "uploadStatus": "processed",
+    "privacyStatus": "public",
+    "license": "youtube",
+    "embeddable": true,
+    "publicStatsViewable": true,
+    "madeForKids": false
+   }
+  },
+  {
+   "kind": "youtube#video",
+   "id": "0T48ELXvOa8",
+   "snippet": {
+    "publishedAt": "2026-11-16T05:15:06Z",
+    "channelId": "UCqYw-CTd1dU2yGI71sEyqNw",
+    "title": "\"Ella Arcangel: Awit ng Pangil at Kuko,\" mapapanood sa QCinema Int'l Film Festival... | Balitanghali",
+    "channelTitle": "GMA News",
+    "liveBroadcastContent": "none"
+   },
+   "status": {
+    "uploadStatus": "processed",
+    "privacyStatus": "public",
+    "license": "youtube",
+    "embeddable": true,
+    "publicStatsViewable": true,
+    "madeForKids": false
+   }
+  },
+  {
+   "kind": "youtube#video",
+   "id": "Yc3PuoXV2Es",
+   "snippet": {
+    "publishedAt": "2026-11-16T03:52:58Z",
+    "channelId": "UCqYw-CTd1dU2yGI71sEyqNw",
+    "title": "Ama, napaiyak sa unang pagsasama-sama ng pamilya matapos ang 9 na taon! | GMA News Feed",
+    "channelTitle": "GMA News",
+    "liveBroadcastContent": "upcoming"
+   },
+   "status": {
+    "uploadStatus": "processed",
+    "privacyStatus": "public",
+    "license": "youtube",
+    "embeddable": true,
+    "publicStatsViewable": false,
+    "madeForKids": false
+   },
+   "liveStreamingDetails": {
+    "scheduledStartTime": "2026-11-16T06:15:00Z"
+   }
+  }
+ ],
+ "pageInfo": {
+  "totalResults": 50,
+  "resultsPerPage": 50
+ }
+}

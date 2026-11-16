@@ -5,10 +5,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   buildReasons,
+  eventScore,
   heatScore,
   quakeScore,
   radiusKm,
   rainScore,
+  singleEventScore,
   singleQuakeScore,
   totalScore,
   weatherScore,
@@ -138,28 +140,120 @@ test('reasons name the quake and the weather that caused the score', () => {
     [{ magnitude: 5.2, depthKm: 12, distanceKm: 34, hoursAgo: 5 }],
     { rain1hMm: 20, rain24hMm: 60, heatIndexC: 43 },
   );
-  const text = reasons.join(' | ');
 
-  assert.match(text, /M5\.2 earthquake 34 km away/);
-  assert.match(text, /20 mm in the last hour/);
-  assert.match(text, /Heat index 43 °C/);
+  // Reasons are message keys plus numbers; the web app turns them into words.
+  assert.deepEqual(reasons, [
+    { key: 'quake', target: 'province', magnitude: 5.2, distanceKm: 34, isVeryClose: false, depthKm: 12, hoursAgo: 5 },
+    { key: 'rain', rain1hMm: 20, rain24hMm: 60, level: 'orange' },
+    { key: 'heat', heatIndexC: 43, band: 'danger' },
+  ]);
 });
 
-test('for a single spot, the wording talks about the spot, not a province', () => {
+test('for a single spot, the reasons say the target is the spot', () => {
   const reasons = buildReasons(
-    [{ magnitude: 5.2, depthKm: 12, distanceKm: 0.4, hoursAgo: 5 }],
+    [{ magnitude: 5.2, depthKm: null, distanceKm: 0.4, hoursAgo: 0.2 }],
     null,
     'point',
   );
-  const text = reasons.join(' | ');
 
-  assert.match(text, /M5\.2 earthquake less than 1 km away/);
-  assert.match(text, /No recent weather data for this spot/);
-  assert.doesNotMatch(text, /province/);
+  assert.deepEqual(reasons, [
+    { key: 'quake', target: 'point', magnitude: 5.2, distanceKm: 0, isVeryClose: true, depthKm: null, hoursAgo: 0 },
+    { key: 'noWeather', target: 'point' },
+  ]);
+});
+
+test('more than three quakes are summed up in one extra reason', () => {
+  const quake = { magnitude: 5.2, depthKm: 12, distanceKm: 34, hoursAgo: 5 };
+  const reasons = buildReasons([quake, quake, quake, quake, quake], calmWeather);
+  assert.equal(reasons.length, 4);
+  assert.deepEqual(reasons[3], { key: 'moreQuakes', count: 2 });
 });
 
 test('a calm province gets one reassuring reason', () => {
-  assert.deepEqual(buildReasons([], calmWeather), [
-    'No significant earthquake or weather stress right now.',
+  assert.deepEqual(buildReasons([], calmWeather), [{ key: 'calm' }]);
+});
+
+// ---------- Disaster events (GDACS alert levels) ----------
+
+// An ongoing Orange typhoon right at the province. Tests change one thing at a time.
+const baseEvent = { kind: 'typhoon' as const, alertLevel: 'orange' as const, distanceKm: 0, hoursSinceEnd: null };
+
+test('a higher alert level scores higher: green < orange < red', () => {
+  const green = singleEventScore({ ...baseEvent, alertLevel: 'green' });
+  const orange = singleEventScore(baseEvent);
+  const red = singleEventScore({ ...baseEvent, alertLevel: 'red' });
+
+  assert.equal(green, WEIGHTS.event.levelScore.green);
+  assert.equal(orange, WEIGHTS.event.levelScore.orange);
+  assert.equal(red, WEIGHTS.event.levelScore.red);
+  assert.ok(green < orange && orange < red);
+});
+
+test('a closer event scores higher, and outside its reach it scores 0', () => {
+  const reach = WEIGHTS.event.reachKm.orange;
+  const near = singleEventScore({ ...baseEvent, distanceKm: 10 });
+  const far = singleEventScore({ ...baseEvent, distanceKm: reach - 1 });
+
+  assert.ok(near > far);
+  assert.ok(far > 0);
+  assert.equal(singleEventScore({ ...baseEvent, distanceKm: reach + 1 }), 0);
+});
+
+test('a red alert reaches further than an orange one', () => {
+  const distanceKm = WEIGHTS.event.reachKm.orange + 20;
+  assert.equal(singleEventScore({ ...baseEvent, distanceKm }), 0);
+  assert.ok(singleEventScore({ ...baseEvent, alertLevel: 'red', distanceKm }) > 0);
+});
+
+test('an event with no alert level does not score', () => {
+  assert.equal(singleEventScore({ ...baseEvent, alertLevel: null }), 0);
+});
+
+test('earthquake and drought events do not score (quakes are already counted from USGS)', () => {
+  assert.equal(singleEventScore({ ...baseEvent, kind: 'earthquake', alertLevel: 'red' }), 0);
+  assert.equal(singleEventScore({ ...baseEvent, kind: 'drought', alertLevel: 'red' }), 0);
+  assert.ok(singleEventScore({ ...baseEvent, kind: 'flood' }) > 0);
+  assert.ok(singleEventScore({ ...baseEvent, kind: 'volcano' }) > 0);
+});
+
+test('an event that has ended fades out and then stops counting', () => {
+  const ongoing = singleEventScore(baseEvent);
+  const justEnded = singleEventScore({ ...baseEvent, hoursSinceEnd: WEIGHTS.event.endedFadeHours / 2 });
+
+  assert.ok(Math.abs(justEnded - ongoing / 2) < 0.001);
+  assert.equal(singleEventScore({ ...baseEvent, hoursSinceEnd: WEIGHTS.event.endedFadeHours + 1 }), 0);
+});
+
+test('the event score is the strongest event, and 0 with no events', () => {
+  assert.equal(eventScore([]), 0);
+  assert.equal(
+    eventScore([{ ...baseEvent, alertLevel: 'green' }, { ...baseEvent, alertLevel: 'red' }]),
+    WEIGHTS.event.levelScore.red,
+  );
+});
+
+test('a province beside an Orange event scores higher than the same province without it', () => {
+  const quake = quakeScore([{ ...baseQuake, magnitude: 4.5, distanceKm: 30 }]);
+  const weather = weatherScore(calmWeather);
+  const withEvent = eventScore([{ ...baseEvent, distanceKm: 20 }]);
+
+  assert.ok(totalScore(quake, weather, withEvent) > totalScore(quake, weather));
+});
+
+test('with three signals the strongest counts in full and each other adds a share', () => {
+  assert.equal(totalScore(40, 20, 80), 80 + WEIGHTS.secondaryWeight * 40 + WEIGHTS.secondaryWeight * 20);
+  assert.equal(totalScore(40, 20), totalScore(40, 20, 0));
+  assert.equal(totalScore(90, 90, 90), 100);
+});
+
+test('an event that scores is named in the reasons with its level and distance', () => {
+  const reasons = buildReasons([], calmWeather, 'province', [{ ...baseEvent, distanceKm: 120 }]);
+  assert.deepEqual(reasons, [
+    { key: 'event', target: 'province', alertLevel: 'orange', kind: 'typhoon', distanceKm: 120, isVeryClose: false, hasEnded: false },
   ]);
+});
+
+test('an event that does not score is not mentioned', () => {
+  const reasons = buildReasons([], calmWeather, 'province', [{ ...baseEvent, alertLevel: null }]);
+  assert.deepEqual(reasons, buildReasons([], calmWeather));
 });

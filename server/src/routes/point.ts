@@ -6,19 +6,21 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import type { HazardEvent, PointDetail } from '@ph-monitor/shared';
+import type { DisasterKind, HazardEvent, PointDetail } from '@ph-monitor/shared';
+import { getConditions } from '../conditions.ts';
 import { pool } from '../db.ts';
 import { buildFreshness, getLastOk } from '../freshness.ts';
 import { getPointWeather } from '../pointWeather.ts';
 import {
   buildReasons,
+  eventScore,
   quakeScore,
   radiusKm,
   totalScore,
   weatherScore,
   WEIGHTS,
 } from '../scoring/scoring.ts';
-import type { QuakeInput, WeatherInput } from '../scoring/scoring.ts';
+import type { EventInput, QuakeInput, WeatherInput } from '../scoring/scoring.ts';
 
 export const pointRouter = Router();
 
@@ -108,6 +110,35 @@ pointRouter.get('/', async (req, res) => {
   );
   const quakeRows = quakeResult.rows.filter((row) => row.distance_km <= radiusKm(row.magnitude));
 
+  // Disaster events with an alert level near the point (distance from the point itself).
+  const eventResult = await pool.query<{
+    kind: DisasterKind; // checked when the event was saved
+    alert_level: 'green' | 'orange' | 'red';
+    ended_at: Date | null;
+    distance_km: number;
+  }>(
+    `WITH spot AS (SELECT ST_SetSRID(ST_MakePoint($1, $2), 4326) AS pt)
+     SELECT e.kind, e.alert_level, e.ended_at,
+            ST_Distance(e.geom::geography, spot.pt::geography) / 1000 AS distance_km
+     FROM spot, events e
+     WHERE e.alert_level IS NOT NULL AND e.kind = ANY($3::text[])
+       AND (e.ended_at IS NULL OR e.ended_at >= $4)
+       AND ST_DWithin(e.geom::geography, spot.pt::geography, $5)`,
+    [
+      lon,
+      lat,
+      WEIGHTS.event.kinds,
+      new Date(now.getTime() - WEIGHTS.event.endedFadeHours * HOUR_MS),
+      Math.max(...Object.values(WEIGHTS.event.reachKm)) * 1000,
+    ],
+  );
+  const eventInputs: EventInput[] = eventResult.rows.map((row) => ({
+    kind: row.kind,
+    alertLevel: row.alert_level,
+    distanceKm: row.distance_km,
+    hoursSinceEnd: row.ended_at ? (now.getTime() - row.ended_at.getTime()) / HOUR_MS : null,
+  }));
+
   const pointWeather = await getPointWeather(lat, lon);
 
   // Score it with the same formulas as the provinces.
@@ -127,6 +158,7 @@ pointRouter.get('/', async (req, res) => {
 
   const quake = quakeScore(quakeInputs);
   const weather = weatherScore(weatherInput);
+  const eventPoints = eventScore(eventInputs);
 
   const events: HazardEvent[] = quakeRows.map((row) => ({
     kind: 'earthquake',
@@ -164,15 +196,17 @@ pointRouter.get('/', async (req, res) => {
     },
     provinceScore: province.province_score,
     score: {
-      score: totalScore(quake, weather),
+      score: totalScore(quake, weather, eventPoints),
       quakeScore: quake,
       weatherScore: weather,
-      reasons: buildReasons(quakeInputs, weatherInput, 'point'),
+      eventScore: eventPoints,
+      reasons: buildReasons(quakeInputs, weatherInput, 'point', eventInputs),
       computedAt: now.toISOString(),
     },
     events,
     // Earthquakes come from the scheduled fetch; weather was fetched for this spot.
     freshness: buildFreshness(lastOk.earthquakes, pointWeather?.fetchedAt ?? null),
+    conditions: await getConditions(province.psgc, { lat, lon }),
   };
   res.json(detail);
 });

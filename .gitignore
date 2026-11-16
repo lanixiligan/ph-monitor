@@ -12,6 +12,9 @@ dist/
 # Downloaded boundary files (recreated by `npm run load-provinces`)
 data/
 
+# Claude Code's local files (settings, temporary worktrees)
+.claude/
+
 # Editor and OS clutter
 .DS_Store
 *.log

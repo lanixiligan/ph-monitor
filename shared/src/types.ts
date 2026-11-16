@@ -66,10 +66,52 @@ export type ProvinceScore = {
   score: number;
   quakeScore: number;
   weatherScore: number;
-  /** Short sentences explaining the score. `string[]` means "a list of strings". */
-  reasons: string[];
+  /** From disaster events with an alert level (GDACS). */
+  eventScore: number;
+  /** Why the score is what it is. `ScoreReason[]` means "a list of ScoreReason". */
+  reasons: ScoreReason[];
   computedAt: string;
 };
+
+/**
+ * One reason behind a score, as a message key plus the numbers that go in it.
+ * The server never writes the sentence: the web app does, in the reader's
+ * language (see web/src/i18n). `key` says which of these shapes you have.
+ */
+export type ScoreReason =
+  | {
+      key: 'quake';
+      /** What was scored: a whole province, or one exact spot. */
+      target: 'province' | 'point';
+      magnitude: number;
+      /** Whole km. */
+      distanceKm: number;
+      /** True when under 1 km: inside the province, or right at the spot. */
+      isVeryClose: boolean;
+      /** Whole km; null when USGS gave no depth. */
+      depthKm: number | null;
+      /** Whole hours. */
+      hoursAgo: number;
+    }
+  /** "N more smaller or older earthquakes nearby". */
+  | { key: 'moreQuakes'; count: number }
+  | {
+      key: 'event';
+      target: 'province' | 'point';
+      alertLevel: AlertLevel;
+      kind: DisasterKind;
+      distanceKm: number;
+      isVeryClose: boolean;
+      hasEnded: boolean;
+    }
+  /** No weather reading recent enough to use. */
+  | { key: 'noWeather'; target: 'province' | 'point' }
+  /** `level` is PAGASA's rainfall level: 'yellow', 'orange', 'red', or null below yellow. */
+  | { key: 'rain'; rain1hMm: number; rain24hMm: number; level: string | null }
+  /** `band` is PAGASA's heat band, e.g. 'danger'. */
+  | { key: 'heat'; heatIndexC: number; band: string | null }
+  /** Nothing significant right now. */
+  | { key: 'calm' };
 
 /** How fresh the data is. */
 export type Freshness = {
@@ -91,6 +133,7 @@ export type ProvinceMapProperties = {
   score: number | null;
   quake_score: number | null;
   weather_score: number | null;
+  event_score: number | null;
 };
 
 /** Everything the status card needs. Returned by GET /api/provinces/:psgc */
@@ -100,6 +143,8 @@ export type ProvinceDetail = {
   score: ProvinceScore | null;
   events: HazardEvent[];
   freshness: Freshness;
+  /** Phase 2: outlook, nearby events, storms and news. Not part of the score. */
+  conditions: Conditions;
 };
 
 /** A city or municipality. */
@@ -115,7 +160,8 @@ export type PointScore = {
   score: number;
   quakeScore: number;
   weatherScore: number;
-  reasons: string[];
+  eventScore: number;
+  reasons: ScoreReason[];
   computedAt: string;
 };
 
@@ -132,4 +178,151 @@ export type PointDetail = {
   /** Earthquake distances here are measured from the spot itself. */
   events: HazardEvent[];
   freshness: Freshness;
+  /** Phase 2: outlook, nearby events, storms and news. Not part of the score. */
+  conditions: Conditions;
+};
+
+// ---------- Phase 2 ----------
+
+/** The group a news outlet or live stream belongs to. A label, not a ranking of trust. */
+export type OutletCategory = 'official' | 'tv' | 'radio' | 'online' | 'regional' | 'international';
+
+export type DisasterKind =
+  | 'typhoon'
+  | 'earthquake'
+  | 'flood'
+  | 'volcano'
+  | 'wildfire'
+  | 'drought'
+  | 'other';
+
+export type AlertLevel = 'green' | 'orange' | 'red';
+
+/** One disaster event from GDACS or NASA EONET. */
+export type DisasterEvent = {
+  /** Source plus its own id, e.g. "gdacs:TC:1001234". */
+  id: string;
+  source: 'gdacs' | 'eonet';
+  kind: DisasterKind;
+  /** null when the source gives no alert level (EONET never does). */
+  alertLevel: AlertLevel | null;
+  title: string;
+  startedAt: string;
+  /** null while the event is still going. */
+  endedAt: string | null;
+  url: string | null;
+  /** A point that stands for the event on the map. */
+  lat: number;
+  lon: number;
+  /** Only on the status card: how far the event is from the spot or province. */
+  distanceKm?: number; // `?` means the field may be left out
+};
+
+/** One position of a storm, past or forecast. */
+export type StormTrackPoint = {
+  validAt: string;
+  /** false = where the storm was; true = where it is forecast to be. */
+  isForecast: boolean;
+  lat: number;
+  lon: number;
+  pressureHpa: number | null;
+  /** Strongest steady wind, in knots. */
+  windKt: number | null;
+  /** Forecast only: radius of the circle the centre will probably be inside. */
+  radiusKm: number | null;
+};
+
+/** A tropical storm and its track. */
+export type Storm = {
+  id: string;
+  source: 'jma' | 'jtwc' | 'sample';
+  name: string;
+  /** The source's own class, e.g. "TY" (typhoon). */
+  category: string | null;
+  isActive: boolean;
+  url: string | null;
+  updatedAt: string;
+  /** Oldest first. Empty when the source gave warnings but no positions. */
+  track: StormTrackPoint[];
+};
+
+/** One day of the "next 7 days" outlook for a province. Modelled data. */
+export type ForecastDay = {
+  /** Calendar day in Philippine time, e.g. "2026-11-17". */
+  day: string;
+  rainMm: number | null;
+  gustKmh: number | null;
+  riverDischargeM3s: number | null;
+};
+
+/** One outlet's copy of a story. */
+export type NewsOutletLink = {
+  outlet: string;
+  category: OutletCategory;
+  url: string;
+};
+
+/** One disaster headline. No article text is ever stored or shown. */
+export type NewsItem = {
+  id: number;
+  title: string;
+  url: string;
+  outlet: string;
+  category: OutletCategory;
+  publishedAt: string;
+  /** Provinces named in the headline. */
+  provincePsgcs: number[];
+  /** The same story at other outlets. */
+  otherOutlets: NewsOutletLink[];
+};
+
+/** What the link checker found for one feed or stream link. */
+export type SourceStatus = 'ok' | 'dead' | 'not-live' | 'not-embeddable';
+
+/** A live stream the page may show. Dead and not-embeddable ones are never sent. */
+export type StreamSlot = {
+  id: string;
+  outlet: string;
+  category: OutletCategory;
+  /** The YouTube video to embed: the live stream, or else the channel's latest video. */
+  videoId: string;
+  /** The video's title and upload time, when known. */
+  title: string | null;
+  publishedAt: string | null;
+  /**
+   * true = the checker saw it live ("LIVE"); false = not live ("Latest");
+   * null = unknown (no YouTube key set, or the last check failed), shown as
+   * "Latest" with "may be offline".
+   */
+  isLive: boolean | null;
+  lastCheckedAt: string;
+};
+
+/** A storm whose forecast track passes near a province or spot. */
+export type StormComing = {
+  stormId: string;
+  name: string;
+  /** When the forecast track is closest. */
+  closestAt: string;
+  /** Distance from the forecast centre at that time. The centre itself is uncertain. */
+  distanceKm: number;
+};
+
+/** What is happening around one province or spot, beyond the score. */
+export type Conditions = {
+  /** Next 7 days at the province's sample point, oldest first. */
+  outlook: ForecastDay[];
+  /** Current disaster events within a few hundred km, nearest first. */
+  nearbyEvents: DisasterEvent[];
+  stormsComing: StormComing[];
+  /** Recent headlines that name the province. */
+  news: NewsItem[];
+};
+
+/** A link to an official bulletin page. */
+export type BulletinLink = {
+  id: string;
+  agency: string;
+  label: string;
+  url: string;
 };

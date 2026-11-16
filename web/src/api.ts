@@ -2,7 +2,15 @@
 // or Open-Meteo itself: everything goes through /api.
 
 import type { FeatureCollection, Geometry } from 'geojson';
-import type { PointDetail, ProvinceMapProperties } from '@ph-monitor/shared';
+import type {
+  BulletinLink,
+  DisasterEvent,
+  NewsItem,
+  PointDetail,
+  ProvinceMapProperties,
+  Storm,
+  StreamSlot,
+} from '@ph-monitor/shared';
 
 /** All province shapes with their scores, as GeoJSON. */
 export type ProvinceCollection = FeatureCollection<Geometry, ProvinceMapProperties>;
@@ -28,4 +36,28 @@ export type Spot = { lat: number; lon: number };
 /** The score and details for one spot. */
 export async function fetchPointDetail(spot: Spot): Promise<PointDetail> {
   return (await getJson(`/api/point?lat=${spot.lat}&lon=${spot.lon}`)) as PointDetail;
+}
+
+// The Phase 2 lists. Each one may come back empty.
+
+export async function fetchEvents(): Promise<DisasterEvent[]> {
+  return (await getJson('/api/events')) as DisasterEvent[];
+}
+
+export async function fetchStorms(): Promise<Storm[]> {
+  return (await getJson('/api/storms')) as Storm[];
+}
+
+/** Latest headlines. `category` is an outlet category id, or 'all' for no filter. */
+export async function fetchNews(category: string, limit: number): Promise<NewsItem[]> {
+  const filter = category === 'all' ? '' : `&category=${encodeURIComponent(category)}`;
+  return (await getJson(`/api/news?limit=${limit}${filter}`)) as NewsItem[];
+}
+
+export async function fetchStreams(): Promise<StreamSlot[]> {
+  return (await getJson('/api/streams')) as StreamSlot[];
+}
+
+export async function fetchBulletins(): Promise<BulletinLink[]> {
+  return (await getJson('/api/bulletins')) as BulletinLink[];
 }

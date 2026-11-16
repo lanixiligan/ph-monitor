@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>PTV News</title><link>https://ptvnews.ph</link>
+<item><title>Incoming BOC chief vows to pursue Marcos Jr. admin&#8217;s priorities</title><link>https://ptvnews.ph/incoming-boc-chief-vows/</link><pubDate>Mon, 16 Nov 2026 04:00:44 +0000</pubDate><description>Article text we never store.</description></item>
+<item><title><![CDATA[Kanlaon Volcano emits ash anew; Alert Level 2 remains]]></title><link>https://ptvnews.ph/kanlaon-ash/</link><pubDate>Mon, 16 Nov 2026 03:00:12 +0000</pubDate></item>
+<item><title>Fishermen &amp; farmers hit by flood in Cebu</title><link>https://ptvnews.ph/cebu-flood/</link><pubDate>Mon, 16 Nov 2026 02:00:00 +0000</pubDate></item>
+<item><title>Old story from last week</title><link>https://ptvnews.ph/old/</link><pubDate>Mon, 09 Nov 2026 02:00:00 +0000</pubDate></item>
+<item><title>Story dated in the future</title><link>https://ptvnews.ph/future/</link><pubDate>Tue, 17 Nov 2026 02:00:00 +0000</pubDate></item>
+<item><title>Item with no link</title><pubDate>Mon, 16 Nov 2026 02:00:00 +0000</pubDate></item>
+<item><title>Item with a bad link</title><link>not a url</link><pubDate>Mon, 16 Nov 2026 02:00:00 +0000</pubDate></item>
+<item><title>Item with a bad date</title><link>https://ptvnews.ph/bad-date/</link><pubDate>sometime soon</pubDate></item>
+<item><title>   </title><link>https://ptvnews.ph/empty-title/</link><pubDate>Mon, 16 Nov 2026 02:00:00 +0000</pubDate></item>
+</channel></rss>

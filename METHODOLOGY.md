@@ -1,13 +1,13 @@
 # How the score is calculated
 
 Each province gets a score from 0 (calm) to 100 (severe) describing stress **right now** from
-two signals: recent earthquakes and current weather. Every number below is a constant in
+three signals: recent earthquakes, current weather, and disaster events with an alert level. Every number below is a constant in
 `WEIGHTS` at the top of `server/src/scoring/scoring.ts`.
 
 **All thresholds are starting guesses, not calibrated values.** They are meant to be tuned.
 
 **The score is not a forecast or an official warning.** It has not been checked against past
-events. For official warnings, follow PAGASA (weather) and PHIVOLCS (earthquakes).
+events. For official warnings, follow PAGASA (weather) and PHIVOLCS (earthquakes and volcanoes).
 
 ## Earthquake score
 
@@ -69,11 +69,38 @@ different formula. Code: `server/src/heatIndex.ts`.
 A weather reading older than 3 hours is not used; the weather score is then 0 and the card says
 there is no recent weather data.
 
+## Disaster event score
+
+Source: GDACS (Global Disaster Alert and Coordination System), which gives each event an alert
+level: Green, Orange or Red. The level is GDACS's estimate of how much international help the
+event may need. It is **not** a PAGASA signal number or a PHIVOLCS alert level.
+
+**Which events count.** Typhoons, floods, volcanoes and wildfires that have an alert level.
+- Earthquakes are left out here because they are already scored from USGS.
+- Droughts are left out because they are slow and cover whole regions.
+- NASA EONET events are shown but never scored, because EONET gives no alert level.
+
+**Points for one event** = level strength × distance fade × ended fade
+
+| Factor | Rule |
+|---|---|
+| Level strength | Green 10, Orange 50, Red 80 |
+| Reach | Green 100 km, Orange 200 km, Red 300 km; beyond that the event scores 0 |
+| Distance fade | 1.0 at the event, falling in a straight line to 0.25 at the edge of the reach |
+| Ended fade | 1.0 while the event is going on, falling in a straight line to 0 at 48 hours after it ends |
+
+**Distance** is measured from the event's point or area to the province's boundary (0 when it
+touches the province). GDACS often gives a single point for an event; for a typhoon that is its
+latest position, not the whole storm, so a large storm's edge can be closer than the distance
+suggests.
+
+**Province's event score** = its strongest event's points.
+
 ## Overall score
 
-`score = stronger signal + 0.25 × weaker signal`, capped at 100.
+`score = strongest signal + 0.25 × each of the other two`, capped at 100.
 
-An average would hide a severe earthquake behind calm weather, so the stronger signal always
+An average would hide a severe earthquake behind calm weather, so the strongest signal always
 counts in full.
 
 On the map: 0–19 calm, 20–39 low, 40–59 moderate, 60–79 high, 80–100 severe.
@@ -83,8 +110,9 @@ On the map: 0–19 calm, 20–39 low, 40–59 moderate, 60–79 high, 80–100 s
 Clicking the map scores that exact spot with the same formulas, worked out on demand and not
 saved:
 
-- **Earthquakes:** distance is measured from the spot itself instead of the province boundary.
-  A spot far from a quake can score lower than its province, whose score uses the nearest edge.
+- **Earthquakes and disaster events:** distance is measured from the spot itself instead of the
+  province boundary. A spot far from a quake or event can score lower than its province, whose
+  score uses the nearest edge.
 - **Weather:** fetched from Open-Meteo for the spot, snapped to a 0.05° grid (about 5 km) and
   reused for 30 minutes. This is finer than the weather model itself, so nothing is lost.
 - **Place name:** the city or municipality containing the spot. A click up to 2 km outside a
@@ -92,10 +120,18 @@ saved:
 
 The card also shows the whole province's score for comparison.
 
+## Reasons on the card
+
+Along with each score the server sends the reasons behind it as message keys plus numbers
+(for example `quake`, magnitude 5.2, 34 km, 5 hours ago), not as finished sentences. The web
+app writes the sentence, so the same reason can be shown in English or Filipino. This does not
+change any score.
+
 ## Freshness
 
-Earthquakes are fetched every 15 minutes, weather every 30. The card shows when each feed was
-last fetched **successfully**. If either is more than 1 hour old, the data is marked stale.
+Earthquakes are fetched every 15 minutes, weather and disaster events every 30. The card shows
+when the earthquake and weather feeds were last fetched **successfully**. If either is more than
+1 hour old, the data is marked stale. (Disaster events are not yet part of the stale check.)
 A quiet day with no earthquakes is not stale: what counts is that the fetch worked.
 
 ## Known limitations
@@ -113,4 +149,9 @@ A quiet day with no earthquakes is not stale: what counts is that the fetch work
   conditions or building types.
 - **Metro Manila** appears as four districts. Two areas that are not provinces are also scored:
   the City of Isabela and BARMM's Special Geographic Area.
-- **No hazards beyond these two**: no typhoon tracks, floods, landslides or volcanoes yet.
+- **Disaster events are coarse.** GDACS levels are global estimates made for aid agencies, and
+  an event is usually one point. Official PAGASA wind signals and PHIVOLCS volcano alert levels
+  are not in the score.
+- **Storm tracks, the 7-day outlook and news do not change the score.** They are collected
+  (JMA, JTWC, Open-Meteo, GloFAS, news feeds) for display only.
+- **Landslides** are not covered.

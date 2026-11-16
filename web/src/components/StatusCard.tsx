@@ -5,22 +5,15 @@ import { useEffect, useState } from 'react';
 import type { EarthquakeEvent, PointDetail, WeatherEvent } from '@ph-monitor/shared';
 import { fetchPointDetail } from '../api.ts';
 import type { Spot } from '../api.ts';
-import { bandFor } from '../scoreScale.ts';
+import { formatTime, formatValue } from '../format.ts';
+import { reasonText } from '../reasonText.ts';
+import { fill, useStrings } from '../i18n/index.ts';
+import { bandFor, bandLabel } from '../scoreScale.ts';
+import { ConditionsSections } from './Conditions.tsx';
 import { Disclaimer } from './Disclaimer.tsx';
 
 // How often an open card asks the server again.
 const REFRESH_MS = 5 * 60 * 1000;
-
-/** "2026-11-15T03:00:00Z" → "Nov 15, 2026, 11:00 AM" in the reader's own time zone. */
-function formatTime(iso: string | null): string {
-  if (iso === null) return 'never';
-  return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-}
-
-/** A number with its unit, or a dash when the value is missing. */
-function formatValue(value: number | null, unit: string): string {
-  return value === null ? '–' : `${value} ${unit}`;
-}
 
 type Props = {
   spot: Spot;
@@ -28,8 +21,11 @@ type Props = {
 };
 
 export function StatusCard({ spot, onClose }: Props) {
+  // `t` holds all the words in the current language.
+  const { t } = useStrings();
   const [detail, setDetail] = useState<PointDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // true when the last load failed (the message itself is looked up when drawn).
+  const [failed, setFailed] = useState(false);
 
   // Load the details when a spot is chosen, then refresh now and then.
   useEffect(() => {
@@ -37,7 +33,7 @@ export function StatusCard({ spot, onClose }: Props) {
     // `cancelled` stops the late answer from overwriting the newer one.
     let cancelled = false;
     setDetail(null);
-    setError(null);
+    setFailed(false);
 
     async function load() {
       try {
@@ -45,12 +41,10 @@ export function StatusCard({ spot, onClose }: Props) {
         if (!cancelled) {
           setDetail(result);
           // Clear any earlier error, so one failed refresh doesn't stick.
-          setError(null);
+          setFailed(false);
         }
       } catch {
-        if (!cancelled) {
-          setError('Could not load this spot. It may be off the coast, or the server is not running.');
-        }
+        if (!cancelled) setFailed(true);
       }
     }
     void load();
@@ -61,18 +55,18 @@ export function StatusCard({ spot, onClose }: Props) {
     };
   }, [spot.lat, spot.lon]);
 
-  if (error) {
+  if (failed) {
     return (
       <aside className="card">
-        <CardHead title="This spot" onClose={onClose} />
-        <p>{error}</p>
+        <CardHead title={t.card.thisSpot} onClose={onClose} />
+        <p>{t.card.loadError}</p>
       </aside>
     );
   }
   if (!detail) {
     return (
       <aside className="card">
-        <CardHead title="Loading…" onClose={onClose} />
+        <CardHead title={t.card.loading} onClose={onClose} />
       </aside>
     );
   }
@@ -97,7 +91,7 @@ export function StatusCard({ spot, onClose }: Props) {
       {/* Shown at the top so it can't be missed. */}
       {freshness.isStale && (
         <p>
-          <span className="stale">STALE</span> Some data is more than 1 hour old.
+          <span className="stale">{t.card.stale}</span> {t.card.staleText}
         </p>
       )}
 
@@ -105,29 +99,38 @@ export function StatusCard({ spot, onClose }: Props) {
         <span className="score-number">{score.score}</span>
         <span className="swatch" style={{ background: band.color }} />
         <span>
-          <strong>{band.label}</strong> at this spot
+          <strong>{fill(t.card.bandAtSpot, { band: bandLabel(band) })}</strong>
           <br />
           <span className="muted">
-            Earthquakes {score.quakeScore} · Weather {score.weatherScore}
+            {fill(t.card.parts, {
+              quake: score.quakeScore,
+              weather: score.weatherScore,
+              event: score.eventScore,
+            })}
           </span>
         </span>
       </div>
       {provinceScore !== null && (
         <p className="muted">
-          Whole province ({province.name}): {provinceScore}, {bandFor(provinceScore).label.toLowerCase()}
+          {fill(t.card.wholeProvince, {
+            province: province.name,
+            score: provinceScore,
+            band: bandLabel(bandFor(provinceScore)).toLowerCase(),
+          })}
         </p>
       )}
 
-      <h3>Why</h3>
+      <h3>{t.card.why}</h3>
       <ul>
-        {score.reasons.map((reason) => (
-          <li key={reason}>{reason}</li>
+        {/* `index` is the reason's place in the list; the list never reorders. */}
+        {score.reasons.map((reason, index) => (
+          <li key={index}>{reasonText(reason)}</li>
         ))}
       </ul>
 
-      <h3>Earthquakes, last 3 days</h3>
+      <h3>{t.card.quakesTitle}</h3>
       {quakes.length === 0 ? (
-        <p className="muted">None within reach of this spot.</p>
+        <p className="muted">{t.card.quakesNone}</p>
       ) : (
         <ul>
           {quakes.map((quake) => (
@@ -136,14 +139,19 @@ export function StatusCard({ spot, onClose }: Props) {
               {quake.place ? `, ${quake.place}` : ''}
               <br />
               <span className="muted">
-                {quake.distanceKm < 1 ? 'Less than 1 km away' : `${Math.round(quake.distanceKm)} km away`}
-                {quake.depthKm === null ? '' : `, ${Math.round(quake.depthKm)} km deep`},{' '}
+                {quake.distanceKm < 1
+                  ? t.card.lessThanOneKmAway
+                  : fill(t.card.kmAway, { km: Math.round(quake.distanceKm) })}
+                {quake.depthKm === null
+                  ? ''
+                  : `, ${fill(t.card.kmDeep, { km: Math.round(quake.depthKm) })}`}
+                ,{' '}
                 {formatTime(quake.occurredAt)}
                 {quake.url && (
                   <>
                     {' · '}
                     <a href={quake.url} target="_blank" rel="noreferrer">
-                      USGS page
+                      {t.card.usgsPage}
                     </a>
                   </>
                 )}
@@ -153,55 +161,56 @@ export function StatusCard({ spot, onClose }: Props) {
         </ul>
       )}
 
-      <h3>Weather</h3>
+      <h3>{t.card.weatherTitle}</h3>
       {weather ? (
         <>
           <table>
             <tbody>
               <tr>
-                <td>Temperature</td>
+                <td>{t.card.temperature}</td>
                 <td>{formatValue(weather.tempC, '°C')}</td>
               </tr>
               <tr>
-                <td>Humidity</td>
+                <td>{t.card.humidity}</td>
                 <td>{formatValue(weather.humidityPct, '%')}</td>
               </tr>
               <tr>
-                <td>Heat index (feels like)</td>
+                <td>{t.card.heatIndex}</td>
                 <td>{formatValue(weather.heatIndexC, '°C')}</td>
               </tr>
               <tr>
-                <td>Rain, last hour</td>
+                <td>{t.card.rain1h}</td>
                 <td>{formatValue(weather.rain1hMm, 'mm')}</td>
               </tr>
               <tr>
-                <td>Rain, last 24 hours</td>
+                <td>{t.card.rain24h}</td>
                 <td>{formatValue(weather.rain24hMm, 'mm')}</td>
               </tr>
             </tbody>
           </table>
           <p className="muted">
-            Modelled for this spot (to the nearest 5 km), valid for {formatTime(weather.validAt)}.
-            Not a station reading.
+            {fill(t.card.weatherNote, { time: formatTime(weather.validAt) })}
           </p>
         </>
       ) : (
-        <p className="muted">No weather reading for this spot right now.</p>
+        <p className="muted">{t.card.weatherNone}</p>
       )}
 
-      <h3>Last updated</h3>
+      <ConditionsSections conditions={detail.conditions} />
+
+      <h3>{t.card.updatedTitle}</h3>
       <table>
         <tbody>
           <tr>
-            <td>Score computed</td>
+            <td>{t.card.scoreComputed}</td>
             <td>{formatTime(score.computedAt)}</td>
           </tr>
           <tr>
-            <td>Earthquakes checked</td>
+            <td>{t.card.quakesChecked}</td>
             <td>{formatTime(freshness.earthquakesFetchedAt)}</td>
           </tr>
           <tr>
-            <td>Weather checked</td>
+            <td>{t.card.weatherChecked}</td>
             <td>{formatTime(freshness.weatherFetchedAt)}</td>
           </tr>
         </tbody>
@@ -216,11 +225,12 @@ export function StatusCard({ spot, onClose }: Props) {
 
 /** The top line of the card: a title and a close button. */
 function CardHead({ title, onClose }: { title: string; onClose: () => void }) {
+  const { t } = useStrings();
   return (
     <div className="card-head">
       <h2>{title}</h2>
-      <button className="card-close" onClick={onClose} aria-label="Close">
-        Close
+      <button className="card-close" onClick={onClose} aria-label={t.card.close}>
+        {t.card.close}
       </button>
     </div>
   );

@@ -13,6 +13,8 @@ import type { StyleSpecification } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useEffect, useRef, useState } from 'react';
 import type { ProvinceCollection, Spot } from '../api.ts';
+import { getI18n } from '../i18n/index.ts';
+import { OVERLAY_CLICK_LAYERS, useOverlays } from '../mapOverlays.ts';
 import { MAX_BOUNDS, PH_BOUNDS, SHOW_BASEMAP } from '../mapSettings.ts';
 import { bandFor, NO_DATA_COLOR } from '../scoreScale.ts';
 
@@ -172,7 +174,9 @@ export function ProvinceMap({ data, spot, onSelect }: Props) {
           const properties = event.features?.[0]?.properties;
           if (!properties) return;
           theMap.getCanvas().style.cursor = 'pointer';
-          const score = typeof properties.score === 'number' ? properties.score : 'no score yet';
+          // Read at hover time, so the label follows the language chosen now.
+          const score =
+            typeof properties.score === 'number' ? properties.score : getI18n().t.map.noScoreYet;
           popup
             .setLngLat(event.lngLat)
             .setText(`${properties.name}: ${score}`)
@@ -186,6 +190,11 @@ export function ProvinceMap({ data, spot, onSelect }: Props) {
         // A click on any province shape picks the exact spot under the pointer.
         // 4 decimals is about 11 m, plenty for our purposes and tidy in links.
         theMap.on('click', 'province-fill', (event) => {
+          // A click on an event or storm dot opens its popup instead.
+          const hits = OVERLAY_CLICK_LAYERS.filter((id) => theMap.getLayer(id));
+          if (hits.length > 0 && theMap.queryRenderedFeatures(event.point, { layers: hits }).length > 0) {
+            return;
+          }
           onSelectRef.current({
             lat: Number(event.lngLat.lat.toFixed(4)),
             lon: Number(event.lngLat.lng.toFixed(4)),
@@ -220,6 +229,9 @@ export function ProvinceMap({ data, spot, onSelect }: Props) {
     const source = mapRef.current?.getSource('provinces') as maplibregl.GeoJSONSource | undefined;
     source?.setData(withColors(data));
   }, [ready, data]);
+
+  // Event markers and storm tracks (see mapOverlays.ts).
+  useOverlays(mapRef, ready);
 
   // Whenever the picked spot changes, move the dot (or remove it).
   useEffect(() => {
