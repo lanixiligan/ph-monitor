@@ -21,7 +21,7 @@ const HOUR_MS = 60 * 60 * 1000;
 
 // ---------- GET /api/provinces ----------
 
-type Shape = { psgc: number; name: string; geometry: unknown };
+type Shape = { psgc: number; name: string; geometry: unknown; point_lat: number; point_lon: number };
 
 // Province shapes never change while the server runs, and simplifying them
 // takes a moment, so we do it once and keep the result in memory.
@@ -31,10 +31,13 @@ async function getShapes(): Promise<Shape[]> {
   if (cachedShapes === null) {
     // ST_SimplifyPreserveTopology drops tiny details (smaller than ~0.005°,
     // about 500 m) so the map downloads faster. ST_AsGeoJSON turns the shape
-    // into GeoJSON, keeping 4 decimals (about 10 m).
+    // into GeoJSON, keeping 4 decimals (about 10 m). The weather point is a
+    // spot inside the province; the map pins headlines there.
     const result = await pool.query<Shape>(
       `SELECT psgc, name,
-              ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.005), 4)::json AS geometry
+              ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.005), 4)::json AS geometry,
+              round(ST_Y(weather_point)::numeric, 4)::float8 AS point_lat,
+              round(ST_X(weather_point)::numeric, 4)::float8 AS point_lon
        FROM provinces ORDER BY psgc`,
     );
     cachedShapes = result.rows;
@@ -65,6 +68,8 @@ provincesRouter.get('/', async (_req, res) => {
       quake_score: score?.quake_score ?? null,
       weather_score: score?.weather_score ?? null,
       event_score: score?.event_score ?? null,
+      point_lat: shape.point_lat,
+      point_lon: shape.point_lon,
     };
     return { type: 'Feature', id: shape.psgc, properties, geometry: shape.geometry };
   });

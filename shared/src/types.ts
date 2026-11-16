@@ -134,6 +134,9 @@ export type ProvinceMapProperties = {
   quake_score: number | null;
   weather_score: number | null;
   event_score: number | null;
+  /** A spot inside the province, where the map pins its headlines. */
+  point_lat: number;
+  point_lon: number;
 };
 
 /** Everything the status card needs. Returned by GET /api/provinces/:psgc */
