@@ -120,6 +120,13 @@ saved:
 
 The card also shows the whole province's score for comparison.
 
+## Reasons on the card
+
+Along with each score the server sends the reasons behind it as message keys plus numbers
+(for example `quake`, magnitude 5.2, 34 km, 5 hours ago), not as finished sentences. The web
+app writes the sentence, so the same reason can be shown in English or Filipino. This does not
+change any score.
+
 ## Freshness
 
 Earthquakes are fetched every 15 minutes, weather and disaster events every 30. The card shows

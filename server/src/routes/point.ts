@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import type { HazardEvent, PointDetail } from '@ph-monitor/shared';
+import type { DisasterKind, HazardEvent, PointDetail } from '@ph-monitor/shared';
 import { getConditions } from '../conditions.ts';
 import { pool } from '../db.ts';
 import { buildFreshness, getLastOk } from '../freshness.ts';
@@ -112,7 +112,7 @@ pointRouter.get('/', async (req, res) => {
 
   // Disaster events with an alert level near the point (distance from the point itself).
   const eventResult = await pool.query<{
-    kind: string;
+    kind: DisasterKind; // checked when the event was saved
     alert_level: 'green' | 'orange' | 'red';
     ended_at: Date | null;
     distance_km: number;

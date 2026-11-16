@@ -68,10 +68,50 @@ export type ProvinceScore = {
   weatherScore: number;
   /** From disaster events with an alert level (GDACS). */
   eventScore: number;
-  /** Short sentences explaining the score. `string[]` means "a list of strings". */
-  reasons: string[];
+  /** Why the score is what it is. `ScoreReason[]` means "a list of ScoreReason". */
+  reasons: ScoreReason[];
   computedAt: string;
 };
+
+/**
+ * One reason behind a score, as a message key plus the numbers that go in it.
+ * The server never writes the sentence: the web app does, in the reader's
+ * language (see web/src/i18n). `key` says which of these shapes you have.
+ */
+export type ScoreReason =
+  | {
+      key: 'quake';
+      /** What was scored: a whole province, or one exact spot. */
+      target: 'province' | 'point';
+      magnitude: number;
+      /** Whole km. */
+      distanceKm: number;
+      /** True when under 1 km: inside the province, or right at the spot. */
+      isVeryClose: boolean;
+      /** Whole km; null when USGS gave no depth. */
+      depthKm: number | null;
+      /** Whole hours. */
+      hoursAgo: number;
+    }
+  /** "N more smaller or older earthquakes nearby". */
+  | { key: 'moreQuakes'; count: number }
+  | {
+      key: 'event';
+      target: 'province' | 'point';
+      alertLevel: AlertLevel;
+      kind: DisasterKind;
+      distanceKm: number;
+      isVeryClose: boolean;
+      hasEnded: boolean;
+    }
+  /** No weather reading recent enough to use. */
+  | { key: 'noWeather'; target: 'province' | 'point' }
+  /** `level` is PAGASA's rainfall level: 'yellow', 'orange', 'red', or null below yellow. */
+  | { key: 'rain'; rain1hMm: number; rain24hMm: number; level: string | null }
+  /** `band` is PAGASA's heat band, e.g. 'danger'. */
+  | { key: 'heat'; heatIndexC: number; band: string | null }
+  /** Nothing significant right now. */
+  | { key: 'calm' };
 
 /** How fresh the data is. */
 export type Freshness = {
@@ -121,7 +161,7 @@ export type PointScore = {
   quakeScore: number;
   weatherScore: number;
   eventScore: number;
-  reasons: string[];
+  reasons: ScoreReason[];
   computedAt: string;
 };
 

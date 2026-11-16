@@ -6,6 +6,7 @@ import type { EarthquakeEvent, PointDetail, WeatherEvent } from '@ph-monitor/sha
 import { fetchPointDetail } from '../api.ts';
 import type { Spot } from '../api.ts';
 import { formatTime, formatValue } from '../format.ts';
+import { reasonText } from '../reasonText.ts';
 import { bandFor } from '../scoreScale.ts';
 import { ConditionsSections } from './Conditions.tsx';
 import { Disclaimer } from './Disclaimer.tsx';
@@ -111,8 +112,9 @@ export function StatusCard({ spot, onClose }: Props) {
 
       <h3>Why</h3>
       <ul>
-        {score.reasons.map((reason) => (
-          <li key={reason}>{reason}</li>
+        {/* `index` is the reason's place in the list; the list never reorders. */}
+        {score.reasons.map((reason, index) => (
+          <li key={index}>{reasonText(reason)}</li>
         ))}
       </ul>
 

@@ -5,6 +5,9 @@
 // That makes them easy to test (see test/scoring.test.ts) and safe to tune.
 // How it all fits together is explained in METHODOLOGY.md.
 
+// `import type` brings in only the shapes of data; nothing is loaded when the code runs.
+import type { AlertLevel, DisasterKind, ScoreReason } from '@ph-monitor/shared';
+
 /** Every number you might want to tune. These are starting guesses. */
 export const WEIGHTS = {
   quake: {
@@ -52,7 +55,7 @@ export const WEIGHTS = {
       { at: 200, score: 85 },
       { at: 300, score: 100 },
     ],
-    /** Names used in the reasons text, strongest first. */
+    /** Names sent with the reasons, strongest first. */
     oneHourLevels: [
       { from: 30, name: 'red' },
       { from: 15, name: 'orange' },
@@ -69,7 +72,7 @@ export const WEIGHTS = {
       { at: 42, score: 50 },
       { at: 52, score: 100 },
     ],
-    /** Names used in the reasons text, strongest first. */
+    /** Names sent with the reasons, strongest first. */
     bands: [
       { from: 52, name: 'extreme danger' },
       { from: 42, name: 'danger' },
@@ -127,9 +130,9 @@ export type WeatherInput = {
 /** One disaster event as seen from one province or spot. */
 export type EventInput = {
   /** 'typhoon', 'flood', 'volcano'... Only the kinds in WEIGHTS.event.kinds count. */
-  kind: string;
+  kind: DisasterKind;
   /** null = the source gave no alert level; such an event does not score. */
-  alertLevel: 'green' | 'orange' | 'red' | null;
+  alertLevel: AlertLevel | null;
   /** From the event to the province's edge (or to the spot); 0 if inside. */
   distanceKm: number;
   /** null = still going on. */
@@ -293,44 +296,53 @@ function nameFor(levels: { from: number; name: string }[], value: number): strin
   return null;
 }
 
-/** What is being scored: a whole province, or one exact spot. Only changes the wording. */
+/** What is being scored: a whole province, or one exact spot. */
 export type ScoreTarget = 'province' | 'point';
 
-function describeQuake(quake: QuakeInput, target: ScoreTarget): string {
-  const veryClose = target === 'province' ? 'inside the province' : 'less than 1 km away';
-  const where = quake.distanceKm < 1 ? veryClose : `${Math.round(quake.distanceKm)} km away`;
-  const depth = quake.depthKm === null ? 'depth unknown' : `${Math.round(quake.depthKm)} km deep`;
-  const hours = Math.round(quake.hoursAgo);
-  const when =
-    hours < 1 ? 'less than an hour ago' : hours === 1 ? '1 hour ago' : `${hours} hours ago`;
-  return `M${quake.magnitude.toFixed(1)} earthquake ${where} (${depth}), ${when}.`;
+function describeQuake(quake: QuakeInput, target: ScoreTarget): ScoreReason {
+  return {
+    key: 'quake',
+    target,
+    magnitude: quake.magnitude,
+    distanceKm: Math.round(quake.distanceKm),
+    isVeryClose: quake.distanceKm < 1,
+    depthKm: quake.depthKm === null ? null : Math.round(quake.depthKm),
+    hoursAgo: Math.round(quake.hoursAgo),
+  };
 }
 
-function describeEvent(event: EventInput, target: ScoreTarget): string {
-  const veryClose = target === 'province' ? 'in or beside the province' : 'less than 1 km away';
-  const where = event.distanceKm < 1 ? veryClose : `${Math.round(event.distanceKm)} km away`;
-  // 'orange' → 'Orange'
-  const level = event.alertLevel ? event.alertLevel[0]?.toUpperCase() + event.alertLevel.slice(1) : '';
-  const ended = event.hoursSinceEnd !== null && event.hoursSinceEnd > 0 ? ' (now ended)' : '';
-  return `GDACS ${level} alert: ${event.kind} ${where}${ended}.`;
+// The caller only passes events that score, so the alert level is known.
+function describeEvent(event: EventInput, level: AlertLevel, target: ScoreTarget): ScoreReason {
+  return {
+    key: 'event',
+    target,
+    alertLevel: level,
+    kind: event.kind,
+    distanceKm: Math.round(event.distanceKm),
+    isVeryClose: event.distanceKm < 1,
+    hasEnded: event.hoursSinceEnd !== null && event.hoursSinceEnd > 0,
+  };
 }
 
-/** The short sentences shown on the status card, most important first. */
+/**
+ * Why the score is what it is, most important first. Each reason is a message
+ * key plus numbers; the web app turns it into a sentence in the reader's language.
+ */
 // `target = 'province'` and `events = []` are defaults for callers that leave them out.
 export function buildReasons(
   quakes: QuakeInput[],
   weather: WeatherInput | null,
   target: ScoreTarget = 'province',
   events: EventInput[] = [],
-): string[] {
-  const reasons: string[] = [];
+): ScoreReason[] {
+  const reasons: ScoreReason[] = [];
 
   // Events that count, strongest first; describe up to three.
   const countedEvents = events
     .filter((event) => singleEventScore(event) >= 1)
     .sort((a, b) => singleEventScore(b) - singleEventScore(a));
   for (const event of countedEvents.slice(0, 3)) {
-    reasons.push(describeEvent(event, target));
+    if (event.alertLevel !== null) reasons.push(describeEvent(event, event.alertLevel, target));
   }
 
   // Quakes that count, strongest first; describe up to three.
@@ -341,32 +353,29 @@ export function buildReasons(
     reasons.push(describeQuake(quake, target));
   }
   if (counted.length > 3) {
-    reasons.push(`${counted.length - 3} more smaller or older earthquakes nearby.`);
+    reasons.push({ key: 'moreQuakes', count: counted.length - 3 });
   }
 
   if (weather === null) {
-    reasons.push(
-      target === 'province'
-        ? 'No recent weather data for this province.'
-        : 'No recent weather data for this spot.',
-    );
+    reasons.push({ key: 'noWeather', target });
   } else {
     if (rainScore(weather) >= WEIGHTS.minScoreToMention) {
-      const level = nameFor(WEIGHTS.rain.oneHourLevels, weather.rain1hMm ?? 0);
-      const levelText = level ? ` (PAGASA ${level} rainfall level)` : '';
-      reasons.push(
-        `Rain: ${weather.rain1hMm ?? 0} mm in the last hour, ` +
-          `${weather.rain24hMm ?? 0} mm in the last 24 hours${levelText}.`,
-      );
+      reasons.push({
+        key: 'rain',
+        rain1hMm: weather.rain1hMm ?? 0,
+        rain24hMm: weather.rain24hMm ?? 0,
+        level: nameFor(WEIGHTS.rain.oneHourLevels, weather.rain1hMm ?? 0),
+      });
     }
     if (heatScore(weather) >= WEIGHTS.minScoreToMention && weather.heatIndexC !== null) {
-      const band = nameFor(WEIGHTS.heat.bands, weather.heatIndexC);
-      reasons.push(`Heat index ${weather.heatIndexC} °C (PAGASA "${band}" band).`);
+      reasons.push({
+        key: 'heat',
+        heatIndexC: weather.heatIndexC,
+        band: nameFor(WEIGHTS.heat.bands, weather.heatIndexC),
+      });
     }
   }
 
-  if (reasons.length === 0) {
-    reasons.push('No significant earthquake, weather or disaster event stress right now.');
-  }
+  if (reasons.length === 0) reasons.push({ key: 'calm' });
   return reasons;
 }

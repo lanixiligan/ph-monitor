@@ -8,6 +8,7 @@ import type {
   HazardEvent,
   ProvinceDetail,
   ProvinceMapProperties,
+  ScoreReason,
 } from '@ph-monitor/shared';
 import { getConditions } from '../conditions.ts';
 import { pool } from '../db.ts';
@@ -74,6 +75,15 @@ provincesRouter.get('/', async (_req, res) => {
 // ---------- GET /api/provinces/:psgc ----------
 
 // The code in the URL is text; it must be a positive whole number.
+/**
+ * Scores saved before reasons became message keys hold plain sentences.
+ * Those are dropped here; the next score run (every 15 minutes) replaces them.
+ */
+function keyedReasons(saved: unknown[]): ScoreReason[] {
+  // `as` tells TypeScript the shape; safe because computeScores writes only these.
+  return saved.filter((reason) => typeof reason === 'object' && reason !== null) as ScoreReason[];
+}
+
 const psgcSchema = z.coerce.number().int().positive();
 
 provincesRouter.get('/:psgc', async (req, res) => {
@@ -101,7 +111,7 @@ provincesRouter.get('/:psgc', async (req, res) => {
     quake_score: number;
     weather_score: number;
     event_score: number;
-    reasons: string[];
+    reasons: unknown[];
     computed_at: Date;
   }>(
     `SELECT score, quake_score, weather_score, event_score, reasons, computed_at
@@ -182,7 +192,7 @@ provincesRouter.get('/:psgc', async (req, res) => {
           quakeScore: score.quake_score,
           weatherScore: score.weather_score,
           eventScore: score.event_score,
-          reasons: score.reasons,
+          reasons: keyedReasons(score.reasons),
           computedAt: score.computed_at.toISOString(),
         }
       : null,

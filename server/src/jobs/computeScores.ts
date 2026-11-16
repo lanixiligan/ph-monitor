@@ -4,6 +4,7 @@
 // This file only gathers the inputs and saves the results.
 // The formulas themselves are all in scoring/scoring.ts.
 
+import type { DisasterKind } from '@ph-monitor/shared';
 import { pool } from '../db.ts';
 import {
   buildReasons,
@@ -61,7 +62,7 @@ export async function computeScores(): Promise<void> {
   const maxReachKm = Math.max(...Object.values(WEIGHTS.event.reachKm));
   const eventRows = await pool.query<{
     province_psgc: number;
-    kind: string;
+    kind: DisasterKind; // checked when the event was saved
     alert_level: 'green' | 'orange' | 'red';
     distance_km: number;
     ended_at: Date | null;

@@ -140,30 +140,37 @@ test('reasons name the quake and the weather that caused the score', () => {
     [{ magnitude: 5.2, depthKm: 12, distanceKm: 34, hoursAgo: 5 }],
     { rain1hMm: 20, rain24hMm: 60, heatIndexC: 43 },
   );
-  const text = reasons.join(' | ');
 
-  assert.match(text, /M5\.2 earthquake 34 km away/);
-  assert.match(text, /20 mm in the last hour/);
-  assert.match(text, /Heat index 43 °C/);
+  // Reasons are message keys plus numbers; the web app turns them into words.
+  assert.deepEqual(reasons, [
+    { key: 'quake', target: 'province', magnitude: 5.2, distanceKm: 34, isVeryClose: false, depthKm: 12, hoursAgo: 5 },
+    { key: 'rain', rain1hMm: 20, rain24hMm: 60, level: 'orange' },
+    { key: 'heat', heatIndexC: 43, band: 'danger' },
+  ]);
 });
 
-test('for a single spot, the wording talks about the spot, not a province', () => {
+test('for a single spot, the reasons say the target is the spot', () => {
   const reasons = buildReasons(
-    [{ magnitude: 5.2, depthKm: 12, distanceKm: 0.4, hoursAgo: 5 }],
+    [{ magnitude: 5.2, depthKm: null, distanceKm: 0.4, hoursAgo: 0.2 }],
     null,
     'point',
   );
-  const text = reasons.join(' | ');
 
-  assert.match(text, /M5\.2 earthquake less than 1 km away/);
-  assert.match(text, /No recent weather data for this spot/);
-  assert.doesNotMatch(text, /province/);
+  assert.deepEqual(reasons, [
+    { key: 'quake', target: 'point', magnitude: 5.2, distanceKm: 0, isVeryClose: true, depthKm: null, hoursAgo: 0 },
+    { key: 'noWeather', target: 'point' },
+  ]);
+});
+
+test('more than three quakes are summed up in one extra reason', () => {
+  const quake = { magnitude: 5.2, depthKm: 12, distanceKm: 34, hoursAgo: 5 };
+  const reasons = buildReasons([quake, quake, quake, quake, quake], calmWeather);
+  assert.equal(reasons.length, 4);
+  assert.deepEqual(reasons[3], { key: 'moreQuakes', count: 2 });
 });
 
 test('a calm province gets one reassuring reason', () => {
-  assert.deepEqual(buildReasons([], calmWeather), [
-    'No significant earthquake, weather or disaster event stress right now.',
-  ]);
+  assert.deepEqual(buildReasons([], calmWeather), [{ key: 'calm' }]);
 });
 
 // ---------- Disaster events (GDACS alert levels) ----------
@@ -241,7 +248,9 @@ test('with three signals the strongest counts in full and each other adds a shar
 
 test('an event that scores is named in the reasons with its level and distance', () => {
   const reasons = buildReasons([], calmWeather, 'province', [{ ...baseEvent, distanceKm: 120 }]);
-  assert.ok(reasons.some((reason) => reason.includes('Orange') && reason.includes('typhoon') && reason.includes('120 km')));
+  assert.deepEqual(reasons, [
+    { key: 'event', target: 'province', alertLevel: 'orange', kind: 'typhoon', distanceKm: 120, isVeryClose: false, hasEnded: false },
+  ]);
 });
 
 test('an event that does not score is not mentioned', () => {
