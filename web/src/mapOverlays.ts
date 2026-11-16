@@ -3,13 +3,14 @@
 // (here ProvinceMap) and can start and stop things when the component does.
 
 import * as maplibregl from 'maplibre-gl';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 // `RefObject` is the type of a ref: a box holding a value that survives re-renders.
 import type { RefObject } from 'react';
 import type { DisasterEvent, Storm, StormTrackPoint } from '@ph-monitor/shared';
 import { fetchEvents, fetchStorms } from './api.ts';
 import { formatTime, safeUrl } from './format.ts';
-import { emptyCollection, eventsToGeoJson, SAMPLE_NOTICE, stormsToGeoJson } from './stormGeo.ts';
+import { fill, getI18n, lookup, useStrings } from './i18n/index.ts';
+import { emptyCollection, eventsToGeoJson, stormsToGeoJson } from './stormGeo.ts';
 
 const REFRESH_MS = 5 * 60 * 1000;
 const INK = '#1f1f1f';
@@ -91,27 +92,36 @@ function addLink(box: HTMLElement, url: string | null, text: string) {
   box.appendChild(link);
 }
 
+// The popups are built when the reader clicks, so they use the language
+// chosen at that moment (getI18n()).
 function eventPopup(event: DisasterEvent): HTMLElement {
+  const { t } = getI18n();
   const box = document.createElement('div');
   box.className = 'map-popup';
   addLine(box, event.title, true);
-  addLine(box, `Kind: ${event.kind}`);
-  if (event.alertLevel) addLine(box, `Alert level: ${event.alertLevel}`);
-  addLine(box, `Source: ${event.source === 'gdacs' ? 'GDACS' : 'NASA EONET'}`);
-  addLine(box, `Started: ${formatTime(event.startedAt)}`);
-  addLink(box, event.url, 'Source page');
+  addLine(box, fill(t.map.popupKind, { kind: lookup(t.kinds, event.kind) }));
+  if (event.alertLevel) {
+    addLine(box, fill(t.map.popupAlert, { level: lookup(t.alertLevels, event.alertLevel) }));
+  }
+  const source = event.source === 'gdacs' ? 'GDACS' : 'NASA EONET';
+  addLine(box, fill(t.map.popupSource, { source }));
+  addLine(box, fill(t.map.popupStarted, { time: formatTime(event.startedAt) }));
+  addLink(box, event.url, t.map.popupSourcePage);
   return box;
 }
 
 function stormPopup(name: string, source: Storm['source'], point: StormTrackPoint): HTMLElement {
+  const { t } = getI18n();
   const box = document.createElement('div');
   box.className = 'map-popup';
   addLine(box, name, true);
-  if (source === 'sample') addLine(box, SAMPLE_NOTICE, true);
-  addLine(box, point.isForecast ? 'Forecast position' : 'Observed position');
-  addLine(box, `Time: ${formatTime(point.validAt)}`);
-  addLine(box, `Wind: ${point.windKt === null ? '–' : `${point.windKt} kt`}`);
-  addLine(box, `Pressure: ${point.pressureHpa === null ? '–' : `${point.pressureHpa} hPa`}`);
+  if (source === 'sample') addLine(box, t.map.sampleNotice, true);
+  addLine(box, point.isForecast ? t.map.popupForecast : t.map.popupObserved);
+  addLine(box, fill(t.map.popupTime, { time: formatTime(point.validAt) }));
+  const wind = point.windKt === null ? '–' : `${point.windKt} kt`;
+  addLine(box, fill(t.map.popupWind, { value: wind }));
+  const pressure = point.pressureHpa === null ? '–' : `${point.pressureHpa} hPa`;
+  addLine(box, fill(t.map.popupPressure, { value: pressure }));
   return box;
 }
 
@@ -126,7 +136,7 @@ function drawLabels(map: maplibregl.Map, storms: Storm[], markers: maplibregl.Ma
     const label = document.createElement('div');
     label.className = 'storm-label';
     // The sample storm shows only its warning, so it cannot pass for a real one.
-    label.textContent = storm.source === 'sample' ? SAMPLE_NOTICE : storm.name;
+    label.textContent = storm.source === 'sample' ? getI18n().t.map.sampleNotice : storm.name;
     const marker = new maplibregl.Marker({ element: label, anchor: 'left', offset: [10, -12] })
       .setLngLat([anchor.lon, anchor.lat])
       .addTo(map);
@@ -147,11 +157,17 @@ function readJson(properties: Record<string, unknown> | undefined): unknown {
 
 /** Draws events and storms on the map and refreshes them every 5 minutes. */
 export function useOverlays(mapRef: RefObject<maplibregl.Map | null>, ready: boolean) {
+  // `lang` is only read so this hook re-runs when the language changes.
+  const { lang } = useStrings();
+  // The latest storms and their labels, kept so the labels can be redrawn.
+  const stormsRef = useRef<Storm[]>([]);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
     if (!map.getSource('events')) addLayers(map);
-    const markers: maplibregl.Marker[] = [];
+    const markers = markersRef.current;
 
     // Show a popup when a dot is clicked; show a pointer hand over it.
     map.on('click', 'events-dot', (click) => {
@@ -189,6 +205,7 @@ export function useOverlays(mapRef: RefObject<maplibregl.Map | null>, ready: boo
         source('storm-lines')?.setData(shapes.lines);
         source('storm-dots')?.setData(shapes.dots);
         source('storm-radii')?.setData(shapes.radii);
+        stormsRef.current = storms;
         if (map) drawLabels(map, storms, markers);
       } catch {
         // Keep what is already drawn.
@@ -201,4 +218,11 @@ export function useOverlays(mapRef: RefObject<maplibregl.Map | null>, ready: boo
       for (const marker of markers) marker.remove();
     };
   }, [ready, mapRef]);
+
+  // Draw the storm labels again when the language changes (the sample notice is text).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    drawLabels(map, stormsRef.current, markersRef.current);
+  }, [lang, ready, mapRef]);
 }

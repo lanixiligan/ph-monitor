@@ -11,7 +11,8 @@ that exact spot, with the reasons and the raw events behind it.
 **Status: work in progress.** The map and score use earthquakes, weather and disaster event
 alert levels. The page also shows disaster events and storm tracks on the map, a 7-day outlook
 and links to official bulletins on the status card, disaster headlines, and live streams or
-latest videos from news channels. Expect rough edges, and scores that change as the formula is
+latest videos from news channels. The page can be read in English or Filipino (the Filipino
+text is a draft under review). Expect rough edges, and scores that change as the formula is
 tuned.
 
 "PH Monitor" is a placeholder name (set in `shared/src/appInfo.ts`). Non-commercial project.

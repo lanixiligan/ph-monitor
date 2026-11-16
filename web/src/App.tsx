@@ -12,6 +12,7 @@ import { NewsPanel } from './components/NewsPanel.tsx';
 import { ProvinceMap } from './components/ProvinceMap.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
 import { StreamsPanel } from './components/StreamsPanel.tsx';
+import { LanguageSwitch, useStrings } from './i18n/index.ts';
 import { SHOW_BASEMAP } from './mapSettings.ts';
 
 // How often the map asks the server for new scores.
@@ -32,9 +33,12 @@ function spotFromAddress(): Spot | null {
 }
 
 export function App() {
+  // `t` holds all the words in the current language.
+  const { t } = useStrings();
   // `useState` remembers a value between re-draws of the page.
   const [provinces, setProvinces] = useState<ProvinceCollection | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // true when the last load failed; the message is looked up when drawn.
+  const [failed, setFailed] = useState(false);
   const [spot, setSpot] = useState<Spot | null>(spotFromAddress);
 
   // Keep the address in step with the chosen spot, so it can be copied and
@@ -58,9 +62,9 @@ export function App() {
     async function load() {
       try {
         setProvinces(await fetchProvinces());
-        setError(null);
+        setFailed(false);
       } catch {
-        setError('Could not load the scores. Is the server running?');
+        setFailed(true);
       }
     }
     void load();
@@ -72,17 +76,16 @@ export function App() {
     <div className="app">
       <header>
         <h1>{APP_NAME}</h1>
-        <p>
-          Stress right now from earthquakes, weather and disaster events. Click anywhere on land
-          for that spot.
-        </p>
+        <LanguageSwitch />
+        <p>{t.app.intro}</p>
         {/* Links that jump down the page; `#news-title` is the id of a heading. */}
         <nav>
-          <a href="#news-title">Headlines</a> · <a href="#streams-title">Live streams</a>
+          <a href="#news-title">{t.app.jumpHeadlines}</a> ·{' '}
+          <a href="#streams-title">{t.app.jumpStreams}</a>
         </nav>
       </header>
 
-      {error && <div className="error">{error}</div>}
+      {failed && <div className="error">{t.app.loadError}</div>}
 
       <main>
         <ProvinceMap data={provinces} spot={spot} onSelect={setSpot} />
@@ -97,30 +100,30 @@ export function App() {
 
       <footer>
         <Disclaimer />{' '}
-        Earthquakes: <a href="https://earthquake.usgs.gov/">USGS</a>. Weather (modelled):{' '}
-        <a href="https://open-meteo.com/">Open-Meteo</a>, CC BY 4.0. Boundaries: NAMRIA and PSA via
-        OCHA, CC BY 3.0 IGO, from{' '}
-        <a href="https://github.com/faeldon/philippines-json-maps">philippines-json-maps</a>.
-        {' '}
-        Disaster events: <a href="https://www.gdacs.org/">GDACS</a>, © European Union, CC BY 4.0, and{' '}
-        <a href="https://eonet.gsfc.nasa.gov/">NASA EONET</a>.
-        {' '}
-        Storm tracks: <a href="https://www.jma.go.jp/bosai/map.html#contents=typhoon">JMA</a> and{' '}
-        <a href="https://www.metoc.navy.mil/jtwc/jtwc.html">JTWC</a>.
-        {' '}
-        7-day outlook: <a href="https://open-meteo.com/">Open-Meteo</a>; river flow from{' '}
-        <a href="https://open-meteo.com/en/docs/flood-api">GloFAS via Open-Meteo</a>, CC BY 4.0.
-        {' '}
-        News headlines: the outlets named beside each headline, some found through Google News.
-        {' '}
-        Video: <a href="https://www.youtube.com/">YouTube</a>, from each outlet's own channel.
+        {t.app.creditQuakes} <a href="https://earthquake.usgs.gov/">USGS</a>.{' '}
+        {t.app.creditWeather} <a href="https://open-meteo.com/">Open-Meteo</a>
+        {t.app.creditWeatherEnd} {t.app.creditBoundaries}{' '}
+        <a href="https://github.com/faeldon/philippines-json-maps">philippines-json-maps</a>.{' '}
+        {t.app.creditEvents} <a href="https://www.gdacs.org/">GDACS</a>
+        {t.app.creditEventsMid} <a href="https://eonet.gsfc.nasa.gov/">NASA EONET</a>.{' '}
+        {t.app.creditStorms}{' '}
+        <a href="https://www.jma.go.jp/bosai/map.html#contents=typhoon">JMA</a> {t.app.creditStormsMid}{' '}
+        <a href="https://www.metoc.navy.mil/jtwc/jtwc.html">JTWC</a>.{' '}
+        {t.app.creditOutlook} <a href="https://open-meteo.com/">Open-Meteo</a>
+        {t.app.creditOutlookMid}{' '}
+        <a href="https://open-meteo.com/en/docs/flood-api">GloFAS via Open-Meteo</a>
+        {t.app.creditOutlookEnd} {t.app.creditNews} {t.app.creditVideo}{' '}
+        <a href="https://www.youtube.com/">YouTube</a>
+        {t.app.creditVideoEnd}
         {/* The basemap credit is only needed when the basemap is shown. */}
         {SHOW_BASEMAP && (
           <>
             {' '}
-            Basemap: <a href="https://openfreemap.org/">OpenFreeMap</a>, ©{' '}
-            <a href="https://www.openmaptiles.org/">OpenMapTiles</a>, data ©{' '}
-            <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
+            {t.app.creditBasemap} <a href="https://openfreemap.org/">OpenFreeMap</a>
+            {t.app.creditBasemapMid} <a href="https://www.openmaptiles.org/">OpenMapTiles</a>
+            {t.app.creditBasemapData}{' '}
+            <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>{' '}
+            {t.app.creditBasemapEnd}
           </>
         )}
       </footer>

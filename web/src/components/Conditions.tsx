@@ -5,49 +5,63 @@
 import { useEffect, useState } from 'react';
 import type { BulletinLink, Conditions } from '@ph-monitor/shared';
 import { fetchBulletins } from '../api.ts';
-import { formatDay, formatKm, formatTime, formatValue, safeUrl } from '../format.ts';
+import {
+  bulletinLabel,
+  formatDay,
+  formatKm,
+  formatTime,
+  formatValue,
+  safeUrl,
+} from '../format.ts';
+import { fill, lookup, useStrings } from '../i18n/index.ts';
 
 // Props lists what the parent hands to this component. `{ conditions }` below
 // pulls that one value out of the props object.
 type Props = { conditions: Conditions };
 
 export function ConditionsSections({ conditions }: Props) {
+  const { t } = useStrings();
+  const c = t.conditions;
   const { outlook, nearbyEvents, stormsComing, news } = conditions;
 
   return (
     <>
       {outlook.length > 0 && (
         <>
-          <h3>Next 7 days</h3>
+          <h3>{c.outlookTitle}</h3>
           <div className="outlook">
             {outlook.map((day) => (
               <div className="outlook-day" key={day.day}>
                 <strong>{formatDay(day.day)}</strong>
-                <span>Rain {formatValue(day.rainMm, 'mm')}</span>
-                <span>Gust {formatValue(day.gustKmh, 'km/h')}</span>
-                {day.riverDischargeM3s !== null && <span>River {day.riverDischargeM3s} m³/s</span>}
+                <span>{fill(c.rain, { value: formatValue(day.rainMm, 'mm') })}</span>
+                <span>{fill(c.gust, { value: formatValue(day.gustKmh, 'km/h') })}</span>
+                {day.riverDischargeM3s !== null && (
+                  <span>{fill(c.river, { value: `${day.riverDischargeM3s} m³/s` })}</span>
+                )}
               </div>
             ))}
           </div>
-          <p className="muted">
-            Modelled data, not measurements: Open-Meteo. River flow: GloFAS, via Open-Meteo.
-          </p>
+          <p className="muted">{c.outlookNote}</p>
         </>
       )}
 
       {nearbyEvents.length > 0 && (
         <>
-          <h3>Disaster events nearby</h3>
+          <h3>{c.eventsTitle}</h3>
           <ul>
             {nearbyEvents.map((event) => (
               <li key={event.id}>
                 {event.title}
                 <br />
                 <span className="muted">
-                  {event.distanceKm === undefined ? '' : `${formatKm(event.distanceKm)} away, `}
-                  {event.kind}
-                  {event.alertLevel ? `, alert level ${event.alertLevel}` : ''},{' '}
-                  {event.source === 'gdacs' ? 'GDACS' : 'NASA EONET'}, {formatTime(event.startedAt)}
+                  {event.distanceKm === undefined
+                    ? ''
+                    : fill(c.eventAway, { distance: formatKm(event.distanceKm) })}
+                  {lookup(t.kinds, event.kind)}
+                  {event.alertLevel
+                    ? fill(c.eventAlert, { level: lookup(t.alertLevels, event.alertLevel) })
+                    : ''}
+                  , {event.source === 'gdacs' ? 'GDACS' : 'NASA EONET'}, {formatTime(event.startedAt)}
                 </span>
               </li>
             ))}
@@ -57,22 +71,25 @@ export function ConditionsSections({ conditions }: Props) {
 
       {stormsComing.length > 0 && (
         <>
-          <h3>Storms forecast to pass near</h3>
+          <h3>{c.stormsTitle}</h3>
           <ul>
             {stormsComing.map((storm) => (
               <li key={storm.stormId}>
-                <strong>{storm.name}</strong>: about {formatKm(storm.distanceKm)} away around{' '}
-                {formatTime(storm.closestAt)}
+                <strong>{storm.name}</strong>:{' '}
+                {fill(c.stormLine, {
+                  distance: formatKm(storm.distanceKm),
+                  time: formatTime(storm.closestAt),
+                })}
               </li>
             ))}
           </ul>
-          <p className="muted">The forecast centre is uncertain; the real path can be different.</p>
+          <p className="muted">{c.stormNote}</p>
         </>
       )}
 
       {news.length > 0 && (
         <>
-          <h3>Recent headlines</h3>
+          <h3>{c.newsTitle}</h3>
           <ul>
             {news.map((item) => (
               <li key={item.id}>
@@ -97,6 +114,7 @@ export function ConditionsSections({ conditions }: Props) {
 
 /** Plain links to the official agency pages. Always shown. */
 function Bulletins() {
+  const { t } = useStrings();
   const [links, setLinks] = useState<BulletinLink[]>([]);
 
   useEffect(() => {
@@ -108,17 +126,17 @@ function Bulletins() {
 
   return (
     <>
-      <h3>Official bulletins</h3>
+      <h3>{t.conditions.bulletinsTitle}</h3>
       <ul>
         {links.map((link) => (
           <li key={link.id}>
             <a href={safeUrl(link.url) ?? undefined} target="_blank" rel="noopener noreferrer">
-              {link.agency}: {link.label}
+              {link.agency}: {bulletinLabel(link.id, link.label)}
             </a>
           </li>
         ))}
       </ul>
-      {links.length === 0 && <p className="muted">Official pages: pagasa.dost.gov.ph and phivolcs.dost.gov.ph.</p>}
+      {links.length === 0 && <p className="muted">{t.conditions.bulletinsFallback}</p>}
     </>
   );
 }

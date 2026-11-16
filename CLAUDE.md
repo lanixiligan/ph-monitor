@@ -42,6 +42,7 @@ server/test/       one test file per area, real feed samples in fixtures/
 web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (time, number
                    and link helpers), mapOverlays.ts + stormGeo.ts (event markers and
                    storm tracks), components/
+  i18n/            en.ts and fil.ts (every string the reader sees), language switch
 data/              downloaded boundary files (git-ignored)
 ```
 
@@ -71,6 +72,9 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
 - Types used by both server and web go in `shared/src/types.ts`.
 - Small files, short comments. Explain each TypeScript-specific piece of syntax in one line the
   first time it appears in a file.
+- Every string the reader sees lives in `web/src/i18n/en.ts` and `fil.ts` (same keys; a missing
+  key fails the typecheck). The server sends score reasons as message keys plus numbers
+  (`ScoreReason`), never as sentences. The Filipino text is a draft until the owner reviews it.
 - The app name appears in the UI only through `APP_NAME` (`shared/src/appInfo.ts`).
 - UI stays plain and neutral: no logo, no custom fonts, no colours beyond the score scale
   (`web/src/scoreScale.ts`).

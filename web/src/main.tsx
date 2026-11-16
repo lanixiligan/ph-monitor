@@ -6,6 +6,7 @@ import { APP_NAME } from '@ph-monitor/shared';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './styles.css';
 import { App } from './App.tsx';
+import { LanguageProvider } from './i18n/index.ts';
 
 document.title = APP_NAME;
 
@@ -15,8 +16,11 @@ if (!root) {
 }
 
 // StrictMode is a development helper that warns about common React mistakes.
+// LanguageProvider sits OUTSIDE <App />, so that App itself can call useStrings().
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <LanguageProvider>
+      <App />
+    </LanguageProvider>
   </StrictMode>,
 );

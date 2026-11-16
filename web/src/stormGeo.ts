@@ -4,9 +4,6 @@
 import type { Feature, FeatureCollection } from 'geojson';
 import type { DisasterEvent, Storm } from '@ph-monitor/shared';
 
-/** The sample storm must never be mistaken for a real one. */
-export const SAMPLE_NOTICE = 'Sample data, not a real storm';
-
 // `Record<string, unknown>` is just "an object with text keys and any values".
 type Props = Record<string, unknown>;
 type Collection = FeatureCollection<Feature['geometry'], Props>;

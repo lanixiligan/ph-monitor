@@ -4,13 +4,17 @@
 import { useEffect, useState } from 'react';
 import type { NewsItem } from '@ph-monitor/shared';
 import { fetchNews } from '../api.ts';
-import { CATEGORY_LABELS, categoryLabel, formatTime, safeUrl } from '../format.ts';
+import { CATEGORY_IDS, categoryLabel, formatTime, safeUrl } from '../format.ts';
+import { useStrings } from '../i18n/index.ts';
 
 const REFRESH_MS = 5 * 60 * 1000;
-const FILTERS = [{ id: 'all', label: 'All' }, ...CATEGORY_LABELS];
+// 'all' first, then the outlet groups. `...` spreads one list into another.
+const FILTER_IDS = ['all', ...CATEGORY_IDS];
 
 // This component takes no props, so it can be placed anywhere on the page.
 export function NewsPanel() {
+  // `t` holds all the words in the current language.
+  const { t } = useStrings();
   // `useState` keeps a value between renders. The text in <...> is its type.
   const [category, setCategory] = useState<string>('all');
   const [items, setItems] = useState<NewsItem[] | null>(null);
@@ -41,25 +45,23 @@ export function NewsPanel() {
 
   return (
     <section className="panel" aria-labelledby="news-title">
-      <h2 id="news-title">Disaster headlines</h2>
-      <p className="muted">
-        The group is only a label for the kind of outlet. It is not a ranking of how far to trust it.
-      </p>
-      <div className="filters" role="group" aria-label="Filter by outlet group">
-        {FILTERS.map((filter) => (
+      <h2 id="news-title">{t.news.title}</h2>
+      <p className="muted">{t.news.note}</p>
+      <div className="filters" role="group" aria-label={t.news.filterLabel}>
+        {FILTER_IDS.map((id) => (
           <button
-            key={filter.id}
+            key={id}
             className="filter"
-            aria-pressed={category === filter.id}
-            onClick={() => setCategory(filter.id)}
+            aria-pressed={category === id}
+            onClick={() => setCategory(id)}
           >
-            {filter.label}
+            {categoryLabel(id)}
           </button>
         ))}
       </div>
 
-      {failed && <p className="muted">Could not load headlines right now.</p>}
-      {items !== null && items.length === 0 && !failed && <p className="muted">No headlines to show.</p>}
+      {failed && <p className="muted">{t.news.failed}</p>}
+      {items !== null && items.length === 0 && !failed && <p className="muted">{t.news.none}</p>}
       {items !== null && items.length > 0 && (
         <ul className="plain-list">
           {items.map((item) => (
@@ -73,7 +75,7 @@ export function NewsPanel() {
               </span>
               {item.otherOutlets.length > 0 && (
                 <div className="muted">
-                  Also at:{' '}
+                  {t.news.alsoAt}{' '}
                   {item.otherOutlets.map((other, index) => (
                     <span key={other.url}>
                       {index > 0 && ', '}

@@ -13,6 +13,7 @@ import type { StyleSpecification } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useEffect, useRef, useState } from 'react';
 import type { ProvinceCollection, Spot } from '../api.ts';
+import { getI18n } from '../i18n/index.ts';
 import { OVERLAY_CLICK_LAYERS, useOverlays } from '../mapOverlays.ts';
 import { MAX_BOUNDS, PH_BOUNDS, SHOW_BASEMAP } from '../mapSettings.ts';
 import { bandFor, NO_DATA_COLOR } from '../scoreScale.ts';
@@ -173,7 +174,9 @@ export function ProvinceMap({ data, spot, onSelect }: Props) {
           const properties = event.features?.[0]?.properties;
           if (!properties) return;
           theMap.getCanvas().style.cursor = 'pointer';
-          const score = typeof properties.score === 'number' ? properties.score : 'no score yet';
+          // Read at hover time, so the label follows the language chosen now.
+          const score =
+            typeof properties.score === 'number' ? properties.score : getI18n().t.map.noScoreYet;
           popup
             .setLngLat(event.lngLat)
             .setText(`${properties.name}: ${score}`)
