@@ -24,6 +24,8 @@
     "ingest:weather": "npm run ingest:weather --workspace server",
     "compute:scores": "npm run compute:scores --workspace server",
     "ingest:events": "npm run ingest:events --workspace server",
+    "ingest:storms": "npm run ingest:storms --workspace server",
+    "sample-storm": "npm run sample-storm --workspace server",
     "test": "npm test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

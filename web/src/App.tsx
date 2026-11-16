@@ -73,6 +73,9 @@ export function App() {
         {' '}
         Disaster events: <a href="https://www.gdacs.org/">GDACS</a>, © European Union, CC BY 4.0, and{' '}
         <a href="https://eonet.gsfc.nasa.gov/">NASA EONET</a>.
+        {' '}
+        Storm tracks: <a href="https://www.jma.go.jp/bosai/map.html#contents=typhoon">JMA</a> and{' '}
+        <a href="https://www.metoc.navy.mil/jtwc/jtwc.html">JTWC</a>.
         {/* The basemap credit is only needed when the basemap is shown. */}
         {SHOW_BASEMAP && (
           <>

@@ -3,12 +3,14 @@
 //   npm run ingest:weather
 //   npm run compute:scores
 //   npm run ingest:events
+//   npm run ingest:storms
 // (The running server does the same jobs on a timer.)
 
 import { pool } from '../src/db.ts';
 import { computeScores } from '../src/jobs/computeScores.ts';
 import { ingestEarthquakes } from '../src/jobs/ingestEarthquakes.ts';
 import { ingestEvents } from '../src/jobs/ingestEvents.ts';
+import { ingestStorms } from '../src/jobs/ingestStorms.ts';
 import { ingestWeather } from '../src/jobs/ingestWeather.ts';
 
 // A lookup table from job name to the function that runs it.
@@ -18,6 +20,7 @@ const jobs: Record<string, () => Promise<void>> = {
   weather: ingestWeather,
   scores: computeScores,
   events: ingestEvents,
+  storms: ingestStorms,
 };
 
 // process.argv holds the words typed on the command line; [2] is the first

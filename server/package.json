@@ -14,6 +14,8 @@
     "ingest:weather": "tsx scripts/run-job.ts weather",
     "compute:scores": "tsx scripts/run-job.ts scores",
     "ingest:events": "tsx scripts/run-job.ts events",
+    "ingest:storms": "tsx scripts/run-job.ts storms",
+    "sample-storm": "tsx scripts/load-sample-storm.ts",
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

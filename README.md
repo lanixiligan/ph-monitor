@@ -59,6 +59,8 @@ The build plan is in [PLAN.md](PLAN.md).
 | Province, city and municipality boundaries (simplified) | NAMRIA and PSA via OCHA, from [faeldon/philippines-json-maps](https://github.com/faeldon/philippines-json-maps) | Boundaries CC BY 3.0 IGO; repository MIT |
 | Disaster events (typhoons, floods, volcanoes, quakes) with alert levels | [GDACS](https://www.gdacs.org/), European Commission JRC and UN OCHA | CC BY 4.0, © European Union |
 | Natural events | [NASA EONET](https://eonet.gsfc.nasa.gov/) | Free to use; credit NASA |
+| Tropical storm tracks and forecasts | [Japan Meteorological Agency (JMA)](https://www.jma.go.jp/bosai/map.html#contents=typhoon) | JMA terms of use; credit required |
+| Tropical storm warnings (backup) | [Joint Typhoon Warning Center (JTWC)](https://www.metoc.navy.mil/jtwc/jtwc.html), US Navy | Public domain |
 | Basemap: roads and place names (switch in `web/src/mapSettings.ts`) | [OpenFreeMap](https://openfreemap.org/), © OpenMapTiles, data © OpenStreetMap contributors | ODbL (OpenStreetMap data) |
 
 ## Licence

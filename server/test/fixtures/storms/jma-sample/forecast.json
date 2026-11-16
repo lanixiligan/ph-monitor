@@ -1,0 +1,47 @@
+[
+  { "part": "title", "typhoonNumber": "9901" },
+  {
+    "advancedHours": 0,
+    "validtime": { "JST": "2026-11-16T21:00:00+09:00", "UTC": "2026-11-16T12:00:00Z" },
+    "center": [14.7, 124.0],
+    "track": {
+      "preTyphoon": [[12.9, 132.4]],
+      "typhoon": [[12.9, 132.4], [13.3, 130.6], [13.7, 128.8], [14.1, 127.0], [14.5, 125.4], [14.7, 124.0]]
+    }
+  },
+  {
+    "advancedHours": 1,
+    "validtime": { "JST": "2026-11-16T22:00:00+09:00", "UTC": "2026-11-16T13:00:00Z" },
+    "center": [14.7, 123.9]
+  },
+  {
+    "advancedHours": 12,
+    "validtime": { "JST": "2026-11-17T09:00:00+09:00", "UTC": "2026-11-17T00:00:00Z" },
+    "center": [15.0, 122.4],
+    "probabilityCircle": { "radius": 40000 }
+  },
+  {
+    "advancedHours": 24,
+    "validtime": { "JST": "2026-11-17T21:00:00+09:00", "UTC": "2026-11-17T12:00:00Z" },
+    "center": [15.5, 120.4],
+    "probabilityCircle": { "radius": 70000 }
+  },
+  {
+    "advancedHours": 48,
+    "validtime": { "JST": "2026-11-18T21:00:00+09:00", "UTC": "2026-11-18T12:00:00Z" },
+    "center": [16.3, 116.5],
+    "probabilityCircle": { "radius": 130000 }
+  },
+  {
+    "advancedHours": 72,
+    "validtime": { "JST": "2026-11-19T21:00:00+09:00", "UTC": "2026-11-19T12:00:00Z" },
+    "center": [17.0, 113.2],
+    "probabilityCircle": { "radius": 200000 }
+  },
+  {
+    "advancedHours": 96,
+    "validtime": { "JST": "2026-11-20T21:00:00+09:00", "UTC": "2026-11-20T12:00:00Z" },
+    "center": [17.6, 110.5],
+    "probabilityCircle": { "radius": 280000 }
+  }
+]
