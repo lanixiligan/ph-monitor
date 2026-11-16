@@ -41,8 +41,10 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
 server/test/       one test file per area, real feed samples in fixtures/
 web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (time, number
                    and link helpers), mapOverlays.ts + stormGeo.ts (event markers and
-                   storm tracks), components/
+                   storm tracks), styles.css (all colours and layout), palette.ts (CSS
+                   colours for the map), components/
   i18n/            en.ts and fil.ts (every string the reader sees), language switch
+  theme/           light/dark choice (sets <html data-theme>), theme switch
 data/              downloaded boundary files (git-ignored)
 docs/              reference pages: data sources, news and streams, how it works, limits
 ```
@@ -77,8 +79,16 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   key fails the typecheck). The server sends score reasons as message keys plus numbers
   (`ScoreReason`), never as sentences. The Filipino text is a draft until the owner reviews it.
 - The app name appears in the UI only through `APP_NAME` (`shared/src/appInfo.ts`).
-- UI stays plain and neutral: no logo, no custom fonts, no colours beyond the score scale
-  (`web/src/scoreScale.ts`).
+- UI look ("sea chart"): cool sea-and-ink colours, defined once as CSS variables at the top of
+  `web/src/styles.css`, with a light set and a dark set (`[data-theme='dark']`). Never write a
+  hex colour anywhere else: the map reads the variables through `web/src/palette.ts`. The score
+  scale (`web/src/scoreScale.ts`) is the only warm colour on the page; it has a light version
+  (darker = worse) and a dark version (brighter = worse). Errors and stale data use ink, the
+  `WarnIcon` and words, never red or amber. Two fonts, Barlow Condensed (titles, numbers) and Atkinson Hyperlegible (text), come
+  from `@fontsource` npm packages and ship with the app; never load a font from a font site.
+- Layout: top bar, map on the left with the legend (its tick boxes switch map layers), panels
+  on the right (spot, live streams, headlines), credits along the bottom. Under 900px wide it
+  is one scrolling page.
 - The web app talks only to our own `/api`, with two exceptions: the basemap tiles come straight
   from OpenFreeMap (switch: `SHOW_BASEMAP` in `web/src/mapSettings.ts`), and a video plays in
   YouTube's own player, embedded from `youtube-nocookie.com` only after the reader clicks Play.

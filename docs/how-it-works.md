@@ -82,7 +82,11 @@ The web page talks only to these addresses on our own server (port 3001).
 ## What the reader sees
 
 - **Map:** provinces coloured by score (0–19 calm, 20–39 low, 40–59 moderate, 60–79 high,
-  80–100 severe), with event markers and storm tracks on top.
+  80–100 severe), with event markers and storm tracks on top. A province with no score yet
+  is striped grey.
+- **Light or dark:** follows the device setting until the reader picks one in the top bar
+  (remembered in the browser). The dark theme uses a dark basemap and a score scale where
+  brighter means more stress.
 - **Status card:** opens on a click. Score for that spot, the reasons, the province's score,
   the 7-day outlook, nearby events (within 300 km), storms forecast to pass within 300 km,
   headlines naming the province, and official bulletin links.
