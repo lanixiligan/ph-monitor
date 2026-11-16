@@ -28,11 +28,12 @@ a {
   color: #6b6b6b;
 }
 
-/* Page layout: header on top, map filling the middle, credits at the bottom. */
+/* Page layout: header on top, then the map, the panels and the credits. */
 .app {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  /* At least one screen tall; the panels below the map make it longer. */
+  min-height: 100%;
 }
 
 header {
@@ -54,10 +55,13 @@ header p {
   color: #6b6b6b;
 }
 
+/* The map takes most of the first screen; the panels start just below it. */
 main {
   position: relative;
-  flex: 1;
-  min-height: 0;
+  flex: none;
+  /* vh = percent of the screen's height. */
+  height: 75vh;
+  min-height: 420px;
 }
 
 .map {
@@ -265,4 +269,131 @@ footer {
     flex-wrap: wrap;
     gap: 2px 12px;
   }
+}
+
+/* Phase 2: map popups, storm labels, outlook, news and stream panels. */
+.map-popup {
+  max-width: 240px;
+  color: #1f1f1f;
+}
+
+.storm-label {
+  padding: 1px 4px;
+  background: #ffffff;
+  border: 1px solid #c9c9c9;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.outlook {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 4px;
+}
+
+.outlook-day {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px;
+  border: 1px solid #c9c9c9;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.panel {
+  padding: 12px 16px;
+  background: #ffffff;
+  border-top: 1px solid #d9d9d9;
+}
+
+.panel h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.filter {
+  padding: 4px 10px;
+  border: 1px solid #c9c9c9;
+  border-radius: 4px;
+  background: #ffffff;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The chosen filter is shown with a solid dark border and bold text. */
+.filter[aria-pressed='true'] {
+  border: 2px solid #1f1f1f;
+  font-weight: 700;
+}
+
+.plain-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plain-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid #d9d9d9;
+}
+
+.stream-frame {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 16 / 9;
+  margin: 6px 0;
+  border: 0;
+}
+
+/* Headlines and live streams, side by side below the map. */
+.below-map {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.below-map .panel + .panel {
+  border-left: 1px solid #d9d9d9;
+}
+
+/* On a narrow screen they stack, one above the other. */
+@media (max-width: 640px) {
+  .below-map {
+    grid-template-columns: 1fr;
+  }
+
+  .below-map .panel + .panel {
+    border-left: 0;
+  }
+}
+
+/* The marks in the legend for events and storms: drawn with borders only. */
+.mark {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+}
+
+.mark-event {
+  height: 14px;
+  border: 3px solid #1f1f1f;
+  border-radius: 50%;
+}
+
+.mark-storm {
+  border-top: 2px solid #1f1f1f;
+}
+
+.mark-forecast {
+  border-top: 2px dashed #1f1f1f;
 }
