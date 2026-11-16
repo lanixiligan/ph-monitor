@@ -44,6 +44,7 @@ web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (ti
                    storm tracks), components/
   i18n/            en.ts and fil.ts (every string the reader sees), language switch
 data/              downloaded boundary files (git-ignored)
+docs/              reference pages: data sources, news and streams, how it works, limits
 ```
 
 ## Commands (from the project root)

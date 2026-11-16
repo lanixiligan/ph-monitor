@@ -62,6 +62,11 @@ A link can open a spot directly: `http://localhost:5173/?lat=10.3157&lon=123.885
 See [METHODOLOGY.md](METHODOLOGY.md). All weights live in `server/src/scoring/scoring.ts`.
 The build plan is in [PLAN.md](PLAN.md).
 
+## More detail
+
+The [docs/](docs/README.md) folder explains the data sources, the news and live streams, how
+data flows through the app, and its limits.
+
 ## Data sources and credits
 
 | Data | Source | Licence |
