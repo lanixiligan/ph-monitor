@@ -1,5 +1,47 @@
-/* Plain, neutral styling: system font, greys, no theme.
-   The only colours with meaning are the score scale (see scoreScale.ts). */
+/* The look: a sea chart. Cool sea-and-ink colours everywhere, so the warm
+   score scale (scoreScale.ts) is the only thing on the page that looks hot.
+   Titles and numbers are set in Barlow Condensed, the rest in Atkinson
+   Hyperlegible. Both fonts ship with the app (see main.tsx). */
+
+/* `:root` is the whole page. `--name` defines a value that is reused below
+   as `var(--name)`. */
+:root {
+  color-scheme: light; /* form controls and scrollbars follow the theme */
+  --sea: #dce7ea; /* behind the map and between panels */
+  --paper: #f7f9f8; /* panels */
+  --ink: #10313b; /* text, strong lines */
+  --ink-soft: #4d656d; /* secondary text */
+  --on-ink: #ffffff; /* text on something filled with ink (chips, pressed buttons) */
+  --line: #b6c6ca; /* borders */
+  --line-soft: #dae3e5; /* dividers inside a panel */
+  --news: #1f6f8b; /* headline dots on the map and their buttons */
+  --no-data: #b3bec1; /* provinces with no score yet (hatched on the map) */
+  --bar: #10313b; /* the top bar */
+  --bar-text: #ffffff;
+  --bar-soft: #c3d3d7; /* secondary text in the top bar */
+  --bar-line: #7f979d; /* button borders in the top bar */
+  --font-title: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
+}
+
+/* Dark theme: the same sea chart at night. Set by theme/state.ts as
+   <html data-theme="dark">. The map reads these too (palette.ts). */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --sea: #0e1f26;
+  --paper: #152a32;
+  --ink: #e3ecee;
+  --ink-soft: #9db2b8;
+  --on-ink: #0e1f26;
+  --line: #35505a;
+  --line-soft: #223a43;
+  --news: #5cb3cf;
+  --no-data: #2b3d44;
+  --bar: #08161b;
+  --bar-text: #e3ecee;
+  --bar-soft: #9db2b8;
+  --bar-line: #4a6670;
+}
 
 * {
   box-sizing: border-box;
@@ -13,371 +55,373 @@ body,
 }
 
 body {
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
-  line-height: 1.4;
-  color: #1f1f1f;
-  background: #ffffff;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--sea);
 }
 
 a {
   color: inherit;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--line);
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* A clear outline on whatever the keyboard has reached. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-title);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+p {
+  margin: 0 0 8px;
 }
 
 .muted {
-  color: #6b6b6b;
+  color: var(--ink-soft);
 }
 
-/* Page layout: header on top, then the map, the panels and the credits. */
+/* ---------- Page layout ----------
+   Small screen (the default here): one long page that scrolls.
+   Wide screen (see the media queries at the bottom): the page is exactly one
+   screen tall and each panel scrolls on its own. */
 .app {
   display: flex;
   flex-direction: column;
-  /* At least one screen tall; the panels below the map make it longer. */
   min-height: 100%;
 }
 
-header {
+/* ---------- Top bar ---------- */
+.topbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 16px;
-  padding: 10px 16px;
-  border-bottom: 1px solid #d9d9d9;
-}
-
-header h1 {
-  margin: 0;
-  font-size: 18px;
-}
-
-header p {
-  margin: 0;
-  color: #6b6b6b;
-}
-
-/* The map takes most of the first screen; the panels start just below it. */
-main {
-  position: relative;
-  flex: none;
-  /* vh = percent of the screen's height. */
-  height: 75vh;
-  min-height: 420px;
-}
-
-.map {
-  position: absolute;
-  inset: 0;
-}
-
-footer {
-  padding: 6px 16px;
-  border-top: 1px solid #d9d9d9;
-  font-size: 12px;
-  color: #6b6b6b;
-}
-
-/* The "not an official warning" notice (Disclaimer.tsx). */
-.disclaimer {
-  font-weight: 600;
-  color: #1f1f1f;
-}
-
-.error {
-  padding: 8px 16px;
-  background: #f3f3f3;
-  border-bottom: 1px solid #d9d9d9;
-  font-weight: 600;
-}
-
-/* Boxes that float over the map. */
-.legend,
-.card {
-  position: absolute;
-  background: #ffffff;
-  border: 1px solid #c9c9c9;
-  border-radius: 4px;
-}
-
-.legend {
-  left: 12px;
-  bottom: 12px;
-  padding: 8px 10px;
-}
-
-.legend-title {
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-
-.legend ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.legend li {
-  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 6px 20px;
+  padding: 8px 16px;
+  color: var(--bar-text);
+  background: var(--bar);
 }
 
-.swatch {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 1px solid #8a8a8a;
-  flex: none;
-}
-
-/* The status card. On a wide screen it sits on the right of the map. */
-.card {
-  /* Above the map's own small controls, so they never cover the text. */
-  z-index: 3;
-  top: 12px;
-  right: 12px;
-  width: 340px;
-  max-width: calc(100% - 24px);
-  max-height: calc(100% - 24px);
-  overflow-y: auto;
-  padding: 12px 14px;
-}
-
-.card h2 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.card h3 {
-  margin: 14px 0 4px;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #6b6b6b;
-}
-
-.card ul {
-  margin: 0;
-  padding-left: 18px;
-}
-
-.card li {
-  margin-bottom: 4px;
-}
-
-.card-where {
-  margin: 2px 0 0;
-}
-
-.card-head {
+.topbar h1 {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 8px;
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
-.card-close {
-  border: 1px solid #c9c9c9;
-  border-radius: 4px;
-  background: #ffffff;
+.topbar-intro {
+  flex: 1;
+  min-width: 240px;
+  margin: 0;
+  color: var(--bar-soft);
+}
+
+.topbar-jump {
+  display: flex;
+  gap: 14px;
+}
+
+.topbar :focus-visible {
+  outline-color: var(--bar-text);
+}
+
+/* The language and theme switches: two buttons joined into one control. */
+.switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.switch button {
+  padding: 3px 10px;
+  border: 1px solid var(--bar-line);
+  color: var(--bar-text);
+  background: transparent;
   font: inherit;
   cursor: pointer;
 }
 
-.score-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
+.switch button + button {
+  border-left: 0;
 }
 
-.score-number {
-  font-size: 32px;
+.switch button[aria-pressed='true'] {
+  color: var(--bar);
+  background: var(--bar-text);
+  border-color: var(--bar-text);
   font-weight: 700;
-  line-height: 1;
 }
 
-.score-row .swatch {
-  width: 18px;
-  height: 18px;
-}
-
-.stale {
-  display: inline-block;
-  padding: 1px 6px;
-  border: 1px solid #1f1f1f;
-  border-radius: 3px;
+.lang-note {
+  margin-left: 10px;
   font-size: 12px;
+  color: var(--bar-soft);
+}
+
+/* Something went wrong or is out of date. Ink, an icon and words only:
+   warm colours mean stress on this page and nothing else. */
+.error {
+  padding: 8px 16px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  border-left: 4px solid var(--ink);
   font-weight: 700;
 }
 
-.card table {
-  width: 100%;
-  border-collapse: collapse;
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
 }
 
-.card td {
-  padding: 2px 0;
+.warn-icon {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  /* Sits on the first line of text. */
+  margin-top: 0.2em;
 }
 
-.card td:last-child {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+.stale .warn-icon {
+  margin-top: 0;
 }
 
-/* On a narrow screen the card sits BELOW the map instead of on top of it:
-   the map shrinks to make room, so nothing is hidden behind the card. */
-@media (max-width: 640px) {
-  main {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .map {
-    position: relative;
-    inset: auto;
-    flex: 1;
-    min-height: 0;
-  }
-
-  .card {
-    position: static;
-    flex: none;
-    width: auto;
-    max-width: none;
-    /* vh = percent of the screen's height. */
-    max-height: 50vh;
-    border-width: 1px 0 0;
-    border-radius: 0;
-  }
-
-  /* The legend becomes a compact strip above the map, so it covers nothing. */
-  .legend {
-    position: static;
-    order: -1;
-    padding: 6px 16px;
-    border-width: 0 0 1px;
-    border-radius: 0;
-    font-size: 12px;
-  }
-
-  .legend-title {
-    margin-bottom: 2px;
-  }
-
-  .legend ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px 12px;
-  }
+/* ---------- The score ladder (Ladder.tsx) ----------
+   Five steps that rise left to right; a step is filled once the score
+   reaches its band. */
+.ladder {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  vertical-align: baseline;
 }
 
-/* Phase 2: map popups, storm labels, outlook, news and stream panels. */
+.ladder-step {
+  width: 5px;
+  /* The outline keeps the palest step visible on a pale panel. */
+  border: 1px solid var(--ink-soft);
+}
+
+/* nth-child(n) picks the n-th step. */
+.ladder-step:nth-child(1) {
+  height: 5px;
+}
+.ladder-step:nth-child(2) {
+  height: 8px;
+}
+.ladder-step:nth-child(3) {
+  height: 11px;
+}
+.ladder-step:nth-child(4) {
+  height: 14px;
+}
+.ladder-step:nth-child(5) {
+  height: 17px;
+}
+
+/* Beside the app name the ladder is a little bigger. */
+.topbar .ladder {
+  gap: 3px;
+  padding-bottom: 5px;
+}
+
+.topbar .ladder-step {
+  width: 6px;
+  border-color: transparent;
+}
+
+/* ---------- Map ---------- */
+.map-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.map {
+  /* vh = percent of the screen's height. */
+  height: 62vh;
+  min-height: 360px;
+}
+
+/* MapLibre's own zoom buttons and popups, matched to the page. */
+.maplibregl-ctrl-group {
+  background: var(--paper) !important;
+  border: 1px solid var(--ink);
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+.maplibregl-popup-content {
+  padding: 8px 10px !important;
+  border: 1px solid var(--ink);
+  border-radius: 2px !important;
+  box-shadow: none !important;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--paper) !important;
+}
+
+/* The popup's little pointer, in the border colour, whichever side it is on. */
+[class*='maplibregl-popup-anchor-top'] .maplibregl-popup-tip {
+  border-bottom-color: var(--ink) !important;
+}
+[class*='maplibregl-popup-anchor-bottom'] .maplibregl-popup-tip {
+  border-top-color: var(--ink) !important;
+}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--ink) !important;
+}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--ink) !important;
+}
+
+.maplibregl-popup-close-button {
+  color: var(--ink);
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top-color: var(--line) !important;
+}
+
+.maplibregl-ctrl.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  color: var(--ink-soft);
+  background: var(--paper) !important;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--ink-soft) !important;
+}
+
+/* MapLibre's button icons are dark pictures; flip them to light on a dark theme. */
+:root[data-theme='dark'] .maplibregl-ctrl-icon,
+:root[data-theme='dark'] .maplibregl-ctrl-attrib-button {
+  filter: invert(1);
+}
+
 .map-popup {
   max-width: 240px;
-  color: #1f1f1f;
+}
+
+/* The headlines listed in a headline dot's popup. */
+.map-popup-list {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-popup-list li {
+  padding: 4px 0;
+  border-top: 1px solid var(--line-soft);
 }
 
 .storm-label {
-  padding: 1px 4px;
-  background: #ffffff;
-  border: 1px solid #c9c9c9;
-  border-radius: 3px;
-  font-size: 12px;
+  padding: 1px 5px;
+  color: var(--on-ink);
+  background: var(--ink);
+  font-family: var(--font-title);
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
 }
 
-.outlook {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 4px;
+/* Set on the map when the storm tick box in the legend is off. */
+.hide-storm-labels .storm-label {
+  display: none;
 }
 
-.outlook-day {
+/* ---------- Legend (Legend.tsx) ---------- */
+.legend {
+  padding: 10px 12px;
+  background: var(--paper);
+  border-top: 3px solid var(--ink);
+  font-size: 13px;
+}
+
+.legend-row {
   display: flex;
-  flex-direction: column;
-  padding: 4px 6px;
-  border: 1px solid #c9c9c9;
-  border-radius: 3px;
-  font-size: 12px;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
 }
 
-.panel {
-  padding: 12px 16px;
-  background: #ffffff;
-  border-top: 1px solid #d9d9d9;
+.legend-row:first-child {
+  margin-top: 0;
 }
 
-.panel h2 {
-  margin: 0 0 4px;
-  font-size: 16px;
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0;
-}
-
-.filter {
-  padding: 4px 10px;
-  border: 1px solid #c9c9c9;
-  border-radius: 4px;
-  background: #ffffff;
-  font: inherit;
+label.legend-row {
   cursor: pointer;
 }
 
-/* The chosen filter is shown with a solid dark border and bold text. */
-.filter[aria-pressed='true'] {
-  border: 2px solid #1f1f1f;
-  font-weight: 700;
+.legend input {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  /* accent-color sets the colour of a ticked box. */
+  accent-color: var(--ink);
 }
 
-.plain-list {
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
+/* A row with no tick box lines up with the text of the rows that have one. */
+.legend-indent {
+  padding-left: 22px;
 }
 
-.plain-list li {
-  padding: 6px 0;
-  border-bottom: 1px solid #d9d9d9;
-}
-
-.stream-frame {
-  display: block;
-  width: 100%;
-  max-width: 480px;
-  aspect-ratio: 16 / 9;
-  margin: 6px 0;
-  border: 0;
-}
-
-/* Headlines and live streams, side by side below the map. */
-.below-map {
+/* The five score colours side by side, each with its name and range under it. */
+.scale {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  margin: 6px 0 0;
+  padding: 0 0 0 22px;
+  list-style: none;
+  font-size: 12px;
+  line-height: 1.25;
 }
 
-.below-map .panel + .panel {
-  border-left: 1px solid #d9d9d9;
+.scale li {
+  display: flex;
+  flex-direction: column;
 }
 
-/* On a narrow screen they stack, one above the other. */
-@media (max-width: 640px) {
-  .below-map {
-    grid-template-columns: 1fr;
-  }
-
-  .below-map .panel + .panel {
-    border-left: 0;
-  }
+/* Score colours get a thin border so the palest one still shows on a panel. */
+.scale-color {
+  height: 10px;
+  margin-bottom: 3px;
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
-/* The marks in the legend for events and storms: drawn with borders only. */
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 10px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* "No score yet": the same diagonal lines as on the map (palette.ts). */
+.swatch-nodata {
+  background: repeating-linear-gradient(-45deg, var(--ink-soft) 0 1px, var(--no-data) 1px 4px);
+}
+
+/* The marks for events and storms: drawn with borders only. */
 .mark {
   display: inline-block;
   flex: none;
@@ -386,14 +430,426 @@ footer {
 
 .mark-event {
   height: 14px;
-  border: 3px solid #1f1f1f;
+  border: 3px solid var(--ink);
   border-radius: 50%;
 }
 
 .mark-storm {
-  border-top: 2px solid #1f1f1f;
+  border-top: 2px solid var(--ink);
 }
 
 .mark-forecast {
-  border-top: 2px dashed #1f1f1f;
+  border-top: 2px dashed var(--ink);
+}
+
+.mark-news {
+  height: 12px;
+  width: 12px;
+  margin: 0 1px;
+  border-radius: 50%;
+  background: var(--news);
+}
+
+/* ---------- Panels (spot, live streams, headlines) ----------
+   Every panel is a head (its title) and a body. */
+.panel {
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.panel-body {
+  padding: 10px 14px 14px;
+}
+
+.panel h3 {
+  margin: 16px 0 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 17px;
+}
+
+.panel-body ul,
+.panel-body ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.panel-body li {
+  margin-bottom: 5px;
+}
+
+/* Buttons: filters, Play and Stop, Close. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.filter {
+  flex: none;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.filter:hover {
+  border-color: var(--ink);
+}
+
+/* The chosen filter is filled with ink. */
+.filter[aria-pressed='true'] {
+  color: var(--on-ink);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+/* A list with dividing lines and no bullets. */
+.panel-body .plain-list {
+  padding: 0;
+  list-style: none;
+}
+
+.panel-body .plain-list li {
+  margin: 0;
+  padding: 8px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.headline {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.headline:hover {
+  text-decoration: underline;
+}
+
+/* "● Albay, Sorsogon" under a headline: shows the places on the map. */
+.place-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  padding: 1px 0;
+  border: 0;
+  color: var(--news);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.place-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* The same dot as on the map. */
+.place-pin {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--news);
+}
+
+/* ---------- Spot panel: the status card and the hint ---------- */
+.card-where {
+  margin: 0;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.score-number {
+  flex: none;
+  min-width: 68px;
+  padding: 2px 10px 4px;
+  font-family: var(--font-title);
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px var(--line);
+  /* tabular-nums gives every digit the same width, so numbers line up. */
+  font-variant-numeric: tabular-nums;
+}
+
+.stale {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  color: var(--on-ink);
+  background: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.panel table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.panel td {
+  padding: 3px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.panel td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel table + p {
+  margin-top: 8px;
+}
+
+.outlook {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px 6px;
+  margin-bottom: 8px;
+}
+
+.outlook-day {
+  display: flex;
+  flex-direction: column;
+  padding-top: 4px;
+  border-top: 2px solid var(--ink);
+  font-size: 12px;
+}
+
+/* The list of highest-scoring provinces (SpotHint.tsx). */
+.panel-body .ranking {
+  padding: 0;
+  list-style: none;
+}
+
+.panel-body .ranking li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.ranking-name {
+  flex: 1;
+}
+
+.ranking-band {
+  width: 64px;
+  font-size: 12px;
+}
+
+.ranking-score {
+  width: 28px;
+  font-family: var(--font-title);
+  font-size: 19px;
+  line-height: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Live streams ---------- */
+.player {
+  background: var(--bar);
+}
+
+.stream-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+
+.panel-body .plain-list .stream {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.stream-text {
+  flex: 1;
+  /* Lets a long title wrap instead of pushing the button off the panel. */
+  min-width: 0;
+}
+
+.tag {
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tag-live {
+  color: var(--on-ink);
+  background: var(--ink);
+  border-color: var(--ink);
+  font-weight: 700;
+}
+
+/* ---------- Footer ---------- */
+footer {
+  padding: 6px 16px;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* The "not an official warning" notice (Disclaimer.tsx). */
+.disclaimer {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ---------- Wide screen: one screen tall, map on the left ---------- */
+@media (min-width: 900px) {
+  .app {
+    /* dvh = percent of the screen's height that is really visible. */
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .topbar-jump {
+    display: none;
+  }
+
+  /* Two columns: the map takes what is left, the side column is 400px. */
+  .workspace {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px;
+  }
+
+  .map-area {
+    position: relative;
+    display: block;
+  }
+
+  .map {
+    position: absolute;
+    inset: 0;
+    height: auto;
+  }
+
+  /* The legend floats over the bottom-left corner of the map. */
+  .legend {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    width: 356px;
+    border: 1px solid var(--ink);
+    border-top-width: 3px;
+  }
+
+  /* The side column scrolls as one; each panel's title stays in view. */
+  .side {
+    overflow-y: auto;
+    border-left: 1px solid var(--ink);
+    background: var(--paper);
+  }
+
+  .side .panel:first-child {
+    border-top: 0;
+  }
+
+  .side-feeds .panel:first-child {
+    border-top: 1px solid var(--line);
+  }
+
+  .panel-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--paper);
+  }
+}
+
+/* ---------- Very wide screen: two side columns, each panel scrolls ---------- */
+@media (min-width: 1360px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr) 780px;
+  }
+
+  .side {
+    display: grid;
+    grid-template-columns: 380px 400px;
+    overflow: hidden;
+  }
+
+  .side-spot,
+  .side-feeds {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .side-feeds {
+    border-left: 1px solid var(--line);
+  }
+
+  .side-feeds .panel:first-child {
+    border-top: 0;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .side-spot .panel,
+  .panel-news {
+    flex: 1;
+  }
+
+  /* The streams panel is as tall as it needs, up to a little over half. */
+  .panel-streams {
+    flex: 0 1 auto;
+    max-height: 58%;
+  }
+
+  .panel-head,
+  .player {
+    flex: none;
+  }
+
+  .panel-head {
+    position: static;
+  }
+
+  .panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
 }

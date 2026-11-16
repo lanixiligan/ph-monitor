@@ -1,18 +1,50 @@
 // Latest disaster headlines, with a filter by outlet group.
 // Headlines and links only: we never show article text.
+// A headline that names a place gets a button that shows the place on the map.
 
 import { useEffect, useState } from 'react';
 import type { NewsItem } from '@ph-monitor/shared';
 import { fetchNews } from '../api.ts';
+import type { ProvinceCollection } from '../api.ts';
 import { CATEGORY_IDS, categoryLabel, formatTime, safeUrl } from '../format.ts';
-import { useStrings } from '../i18n/index.ts';
+import { fill, useStrings } from '../i18n/index.ts';
+import { WarnIcon } from './WarnIcon.tsx';
 
 const REFRESH_MS = 5 * 60 * 1000;
 // 'all' first, then the outlet groups. `...` spreads one list into another.
 const FILTER_IDS = ['all', ...CATEGORY_IDS];
 
-// This component takes no props, so it can be placed anywhere on the page.
-export function NewsPanel() {
+type Props = {
+  /** Province names come from here. null while the map is still loading. */
+  provinces: ProvinceCollection | null;
+  /** Called with a headline's province codes when the reader asks to see them. */
+  onShowOnMap: (psgcs: number[]) => void;
+};
+
+/** The place names for a headline. The four Metro Manila districts show as one "Metro Manila". */
+function placeNames(psgcs: number[], nameByPsgc: Map<number, string>): string[] {
+  const names = psgcs.flatMap((psgc) => nameByPsgc.get(psgc) ?? []);
+  const shown = names.map((name) => (name.startsWith('NCR') ? 'Metro Manila' : name));
+  // A Set keeps each name once.
+  return [...new Set(shown)];
+}
+
+/** "📍 Albay, Sorsogon": shows the places on the map. Nothing when the headline names no place. */
+function PlaceButton({ places, onClick }: { places: string; onClick: () => void }) {
+  const { t } = useStrings();
+  if (places === '') return null;
+  return (
+    <div>
+      <button className="place-link" onClick={onClick} aria-label={fill(t.news.showOnMap, { places })}>
+        {/* aria-hidden: screen readers skip the pin picture. */}
+        <span className="place-pin" aria-hidden="true" />
+        {places}
+      </button>
+    </div>
+  );
+}
+
+export function NewsPanel({ provinces, onShowOnMap }: Props) {
   // `t` holds all the words in the current language.
   const { t } = useStrings();
   // `useState` keeps a value between renders. The text in <...> is its type.
@@ -43,9 +75,14 @@ export function NewsPanel() {
     };
   }, [category]);
 
+  const nameByPsgc = new Map((provinces?.features ?? []).map((f) => [f.properties.psgc, f.properties.name]));
+
   return (
-    <section className="panel" aria-labelledby="news-title">
-      <h2 id="news-title">{t.news.title}</h2>
+    <section className="panel panel-news" aria-labelledby="news-title">
+      <div className="panel-head">
+        <h2 id="news-title">{t.news.title}</h2>
+      </div>
+      <div className="panel-body">
       <p className="muted">{t.news.note}</p>
       <div className="filters" role="group" aria-label={t.news.filterLabel}>
         {FILTER_IDS.map((id) => (
@@ -60,19 +97,27 @@ export function NewsPanel() {
         ))}
       </div>
 
-      {failed && <p className="muted">{t.news.failed}</p>}
+      {failed && (
+        <p className="notice">
+          <WarnIcon /> {t.news.failed}
+        </p>
+      )}
       {items !== null && items.length === 0 && !failed && <p className="muted">{t.news.none}</p>}
       {items !== null && items.length > 0 && (
         <ul className="plain-list">
           {items.map((item) => (
             <li key={item.id}>
-              <a href={safeUrl(item.url) ?? undefined} target="_blank" rel="noopener noreferrer">
+              <a className="headline" href={safeUrl(item.url) ?? undefined} target="_blank" rel="noopener noreferrer">
                 {item.title}
               </a>
               <br />
               <span className="muted">
                 {item.outlet} · {categoryLabel(item.category)} · {formatTime(item.publishedAt)}
               </span>
+              <PlaceButton
+                places={placeNames(item.provincePsgcs, nameByPsgc).join(', ')}
+                onClick={() => onShowOnMap(item.provincePsgcs)}
+              />
               {item.otherOutlets.length > 0 && (
                 <div className="muted">
                   {t.news.alsoAt}{' '}
@@ -90,6 +135,7 @@ export function NewsPanel() {
           ))}
         </ul>
       )}
+      </div>
     </section>
   );
 }

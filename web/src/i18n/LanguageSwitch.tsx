@@ -6,14 +6,14 @@ export function LanguageSwitch() {
   const { t, lang, setLanguage } = useStrings();
 
   return (
-    <div className="filters" role="group" aria-label={t.language.groupLabel}>
+    <div className="switch" role="group" aria-label={t.language.groupLabel}>
       <button className="filter" aria-pressed={lang === 'en'} onClick={() => setLanguage('en')}>
         {t.language.english}
       </button>
       <button className="filter" aria-pressed={lang === 'fil'} onClick={() => setLanguage('fil')}>
         {t.language.filipino}
       </button>
-      {lang === 'fil' && <span className="muted">{t.language.draftNote}</span>}
+      {lang === 'fil' && <span className="lang-note">{t.language.draftNote}</span>}
     </div>
   );
 }

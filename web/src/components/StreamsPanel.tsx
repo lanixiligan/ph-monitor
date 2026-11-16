@@ -7,6 +7,7 @@ import { fetchStreams } from '../api.ts';
 import { categoryLabel, formatTime } from '../format.ts';
 import { fill, useStrings } from '../i18n/index.ts';
 import type { Strings } from '../i18n/index.ts';
+import { WarnIcon } from './WarnIcon.tsx';
 
 const REFRESH_MS = 5 * 60 * 1000;
 
@@ -45,46 +46,70 @@ export function StreamsPanel() {
     };
   }, []);
 
+  // The slot that is playing now, if any. `?? null` turns "not found" into null.
+  const playing = slots?.find((slot) => slot.id === playingId) ?? null;
+
   return (
-    <section className="panel" aria-labelledby="streams-title">
-      <h2 id="streams-title">{t.streams.title}</h2>
-      <p className="muted">{t.streams.note}</p>
-      {failed && <p className="muted">{t.streams.failed}</p>}
-      {slots !== null && slots.length === 0 && !failed && (
-        <p className="muted">{t.streams.none}</p>
+    <section className="panel panel-streams" aria-labelledby="streams-title">
+      <div className="panel-head">
+        <h2 id="streams-title">{t.streams.title}</h2>
+      </div>
+
+      {/* The player sits above the list and stays put while the list scrolls. */}
+      {playing && (
+        <div className="player">
+          {/* Only the privacy-friendly YouTube host is ever used. */}
+          <iframe
+            className="stream-frame"
+            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(playing.videoId)}`}
+            title={fill(t.streams.videoTitle, { outlet: playing.outlet })}
+            allow="encrypted-media; picture-in-picture"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        </div>
       )}
-      {slots !== null && slots.length > 0 && (
-        <ul className="plain-list">
-          {slots.map((slot) => (
-            <li key={slot.id}>
-              <strong>{slot.outlet}</strong> · {categoryLabel(slot.category)} ·{' '}
-              <strong>{liveLabel(slot.isLive, t)}</strong>
-              {slot.title && <div>{slot.title}</div>}
-              {slot.publishedAt && <div className="muted">{fill(t.streams.uploaded, { time: formatTime(slot.publishedAt) })}</div>}
-              {playingId === slot.id ? (
-                <>
-                  {/* Only the privacy-friendly YouTube host is ever used. */}
-                  <iframe
-                    className="stream-frame"
-                    src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(slot.videoId)}`}
-                    title={fill(t.streams.videoTitle, { outlet: slot.outlet })}
-                    allow="encrypted-media; picture-in-picture"
-                    allowFullScreen
-                    referrerPolicy="strict-origin-when-cross-origin"
-                  />
-                  <button className="filter" onClick={() => setPlayingId(null)}>
+
+      <div className="panel-body">
+        <p className="muted">{t.streams.note}</p>
+        {failed && (
+          <p className="notice">
+            <WarnIcon /> {t.streams.failed}
+          </p>
+        )}
+        {slots !== null && slots.length === 0 && !failed && (
+          <p className="muted">{t.streams.none}</p>
+        )}
+        {slots !== null && slots.length > 0 && (
+          <ul className="plain-list">
+            {slots.map((slot) => (
+              <li key={slot.id} className="stream">
+                <div className="stream-text">
+                  <strong>{slot.outlet}</strong>{' '}
+                  <span className={slot.isLive === true ? 'tag tag-live' : 'tag'}>
+                    {liveLabel(slot.isLive, t)}
+                  </span>
+                  {slot.title && <div className="stream-title">{slot.title}</div>}
+                  <div className="muted">
+                    {categoryLabel(slot.category)}
+                    {slot.publishedAt &&
+                      `, ${fill(t.streams.uploaded, { time: formatTime(slot.publishedAt) })}`}
+                  </div>
+                </div>
+                {playingId === slot.id ? (
+                  <button className="filter" aria-pressed="true" onClick={() => setPlayingId(null)}>
                     {t.streams.stop}
                   </button>
-                </>
-              ) : (
-                <button className="filter" onClick={() => setPlayingId(slot.id)}>
-                  {t.streams.play}
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+                ) : (
+                  <button className="filter" onClick={() => setPlayingId(slot.id)}>
+                    {t.streams.play}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }

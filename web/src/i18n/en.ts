@@ -41,6 +41,13 @@ export const en = {
     draftNote: 'The Filipino translation is a draft still under review.',
   },
 
+  // The light/dark colour switch in the top bar.
+  theme: {
+    groupLabel: 'Colours',
+    light: 'Light',
+    dark: 'Dark',
+  },
+
   // The "not an official warning" notice (page footer and status card).
   disclaimer: {
     lead: 'Unofficial estimate, not a warning service. For official warnings, follow',
@@ -54,6 +61,16 @@ export const en = {
     event: 'Disaster event (thicker ring = higher alert)',
     stormPast: 'Storm track so far',
     stormForecast: 'Storm forecast',
+    news: 'Place named in the news (bigger = more headlines)',
+    showLabel: 'Show on the map',
+  },
+
+  // The side panel before a spot is picked.
+  spot: {
+    title: 'Pick a spot',
+    hint: 'Click anywhere on land. The score for that exact spot, the reasons for it and the next 7 days open here.',
+    highest: 'Highest province scores now',
+    noScores: 'No province has a score yet.',
   },
 
   // Score bands.
@@ -147,6 +164,8 @@ export const en = {
     popupTime: 'Time: {time}',
     popupWind: 'Wind: {value}',
     popupPressure: 'Pressure: {value}',
+    popupNewsTitle: '{province}: {count} in the news',
+    popupNewsMore: 'and {count} more in the headlines panel',
   },
 
   // The status card.
@@ -216,6 +235,7 @@ export const en = {
     failed: 'Could not load headlines right now.',
     none: 'No headlines to show.',
     alsoAt: 'Also at:',
+    showOnMap: 'Show {places} on the map',
   },
 
   // The live streams panel.

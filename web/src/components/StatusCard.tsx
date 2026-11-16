@@ -8,9 +8,12 @@ import type { Spot } from '../api.ts';
 import { formatTime, formatValue } from '../format.ts';
 import { reasonText } from '../reasonText.ts';
 import { fill, useStrings } from '../i18n/index.ts';
-import { bandFor, bandLabel } from '../scoreScale.ts';
+import { bandColors, bandFor, bandLabel } from '../scoreScale.ts';
+import { useTheme } from '../theme/index.ts';
+import { WarnIcon } from './WarnIcon.tsx';
 import { ConditionsSections } from './Conditions.tsx';
 import { Disclaimer } from './Disclaimer.tsx';
+import { Ladder } from './Ladder.tsx';
 
 // How often an open card asks the server again.
 const REFRESH_MS = 5 * 60 * 1000;
@@ -23,6 +26,7 @@ type Props = {
 export function StatusCard({ spot, onClose }: Props) {
   // `t` holds all the words in the current language.
   const { t } = useStrings();
+  const { theme } = useTheme();
   const [detail, setDetail] = useState<PointDetail | null>(null);
   // true when the last load failed (the message itself is looked up when drawn).
   const [failed, setFailed] = useState(false);
@@ -57,15 +61,19 @@ export function StatusCard({ spot, onClose }: Props) {
 
   if (failed) {
     return (
-      <aside className="card">
+      <aside className="panel card">
         <CardHead title={t.card.thisSpot} onClose={onClose} />
-        <p>{t.card.loadError}</p>
+        <div className="panel-body">
+          <p className="notice">
+            <WarnIcon /> {t.card.loadError}
+          </p>
+        </div>
       </aside>
     );
   }
   if (!detail) {
     return (
-      <aside className="card">
+      <aside className="panel card">
         <CardHead title={t.card.loading} onClose={onClose} />
       </aside>
     );
@@ -73,6 +81,7 @@ export function StatusCard({ spot, onClose }: Props) {
 
   const { place, province, provinceScore, score, events, freshness } = detail;
   const band = bandFor(score.score);
+  const colors = bandColors(band, theme);
 
   // Split the events by kind. The `(e): e is ...` part tells TypeScript what
   // the filter keeps, so `quakes` is known to hold only earthquakes.
@@ -80,9 +89,10 @@ export function StatusCard({ spot, onClose }: Props) {
   const weather = events.find((e): e is WeatherEvent => e.kind === 'weather');
 
   return (
-    <aside className="card">
+    <aside className="panel card">
       {/* The city or municipality if we know it, otherwise the province. */}
       <CardHead title={place?.name ?? province.name} onClose={onClose} />
+      <div className="panel-body">
       <p className="muted card-where">
         {place ? `${province.name} · ` : ''}
         {detail.lat.toFixed(4)}, {detail.lon.toFixed(4)}
@@ -91,15 +101,19 @@ export function StatusCard({ spot, onClose }: Props) {
       {/* Shown at the top so it can't be missed. */}
       {freshness.isStale && (
         <p>
-          <span className="stale">{t.card.stale}</span> {t.card.staleText}
+          <span className="stale">
+            <WarnIcon /> {t.card.stale}
+          </span> {t.card.staleText}
         </p>
       )}
 
       <div className="score-row">
-        <span className="score-number">{score.score}</span>
-        <span className="swatch" style={{ background: band.color }} />
+        {/* The number sits on its band's colour; `ink` is the text colour that reads on it. */}
+        <span className="score-number" style={{ background: colors.color, color: colors.ink }}>
+          {score.score}
+        </span>
         <span>
-          <strong>{fill(t.card.bandAtSpot, { band: bandLabel(band) })}</strong>
+          <strong>{fill(t.card.bandAtSpot, { band: bandLabel(band) })}</strong> <Ladder score={score.score} />
           <br />
           <span className="muted">
             {fill(t.card.parts, {
@@ -219,6 +233,7 @@ export function StatusCard({ spot, onClose }: Props) {
       <p className="muted">
         <Disclaimer />
       </p>
+      </div>
     </aside>
   );
 }
@@ -227,9 +242,9 @@ export function StatusCard({ spot, onClose }: Props) {
 function CardHead({ title, onClose }: { title: string; onClose: () => void }) {
   const { t } = useStrings();
   return (
-    <div className="card-head">
+    <div className="panel-head">
       <h2>{title}</h2>
-      <button className="card-close" onClick={onClose} aria-label={t.card.close}>
+      <button className="filter" onClick={onClose} aria-label={t.card.close}>
         {t.card.close}
       </button>
     </div>

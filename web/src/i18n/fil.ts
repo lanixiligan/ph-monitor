@@ -41,6 +41,12 @@ export const fil: Strings = {
     draftNote: 'Draft pa lamang ang salin sa Filipino at sinusuri pa.', // REVIEW: unsure about "salin"
   },
 
+  theme: {
+    groupLabel: 'Kulay', // REVIEW
+    light: 'Maliwanag', // REVIEW
+    dark: 'Madilim', // REVIEW
+  },
+
   // The "not an official warning" notice (page footer and status card).
   disclaimer: {
     lead: 'Hindi opisyal ang tantiyang ito at hindi ito serbisyo ng babala. Para sa opisyal na babala, sundin ang', // REVIEW: unsure about "tantiyang"
@@ -54,6 +60,16 @@ export const fil: Strings = {
     event: 'Sakuna (mas makapal na ring = mas mataas na alerto)', // REVIEW
     stormPast: 'Landas ng bagyo hanggang ngayon', // REVIEW
     stormForecast: 'Forecast ng bagyo', // REVIEW
+    news: 'Lugar na nasa balita (mas malaki = mas maraming balita)', // REVIEW
+    showLabel: 'Ipakita sa mapa', // REVIEW
+  },
+
+  // The side panel before a spot is picked.
+  spot: {
+    title: 'Pumili ng lugar', // REVIEW
+    hint: 'I-click ang kahit saang lupa. Dito lalabas ang score para sa mismong lugar na iyon, ang mga dahilan nito at ang susunod na 7 araw.', // REVIEW
+    highest: 'Pinakamataas na score ng mga lalawigan ngayon', // REVIEW
+    noScores: 'Wala pang lalawigang may score.', // REVIEW
   },
 
   // Score bands.
@@ -147,6 +163,8 @@ export const fil: Strings = {
     popupTime: 'Oras: {time}', // REVIEW
     popupWind: 'Hangin: {value}', // REVIEW
     popupPressure: 'Presyon: {value}', // REVIEW
+    popupNewsTitle: '{province}: {count} sa balita', // REVIEW
+    popupNewsMore: 'at {count} pa sa panel ng mga balita', // REVIEW
   },
 
   // The status card.
@@ -215,6 +233,7 @@ export const fil: Strings = {
     failed: 'Hindi ma-load ang mga balita ngayon.', // REVIEW
     none: 'Walang balitang maipapakita.', // REVIEW
     alsoAt: 'Makikita rin sa:', // REVIEW
+    showOnMap: 'Ipakita ang {places} sa mapa', // REVIEW
   },
 
   // The live streams panel.

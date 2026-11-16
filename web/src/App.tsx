@@ -1,6 +1,6 @@
-// The whole page: a header, the map with its legend, the status card for
-// the clicked spot, the headlines and live streams below the map, and the
-// credits line.
+// The whole page: a top bar, the map with its legend on the left, and on the
+// right the panel for the clicked spot, the live streams and the headlines.
+// The credits line runs along the bottom.
 
 import { useEffect, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
@@ -10,10 +10,14 @@ import { Disclaimer } from './components/Disclaimer.tsx';
 import { Legend } from './components/Legend.tsx';
 import { NewsPanel } from './components/NewsPanel.tsx';
 import { ProvinceMap } from './components/ProvinceMap.tsx';
+import { Ladder } from './components/Ladder.tsx';
+import { SpotHint } from './components/SpotHint.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
 import { StreamsPanel } from './components/StreamsPanel.tsx';
+import { WarnIcon } from './components/WarnIcon.tsx';
 import { LanguageSwitch, useStrings } from './i18n/index.ts';
-import { SHOW_BASEMAP } from './mapSettings.ts';
+import { ALL_LAYERS_ON, SHOW_BASEMAP } from './mapSettings.ts';
+import { ThemeSwitch } from './theme/index.ts';
 
 // How often the map asks the server for new scores.
 const REFRESH_MS = 5 * 60 * 1000;
@@ -40,6 +44,19 @@ export function App() {
   // true when the last load failed; the message is looked up when drawn.
   const [failed, setFailed] = useState(false);
   const [spot, setSpot] = useState<Spot | null>(spotFromAddress);
+  // Which map layers the legend's tick boxes have switched on.
+  const [layers, setLayers] = useState(ALL_LAYERS_ON);
+  // Provinces picked from a headline, outlined on the map. A new object on
+  // every click, so picking the same place twice still moves the map.
+  const [focus, setFocus] = useState<{ psgcs: number[] } | null>(null);
+
+  function showOnMap(psgcs: number[]) {
+    setFocus({ psgcs });
+    // Make sure the dots are on, so the reader sees them.
+    setLayers((current) => ({ ...current, news: true }));
+    // On a small screen the map may be scrolled away; bring it back into view.
+    document.querySelector('.map-area')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 
   // Keep the address in step with the chosen spot, so it can be copied and
   // shared: /?lat=10.3157&lon=123.8854. `replaceState` changes the address
@@ -74,28 +91,58 @@ export function App() {
 
   return (
     <div className="app">
-      <header>
-        <h1>{APP_NAME}</h1>
-        <LanguageSwitch />
-        <p>{t.app.intro}</p>
-        {/* Links that jump down the page; `#news-title` is the id of a heading. */}
-        <nav>
-          <a href="#news-title">{t.app.jumpHeadlines}</a> ·{' '}
+      <header className="topbar">
+        <h1>
+          {/* A full ladder beside the name; score 100 fills every step. It keeps
+              the light colours in both themes, since the bar is dark in both. */}
+          <Ladder score={100} theme="light" />
+          {APP_NAME}
+        </h1>
+        <p className="topbar-intro">{t.app.intro}</p>
+        {/* Links that jump down the page on a small screen; `#news-title` is the id of a heading. */}
+        <nav className="topbar-jump">
           <a href="#streams-title">{t.app.jumpStreams}</a>
+          <a href="#news-title">{t.app.jumpHeadlines}</a>
         </nav>
+        <LanguageSwitch />
+        <ThemeSwitch />
       </header>
 
-      {failed && <div className="error">{t.app.loadError}</div>}
+      {failed && (
+        <div className="error notice">
+          <WarnIcon /> {t.app.loadError}
+        </div>
+      )}
 
-      <main>
-        <ProvinceMap data={provinces} spot={spot} onSelect={setSpot} />
-        <Legend />
-        {spot !== null && <StatusCard spot={spot} onClose={() => setSpot(null)} />}
-      </main>
+      <div className="workspace">
+        <main className="map-area">
+          <ProvinceMap
+            data={provinces}
+            spot={spot}
+            // Picking a spot clears the headline outline.
+            onSelect={(picked) => {
+              setSpot(picked);
+              setFocus(null);
+            }}
+            layers={layers}
+            focus={focus}
+          />
+          <Legend layers={layers} onChange={setLayers} />
+        </main>
 
-      <div className="below-map">
-        <NewsPanel />
-        <StreamsPanel />
+        <div className="side">
+          <div className="side-spot">
+            {spot !== null ? (
+              <StatusCard spot={spot} onClose={() => setSpot(null)} />
+            ) : (
+              <SpotHint provinces={provinces} />
+            )}
+          </div>
+          <div className="side-feeds">
+            <StreamsPanel />
+            <NewsPanel provinces={provinces} onShowOnMap={showOnMap} />
+          </div>
+        </div>
       </div>
 
       <footer>
