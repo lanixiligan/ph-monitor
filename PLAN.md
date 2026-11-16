@@ -1,8 +1,206 @@
-# PH Monitor — Phase 1 plan
+# PH Monitor — plan
 
-> **Historical Phase 1 plan, kept for reference.** It was written before the code and has not
-> been kept up to date. Where it differs, [README.md](README.md),
+> **Phase 2 below is the current plan (built; Filipino text awaits review; see "Progress").**
+> Everything from "Amendments" down is the historical Phase 1 plan, kept for reference; it has
+> not been kept up to date. Where it differs, [README.md](README.md),
 > [METHODOLOGY.md](METHODOLOGY.md) and the code are correct.
+
+## Phase 2 — disaster conditions, forecasts, news, Filipino (planned 2026-11-15)
+
+Goal: keep the province map and score, and add what is happening now, what is coming, and what
+the news says, focused only on disasters. This replaces Phase 1's "out of scope" line for news
+and typhoon tracks.
+
+### Progress (updated 2026-11-16, branch `phase-2`)
+
+| Step | Status |
+|---|---|
+| 1. Disaster events | Done (fetch, table, `/api/events`, map markers with popups, list on the card) |
+| 2. Events in the score | Done |
+| 3. Typhoon tracks | Done (fetch, tables, `/api/storms`, sample storm, map layer) |
+| 4. Outlook | Done (fetch, table, 7-day row on the card) |
+| 5. News panel | Done (ingest, `/api/news`, panel with category filter) |
+| 6. Live streams panel | Done (`/api/streams`, panel; a video loads from youtube-nocookie.com only after Play) |
+| 7. Link checker | Done |
+| 8. Official PH bulletins | Skipped. Plain links to the PAGASA and PHIVOLCS pages are on the card instead |
+| 9. Filipino option | Built as a draft. Every string in `web/src/i18n/fil.ts` is marked `// REVIEW` and waits for the owner's review |
+| 10. AI summaries | Skipped |
+
+Next: the owner reviews the Filipino text and the page; then the open questions below.
+
+Not verified yet, because nothing real was available to test with:
+- JMA storm parsing has never run on a real storm (none was active). The format was read from
+  JMA's own map page and the sample storm is built to match.
+- The JTWC backup was tested on a real warning from the Southern Hemisphere only.
+- Typhoon and flood headlines were tested with saved samples only.
+- No real video with embedding turned off was found, so that status is untested on real data.
+
+### Sources (checked 2026-11-15 and again 2026-11-16, all keyless unless noted)
+
+| Source | Gives | Status |
+|---|---|---|
+| GDACS `gdacsapi/api/events/geteventlist/SEARCH?country=Philippines` | Typhoon, quake, flood, volcano alerts (Green/Orange/Red) | in use; the API was down for hours on 2026-11-16, so `gdacs.org/xml/rss.xml` is the automatic backup |
+| JMA `jma.go.jp/bosai/typhoon/data/targetTc.json` | Active typhoons + forecast track | in use (empty when no storm; untested on a real storm) |
+| JTWC `metoc.navy.mil/jtwc/rss/jtwc.rss` | Typhoon warnings | in use as the backup for JMA |
+| NASA EONET `api/v3/events` with PH bounding box | Natural events | in use; shown but never scored (no alert level) |
+| Open-Meteo forecast (already used) | 7-day rain and wind gusts | in use, CC BY 4.0 |
+| Open-Meteo flood `flood-api.open-meteo.com/v1/flood` | River discharge outlook (GloFAS) | in use |
+| Google News RSS search (PH, disaster words) | Latest news | in use; social posts, automatic quake bulletins and two repost sites are filtered out |
+| Rappler, Inquirer, PhilStar, GMA, PTV, Bombo Radyo, Manila Times, Interaksyon, SunStar, MindaNews RSS | Local news | in use (13 feeds with Google News) |
+| ABS-CBN, PNA, PIA, DZRH, News5, Manila Bulletin RSS | Local news | dropped: no working news feed (404, 403, or entertainment only) |
+| ReliefWeb API v2 | Humanitarian reports | not used (needs a free approved `appname`) |
+| PAGASA, PHIVOLCS | Official PH bulletins | web pages only, no API; linked from the card, not scraped |
+| YouTube oEmbed `youtube.com/oembed?url=...` | Can a video be embedded | used only without a key; accepts video links, not channel links |
+| YouTube channel feed `youtube.com/feeds/videos.xml?channel_id=...` | A channel's newest videos | used only without a key; fails at random (404/500 for real channels) |
+| YouTube Data API | A channel's live stream or latest video | in use with the owner's key; 1-unit calls only, about 1,200 of 10,000 units a day |
+| NDRRMC | Situation reports | blocks automated requests; skip |
+
+Each new source must get its credit line in the UI and README, like the existing ones.
+
+### Steps (each ends with something to run and see)
+
+1. **Disaster events** (server done; map and card to do): GDACS + EONET fetchers (zod schemas, tests first) → new `events` table
+   (kind, alert level, time, geometry, source, link) → markers on the map, listed on the status
+   card. Check: a recent GDACS PH event (e.g. a Kanlaon eruption) shows on the map.
+2. **Events in the score** (done): GDACS alert level near a province adds to its score, in
+   `scoring.ts`, with METHODOLOGY.md updated. Check: `npm test`, and a province beside an Orange
+   event scores higher. As built: Green/Orange/Red give 10/50/80 points within 100/200/300 km;
+   only typhoons, floods, volcanoes and wildfires count (quakes are already scored from USGS);
+   the score is the strongest signal plus 25% of each of the other two.
+3. **Typhoon tracks** (server done; map layer to do): JMA (main) + JTWC (backup) → `storms` and `storm_track_points` tables →
+   past and forecast track drawn on the map; provinces near the forecast track get a "coming"
+   flag. Check: with no storm the layer is empty; a saved sample storm draws correctly
+   (`npm run sample-storm`, and `npm run sample-storm -- remove` to delete it).
+4. **Outlook ("next 7 days")** (server done; card row to do): Open-Meteo daily rain + gusts, and flood discharge, per province
+   → shown on the status card as a short day-by-day row. The "now" score stays separate from the
+   outlook. Check: card numbers match open-meteo.com for the same spot. As built: fetched every
+   6 hours, about 704 Open-Meteo calls a day (about 4,900 with the weather job, of 10,000).
+5. **News panel** (server done; panel to do): fetch the RSS feeds every 15 min → keep only disaster headlines (keyword list
+   in English and Filipino, e.g. bagyo, baha, lindol, pagputok, landslide, storm surge) → merge
+   the same story from several outlets → tag a province when the headline names one → `news`
+   table. Each outlet has a category (see "Outlet categories" below), and the panel can filter by
+   it. UI: "Latest" list, and "News near here" on the status card. Each item links to the
+   original article (headline + outlet + category + time only, no article text). Check: the list
+   shows today's PH disaster headlines with no duplicates, and the category filter works.
+   Known limits: some duplicates are missed, and repeated stories about one long-running event
+   merge into one row within 48 hours.
+6. **Live streams panel** (data ready; panel to do): a short list of PH YouTube channels,
+   grouped by the same outlet categories. Each slot shows the channel's live stream when it is
+   live ("LIVE"), otherwise its latest video ("Latest"), with the title and upload time.
+   12 slots passed the check: PAGASA, Civil Defense PH, PTV, GMA News, ABS-CBN News (backup:
+   ANC), UNTV, One News PH, DZRH, DZBB, Rappler, INQUIRER.net, Bombo Radyo. Dropped: PHIVOLCS and
+   DZMM (the channels found were not the real ones), News5 (not found), SunStar (dormant). Shown in YouTube's own player through `youtube-nocookie.com`, which only
+   loads YouTube when the viewer presses play. YouTube embeds only; no re-streaming of raw TV
+   feeds (`.m3u8`). Each slot can list backup links, tried in order. This is the one exception to
+   "the web app talks only to our own `/api`" besides the basemap; CLAUDE.md is updated to say
+   so when this is built. Check: a live slot plays, and a slot whose links are all dead is hidden.
+7. **Link checker** (done; for news feeds and live streams): a `sources` table holds every feed
+   and stream link with its outlet, category, status (`ok`, `dead`, `not-live`,
+   `not-embeddable`), last checked and last OK time.
+   - News feeds, every hour: reachable, valid RSS, newest item age. A feed with nothing new for
+     7 days is flagged.
+   - Streams, every 30 min, with a YouTube key: two 1-unit Data API calls per channel (newest
+     50 uploads, then those videos' details) find the live stream or the latest video. Never
+     `search.list` (100 units). The key stays on the server.
+   - Streams without a key: the channel feed plus oEmbed. That feed fails at random, so a failed
+     check keeps the last status, and a link is marked dead only after a day of failures. Live
+     status is then unknown and the slot shows "may be offline".
+   - Known limit: on a channel that uploads very often, a live stream that started hours before
+     the server did can be missed (it is no longer among the newest 50 uploads). A known video
+     ID can be pinned in `sources.ts` for such a case.
+   - `npm run check:sources` runs it by hand and prints a table of what is broken and why.
+   - The UI hides dead links and never shows a stream as live unless the check said so.
+   - Link lists live in one file (`server/src/sources.ts`) so a dead link is fixed in one place.
+   Check: put a fake link in the list, run the checker, see it marked `dead` and hidden.
+8. **Official PH bulletins (skipped for now)**: PAGASA wind signal numbers and rainfall
+   warnings, PHIVOLCS volcano alert levels. These are the official PH warnings the global feeds
+   do not carry, but there is no API, so we would have to scrape web pages. Do this only after
+   checking their terms of use, and keep it isolated so a page change cannot break the rest.
+   Instead, the status card gets plain links to the PAGASA and PHIVOLCS bulletin pages.
+9. **Filipino option** (to do): an English / Filipino switch in the page header, remembered in the
+   browser. Details below. Check: switching changes every label, the legend, the disclaimer, the
+   card and the outlet category names, with no English left over.
+10. **AI summaries (skipped for now)**: a short "what is happening" brief from the news and
+    events, only if a local model (Ollama) or an API key is set up. Off by default.
+
+### Outlet categories
+
+Every news feed and live stream belongs to one category. They are labels for filtering and
+grouping, not a ranking of trust.
+
+| Category | Filipino label | Examples in use (full list: `server/src/sources.ts`) |
+|---|---|---|
+| `official` — government agencies | Opisyal | PAGASA, PTV, Civil Defense PH |
+| `tv` — national TV networks | Telebisyon | GMA, ABS-CBN News, UNTV, One News PH |
+| `radio` — AM/FM news radio | Radyo | DZRH, DZBB, Bombo Radyo (news feed) |
+| `online` — newspapers and news sites | Online at diyaryo | Rappler, Inquirer, PhilStar, Manila Times |
+| `regional` — outlets covering one region | Panrehiyon | SunStar, MindaNews, Bombo Radyo (stream) |
+| `international` — foreign or wire services | Pandaigdig | Reuters, AP via Google News |
+
+Google News search results take the category of the outlet they come from; unknown outlets go
+under `online` until they are added to the list.
+
+### Filipino translation
+
+- **Interface text**: every label moves into two files, `web/src/i18n/en.ts` and
+  `web/src/i18n/fil.ts` (same keys). Written by hand, not machine-translated, and checked by the
+  owner, because warning wording must be exact. Use the terms PAGASA and PHIVOLCS use themselves
+  (e.g. "Signal No. 2", "Alert Level 3", "bagyo").
+- **Score reasons** on the card are built on the server; they become message keys plus numbers
+  so the web app can show them in either language.
+- **The "not an official warning service" notice** gets a Filipino version, shown everywhere the
+  English one is required.
+- **News headlines** are shown in their original language. Machine translation of headlines is a
+  later option (self-hosted LibreTranslate or the AI step), always labelled "machine-translated"
+  with a link to the original.
+- Dates and numbers use the `fil-PH` locale when Filipino is on.
+
+### Owner's decisions (2026-11-16)
+
+- Scrape PAGASA and PHIVOLCS (step 8): no for now; plain links on the card instead.
+- AI summaries (step 10): no for now.
+- ReliefWeb `appname`: not requested; ReliefWeb is not used.
+- YouTube Data API key: yes, set in `.env` (server only).
+
+### Open questions for the owner
+
+- Confirm that the "Civil Defense PH" YouTube channel is the real one (it is small).
+- Pin video IDs for long-running live streams on busy channels, or accept the known limit?
+- The Filipino labels are drafts until the owner has reviewed them (step 9).
+- All kinds of news on the map: see "Phase 3 idea" below.
+
+## Phase 3 idea — all kinds of news on the map (proposed 2026-11-16, not designed yet)
+
+Idea: stop keeping only disaster headlines. Keep every headline, give it a topic, and mark the
+place it names on the map. Nothing is built or decided; this records what we know so far.
+
+How it works today:
+- The 13 feeds already carry all kinds of news. `server/src/news/keywords.ts` throws away
+  everything that is not about a disaster.
+- `server/src/news/tagProvinces.ts` already tags a headline with any province it names.
+- Headlines appear only in the panel and on the status card, never on the map.
+
+What it would take:
+- **Topic**: replace the disaster-only filter with a sorter that gives each headline one topic
+  (for example disaster, crime, politics, health, transport). Keyword rules can do it roughly.
+- **Map marker**: a marker at the centre of the province or city the headline names, with a
+  topic filter.
+
+Known limits:
+- The place is only as exact as the headline: a city or province, never a street. Stories that
+  name no place get no marker.
+- Wrong tags will get worse: Rizal, Aurora, Quezon and Isabela are also people's names, and
+  political news is full of them.
+- Sorting topics by keywords is rough. Doing it well needs an AI model (step 10, skipped).
+- It changes the project's focus. Phase 2 is "focused only on disasters" and the score only
+  measures hazards; general news would sit beside the score without changing it.
+
+To settle before designing:
+- What should a reader learn from the map that the disaster view does not give today?
+- Which topics, and is "other" shown or dropped?
+- Keyword rules or an AI model for topics?
+- How to stop person names being read as provinces.
+- How many markers the map can show before it becomes unreadable (how many days, grouping).
 
 ## Amendments (2026-11-15, after step 1)
 
