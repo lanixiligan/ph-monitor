@@ -5,22 +5,13 @@ import { useEffect, useState } from 'react';
 import type { EarthquakeEvent, PointDetail, WeatherEvent } from '@ph-monitor/shared';
 import { fetchPointDetail } from '../api.ts';
 import type { Spot } from '../api.ts';
+import { formatTime, formatValue } from '../format.ts';
 import { bandFor } from '../scoreScale.ts';
+import { ConditionsSections } from './Conditions.tsx';
 import { Disclaimer } from './Disclaimer.tsx';
 
 // How often an open card asks the server again.
 const REFRESH_MS = 5 * 60 * 1000;
-
-/** "2026-11-15T03:00:00Z" → "Nov 15, 2026, 11:00 AM" in the reader's own time zone. */
-function formatTime(iso: string | null): string {
-  if (iso === null) return 'never';
-  return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-}
-
-/** A number with its unit, or a dash when the value is missing. */
-function formatValue(value: number | null, unit: string): string {
-  return value === null ? '–' : `${value} ${unit}`;
-}
 
 type Props = {
   spot: Spot;
@@ -108,7 +99,7 @@ export function StatusCard({ spot, onClose }: Props) {
           <strong>{band.label}</strong> at this spot
           <br />
           <span className="muted">
-            Earthquakes {score.quakeScore} · Weather {score.weatherScore}
+            Earthquakes {score.quakeScore} · Weather {score.weatherScore} · Events {score.eventScore}
           </span>
         </span>
       </div>
@@ -188,6 +179,8 @@ export function StatusCard({ spot, onClose }: Props) {
       ) : (
         <p className="muted">No weather reading for this spot right now.</p>
       )}
+
+      <ConditionsSections conditions={detail.conditions} />
 
       <h3>Last updated</h3>
       <table>
