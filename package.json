@@ -27,6 +27,7 @@
     "ingest:storms": "npm run ingest:storms --workspace server",
     "sample-storm": "npm run sample-storm --workspace server",
     "ingest:forecast": "npm run ingest:forecast --workspace server",
+    "ingest:news": "npm run ingest:news --workspace server",
     "test": "npm test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

@@ -63,6 +63,7 @@ The build plan is in [PLAN.md](PLAN.md).
 | Tropical storm warnings (backup) | [Joint Typhoon Warning Center (JTWC)](https://www.metoc.navy.mil/jtwc/jtwc.html), US Navy | Public domain |
 | 7-day outlook: rain and wind gusts (modelled) | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0; free tier is non-commercial only |
 | 7-day outlook: river flow (modelled) | [Open-Meteo Flood API](https://open-meteo.com/en/docs/flood-api), from GloFAS (Copernicus Emergency Management Service) | CC BY 4.0 |
+| News headlines (headline, outlet, time and link only) | RSS feeds of the outlets listed in `server/src/sources.ts`, and [Google News](https://news.google.com/) search | Headlines belong to their outlets; each links to the original article |
 | Basemap: roads and place names (switch in `web/src/mapSettings.ts`) | [OpenFreeMap](https://openfreemap.org/), © OpenMapTiles, data © OpenStreetMap contributors | ODbL (OpenStreetMap data) |
 
 ## Licence

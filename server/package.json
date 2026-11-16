@@ -17,6 +17,7 @@
     "ingest:storms": "tsx scripts/run-job.ts storms",
     "sample-storm": "tsx scripts/load-sample-storm.ts",
     "ingest:forecast": "tsx scripts/run-job.ts forecast",
+    "ingest:news": "tsx scripts/run-job.ts news",
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
