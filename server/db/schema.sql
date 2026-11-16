@@ -92,3 +92,92 @@ CREATE TABLE IF NOT EXISTS places (
   geom          geometry(MultiPolygon, 4326) NOT NULL
 );
 CREATE INDEX IF NOT EXISTS places_geom_idx ON places USING GIST (geom);
+
+-- ---------- Phase 2 ----------
+
+-- Disaster events from GDACS and NASA EONET (typhoons, floods, volcanoes...).
+CREATE TABLE IF NOT EXISTS events (
+  id          TEXT PRIMARY KEY,                -- source + its id, e.g. 'gdacs:TC:1001234'
+  source      TEXT NOT NULL,                   -- 'gdacs' or 'eonet'
+  kind        TEXT NOT NULL,                   -- 'typhoon', 'earthquake', 'flood', 'volcano', 'wildfire', 'drought', 'other'
+  alert_level TEXT,                            -- 'green', 'orange', 'red'; NULL when the source gives none
+  title       TEXT NOT NULL,
+  started_at  TIMESTAMPTZ NOT NULL,
+  ended_at    TIMESTAMPTZ,                     -- NULL while the event is still going
+  url         TEXT,                            -- the source's page about the event
+  geom        geometry(Geometry, 4326) NOT NULL,  -- a point, or an area
+  raw         JSONB NOT NULL,                  -- original record
+  fetched_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS events_geom_idx ON events USING GIST (geom);
+CREATE INDEX IF NOT EXISTS events_time_idx ON events (started_at);
+
+-- Tropical storms from JMA (main) and JTWC (backup).
+CREATE TABLE IF NOT EXISTS storms (
+  id          TEXT PRIMARY KEY,                -- source + its id, e.g. 'jma:TC2625'
+  source      TEXT NOT NULL,                   -- 'jma', 'jtwc' or 'sample'
+  name        TEXT NOT NULL,
+  category    TEXT,                            -- the source's own class, e.g. 'TY'
+  is_active   BOOLEAN NOT NULL,                -- false once the source stops listing it
+  url         TEXT,
+  raw         JSONB NOT NULL,
+  updated_at  TIMESTAMPTZ NOT NULL,            -- time of the source's latest advisory
+  fetched_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Where a storm has been and where it is forecast to go.
+CREATE TABLE IF NOT EXISTS storm_track_points (
+  storm_id     TEXT REFERENCES storms ON DELETE CASCADE,
+  valid_at     TIMESTAMPTZ NOT NULL,           -- time the position is (or will be) valid
+  is_forecast  BOOLEAN NOT NULL,               -- false = where it was, true = where it may go
+  geom         geometry(Point, 4326) NOT NULL,
+  pressure_hpa REAL,                           -- central pressure
+  wind_kt      REAL,                           -- strongest steady wind, in knots
+  radius_km    REAL,                           -- forecast only: how uncertain the position is
+  PRIMARY KEY (storm_id, valid_at, is_forecast)
+);
+
+-- The "next 7 days" outlook for each province's sample point (modelled).
+CREATE TABLE IF NOT EXISTS forecast_days (
+  province_psgc       BIGINT REFERENCES provinces,
+  day                 DATE NOT NULL,           -- the calendar day in Philippine time
+  rain_mm             REAL,                    -- total rain that day
+  gust_kmh            REAL,                    -- strongest wind gust that day
+  river_discharge_m3s REAL,                    -- river flow near the point (GloFAS)
+  fetched_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (province_psgc, day)
+);
+
+-- Disaster headlines. One row per story: the same story from other outlets
+-- is added to `other_outlets` instead of becoming a new row.
+-- Headline, outlet, category, time and link only; never the article text.
+CREATE TABLE IF NOT EXISTS news (
+  id             BIGSERIAL PRIMARY KEY,        -- BIGSERIAL = a number the database counts up by itself
+  story_key      TEXT NOT NULL UNIQUE,         -- the headline boiled down, used to spot the same story
+  title          TEXT NOT NULL,
+  url            TEXT NOT NULL,
+  outlet         TEXT NOT NULL,
+  category       TEXT NOT NULL,                -- outlet category, see server/src/sources.ts
+  published_at   TIMESTAMPTZ NOT NULL,
+  province_psgcs BIGINT[] NOT NULL DEFAULT '{}',   -- provinces named in the headline
+  other_outlets  JSONB NOT NULL DEFAULT '[]',  -- list of { outlet, category, url }
+  fetched_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS news_time_idx ON news (published_at);
+
+-- The health of every news feed and live stream link, filled by the link
+-- checker (`npm run check:sources`). The links themselves live in
+-- server/src/sources.ts; this table only records what the checker found.
+CREATE TABLE IF NOT EXISTS sources (
+  id              TEXT PRIMARY KEY,            -- same id as in sources.ts
+  kind            TEXT NOT NULL,               -- 'feed' or 'stream'
+  outlet          TEXT NOT NULL,
+  category        TEXT NOT NULL,
+  url             TEXT NOT NULL,
+  status          TEXT NOT NULL,               -- 'ok', 'dead', 'not-live' or 'not-embeddable'
+  is_stale        BOOLEAN NOT NULL DEFAULT false,  -- feed only: nothing new for 7 days
+  video_id        TEXT,                        -- stream only: the YouTube video to embed
+  note            TEXT,                        -- why it is not ok, in a few words
+  last_checked_at TIMESTAMPTZ NOT NULL,
+  last_ok_at      TIMESTAMPTZ
+);

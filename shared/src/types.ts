@@ -133,3 +133,115 @@ export type PointDetail = {
   events: HazardEvent[];
   freshness: Freshness;
 };
+
+// ---------- Phase 2 ----------
+
+/** The group a news outlet or live stream belongs to. A label, not a ranking of trust. */
+export type OutletCategory = 'official' | 'tv' | 'radio' | 'online' | 'regional' | 'international';
+
+export type DisasterKind =
+  | 'typhoon'
+  | 'earthquake'
+  | 'flood'
+  | 'volcano'
+  | 'wildfire'
+  | 'drought'
+  | 'other';
+
+export type AlertLevel = 'green' | 'orange' | 'red';
+
+/** One disaster event from GDACS or NASA EONET. */
+export type DisasterEvent = {
+  /** Source plus its own id, e.g. "gdacs:TC:1001234". */
+  id: string;
+  source: 'gdacs' | 'eonet';
+  kind: DisasterKind;
+  /** null when the source gives no alert level (EONET never does). */
+  alertLevel: AlertLevel | null;
+  title: string;
+  startedAt: string;
+  /** null while the event is still going. */
+  endedAt: string | null;
+  url: string | null;
+  /** A point that stands for the event on the map. */
+  lat: number;
+  lon: number;
+  /** Only on the status card: how far the event is from the spot or province. */
+  distanceKm?: number; // `?` means the field may be left out
+};
+
+/** One position of a storm, past or forecast. */
+export type StormTrackPoint = {
+  validAt: string;
+  /** false = where the storm was; true = where it is forecast to be. */
+  isForecast: boolean;
+  lat: number;
+  lon: number;
+  pressureHpa: number | null;
+  /** Strongest steady wind, in knots. */
+  windKt: number | null;
+  /** Forecast only: radius of the circle the centre will probably be inside. */
+  radiusKm: number | null;
+};
+
+/** A tropical storm and its track. */
+export type Storm = {
+  id: string;
+  source: 'jma' | 'jtwc' | 'sample';
+  name: string;
+  /** The source's own class, e.g. "TY" (typhoon). */
+  category: string | null;
+  isActive: boolean;
+  url: string | null;
+  updatedAt: string;
+  /** Oldest first. Empty when the source gave warnings but no positions. */
+  track: StormTrackPoint[];
+};
+
+/** One day of the "next 7 days" outlook for a province. Modelled data. */
+export type ForecastDay = {
+  /** Calendar day in Philippine time, e.g. "2026-11-17". */
+  day: string;
+  rainMm: number | null;
+  gustKmh: number | null;
+  riverDischargeM3s: number | null;
+};
+
+/** One outlet's copy of a story. */
+export type NewsOutletLink = {
+  outlet: string;
+  category: OutletCategory;
+  url: string;
+};
+
+/** One disaster headline. No article text is ever stored or shown. */
+export type NewsItem = {
+  id: number;
+  title: string;
+  url: string;
+  outlet: string;
+  category: OutletCategory;
+  publishedAt: string;
+  /** Provinces named in the headline. */
+  provincePsgcs: number[];
+  /** The same story at other outlets. */
+  otherOutlets: NewsOutletLink[];
+};
+
+/** What the link checker found for one feed or stream link. */
+export type SourceStatus = 'ok' | 'dead' | 'not-live' | 'not-embeddable';
+
+/** A live stream the page may show. Dead and not-embeddable ones are never sent. */
+export type StreamSlot = {
+  id: string;
+  outlet: string;
+  category: OutletCategory;
+  /** The YouTube video to embed. */
+  videoId: string;
+  /**
+   * true = the checker saw it live; false = not live;
+   * null = unknown (no YouTube key set), shown as "may be offline".
+   */
+  isLive: boolean | null;
+  lastCheckedAt: string;
+};

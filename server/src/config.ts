@@ -22,6 +22,9 @@ const schema = z.object({
   DATABASE_URL: z.string().startsWith('postgres://'),
   // .env values are always text; `coerce` turns "3001" into the number 3001.
   SERVER_PORT: z.coerce.number().int().positive(),
+  // Optional: lets the link checker tell which streams are live right now.
+  // `.optional()` means the line may be missing from .env.
+  YOUTUBE_API_KEY: z.string().min(1).optional(),
 });
 
 const env = schema.parse(process.env);
@@ -29,4 +32,6 @@ const env = schema.parse(process.env);
 export const config = {
   databaseUrl: env.DATABASE_URL,
   serverPort: env.SERVER_PORT,
+  /** null when no key is set; streams then show "may be offline". */
+  youtubeApiKey: env.YOUTUBE_API_KEY ?? null,
 };
