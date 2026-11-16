@@ -16,6 +16,7 @@
     "ingest:events": "tsx scripts/run-job.ts events",
     "ingest:storms": "tsx scripts/run-job.ts storms",
     "sample-storm": "tsx scripts/load-sample-storm.ts",
+    "ingest:forecast": "tsx scripts/run-job.ts forecast",
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

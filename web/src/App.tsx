@@ -76,6 +76,9 @@ export function App() {
         {' '}
         Storm tracks: <a href="https://www.jma.go.jp/bosai/map.html#contents=typhoon">JMA</a> and{' '}
         <a href="https://www.metoc.navy.mil/jtwc/jtwc.html">JTWC</a>.
+        {' '}
+        7-day outlook: <a href="https://open-meteo.com/">Open-Meteo</a>; river flow from{' '}
+        <a href="https://open-meteo.com/en/docs/flood-api">GloFAS via Open-Meteo</a>, CC BY 4.0.
         {/* The basemap credit is only needed when the basemap is shown. */}
         {SHOW_BASEMAP && (
           <>

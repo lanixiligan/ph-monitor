@@ -61,6 +61,8 @@ The build plan is in [PLAN.md](PLAN.md).
 | Natural events | [NASA EONET](https://eonet.gsfc.nasa.gov/) | Free to use; credit NASA |
 | Tropical storm tracks and forecasts | [Japan Meteorological Agency (JMA)](https://www.jma.go.jp/bosai/map.html#contents=typhoon) | JMA terms of use; credit required |
 | Tropical storm warnings (backup) | [Joint Typhoon Warning Center (JTWC)](https://www.metoc.navy.mil/jtwc/jtwc.html), US Navy | Public domain |
+| 7-day outlook: rain and wind gusts (modelled) | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0; free tier is non-commercial only |
+| 7-day outlook: river flow (modelled) | [Open-Meteo Flood API](https://open-meteo.com/en/docs/flood-api), from GloFAS (Copernicus Emergency Management Service) | CC BY 4.0 |
 | Basemap: roads and place names (switch in `web/src/mapSettings.ts`) | [OpenFreeMap](https://openfreemap.org/), © OpenMapTiles, data © OpenStreetMap contributors | ODbL (OpenStreetMap data) |
 
 ## Licence
