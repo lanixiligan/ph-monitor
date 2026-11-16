@@ -3,7 +3,7 @@
 //
 // Outlet categories are labels for filtering and grouping, not a ranking of trust.
 
-import type { OutletCategory } from '@ph-monitor/shared';
+import type { BulletinLink, OutletCategory } from '@ph-monitor/shared';
 
 /** Every category with its English and Filipino label. */
 // Filipino labels are drafts for the owner to review.
@@ -84,6 +84,7 @@ export const KNOWN_OUTLETS: { name: string; category: OutletCategory }[] = [
   { name: 'The Manila Times', category: 'online' },
   { name: 'BusinessWorld', category: 'online' },
   { name: 'SunStar', category: 'regional' },
+  { name: 'Cebu Daily News', category: 'regional' },
   { name: 'MindaNews', category: 'regional' },
   { name: 'Reuters', category: 'international' },
   { name: 'AP News', category: 'international' },
@@ -113,9 +114,12 @@ export type StreamSlotConfig = {
 };
 
 // YouTube only. Raw TV feeds (.m3u8) are never re-streamed.
+// Each channel's name and size were confirmed through the YouTube API on
+// 2026-11-16. Left out after that check: PHIVOLCS and DZMM (the channels
+// found under those names are not the real ones), News5 (not found) and
+// SunStar (no uploads since 2023).
 export const STREAM_SLOTS: StreamSlotConfig[] = [
   { id: 'stream-pagasa', outlet: 'DOST-PAGASA', category: 'official', links: [{ channelId: 'UCpyLikj1x70S8UPxVqsPr6g' }] },
-  { id: 'stream-phivolcs', outlet: 'PHIVOLCS', category: 'official', links: [{ channelId: 'UCNtpwEyrUvcs7HHppMbLP8A' }] },
   { id: 'stream-civil-defense', outlet: 'Civil Defense PH', category: 'official', links: [{ channelId: 'UCil7YQ9Hwc2mTTQcaRw1InA' }] },
   { id: 'stream-ptv', outlet: 'PTV', category: 'official', links: [{ channelId: 'UCJCUbMaY593_4SN1QPG7NFQ' }] },
   { id: 'stream-gma', outlet: 'GMA News', category: 'tv', links: [{ channelId: 'UCqYw-CTd1dU2yGI71sEyqNw' }] },
@@ -128,27 +132,15 @@ export const STREAM_SLOTS: StreamSlotConfig[] = [
   },
   { id: 'stream-untv', outlet: 'UNTV News and Rescue', category: 'tv', links: [{ channelId: 'UC3XaG-7UVi2vD8ZZEMNnnpw' }] },
   { id: 'stream-one-news', outlet: 'One News PH', category: 'tv', links: [{ channelId: 'UCzEAC4xGrhpShopTYgBhGJA' }] },
-  {
-    id: 'stream-dzrh',
-    outlet: 'DZRH',
-    category: 'radio',
-    links: [{ channelId: 'UCcTiBX8js_djhSSlmJRI99A' }, { channelId: 'UCkvhMUPIoV9oaM05W5XpBVQ' }],
-  },
+  { id: 'stream-dzrh', outlet: 'DZRH News Television', category: 'radio', links: [{ channelId: 'UCcTiBX8js_djhSSlmJRI99A' }] },
   { id: 'stream-dzbb', outlet: 'Super Radyo DZBB', category: 'radio', links: [{ channelId: 'UCYFgnkDYr-G5L_iy6DZdvSA' }] },
-  {
-    id: 'stream-dzmm',
-    outlet: 'DZMM Teleradyo',
-    category: 'radio',
-    links: [{ channelId: 'UC-RoNhw2na0SfUbHdT8K_8w' }, { channelId: 'UCuPHU8aJythPHPBrdHCZiBA' }],
-  },
   { id: 'stream-rappler', outlet: 'Rappler', category: 'online', links: [{ channelId: 'UCdnZdQxYXnbN4uWJg96oGxw' }] },
   { id: 'stream-inquirer', outlet: 'INQUIRER.net', category: 'online', links: [{ channelId: 'UCvRAX-ujvZ0eTMLGG2vki9w' }] },
   { id: 'stream-bombo', outlet: 'Bombo Radyo Philippines', category: 'regional', links: [{ channelId: 'UCVVw9u0pZ3nnWxx7WyE8YkQ' }] },
-  { id: 'stream-sunstar', outlet: 'SunStar Philippines', category: 'regional', links: [{ channelId: 'UCRNMeOnzX8ZRExN24gqWUsg' }] },
 ];
 
 /** Official bulletin pages, shown as plain links on the status card. */
-export const BULLETIN_LINKS = [
+export const BULLETIN_LINKS: BulletinLink[] = [
   { id: 'pagasa-cyclone', agency: 'PAGASA', label: 'Tropical cyclone bulletin', url: 'https://www.pagasa.dost.gov.ph/tropical-cyclone/severe-weather-bulletin' },
   { id: 'pagasa-flood', agency: 'PAGASA', label: 'Flood information', url: 'https://www.pagasa.dost.gov.ph/flood' },
   { id: 'phivolcs-volcano', agency: 'PHIVOLCS', label: 'Volcano bulletins', url: 'https://wovodat.phivolcs.dost.gov.ph/bulletin/list-of-bulletin' },

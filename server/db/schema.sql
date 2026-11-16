@@ -181,3 +181,11 @@ CREATE TABLE IF NOT EXISTS sources (
   last_checked_at TIMESTAMPTZ NOT NULL,
   last_ok_at      TIMESTAMPTZ
 );
+-- Stream only: true = seen live, false = not live, NULL = unknown (no YouTube key).
+ALTER TABLE sources ADD COLUMN IF NOT EXISTS is_live BOOLEAN;
+-- Stream only: the title and upload time of the video in video_id.
+ALTER TABLE sources ADD COLUMN IF NOT EXISTS video_title TEXT;
+ALTER TABLE sources ADD COLUMN IF NOT EXISTS video_published_at TIMESTAMPTZ;
+-- Stream only: since when every check has failed to get an answer (NULL = the
+-- last check got one). After a day of this the link is marked 'dead'.
+ALTER TABLE sources ADD COLUMN IF NOT EXISTS failing_since TIMESTAMPTZ;

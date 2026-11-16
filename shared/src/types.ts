@@ -100,6 +100,8 @@ export type ProvinceDetail = {
   score: ProvinceScore | null;
   events: HazardEvent[];
   freshness: Freshness;
+  /** Phase 2: outlook, nearby events, storms and news. Not part of the score. */
+  conditions: Conditions;
 };
 
 /** A city or municipality. */
@@ -132,6 +134,8 @@ export type PointDetail = {
   /** Earthquake distances here are measured from the spot itself. */
   events: HazardEvent[];
   freshness: Freshness;
+  /** Phase 2: outlook, nearby events, storms and news. Not part of the score. */
+  conditions: Conditions;
 };
 
 // ---------- Phase 2 ----------
@@ -236,12 +240,45 @@ export type StreamSlot = {
   id: string;
   outlet: string;
   category: OutletCategory;
-  /** The YouTube video to embed. */
+  /** The YouTube video to embed: the live stream, or else the channel's latest video. */
   videoId: string;
+  /** The video's title and upload time, when known. */
+  title: string | null;
+  publishedAt: string | null;
   /**
-   * true = the checker saw it live; false = not live;
-   * null = unknown (no YouTube key set), shown as "may be offline".
+   * true = the checker saw it live ("LIVE"); false = not live ("Latest");
+   * null = unknown (no YouTube key set, or the last check failed), shown as
+   * "Latest" with "may be offline".
    */
   isLive: boolean | null;
   lastCheckedAt: string;
+};
+
+/** A storm whose forecast track passes near a province or spot. */
+export type StormComing = {
+  stormId: string;
+  name: string;
+  /** When the forecast track is closest. */
+  closestAt: string;
+  /** Distance from the forecast centre at that time. The centre itself is uncertain. */
+  distanceKm: number;
+};
+
+/** What is happening around one province or spot, beyond the score. */
+export type Conditions = {
+  /** Next 7 days at the province's sample point, oldest first. */
+  outlook: ForecastDay[];
+  /** Current disaster events within a few hundred km, nearest first. */
+  nearbyEvents: DisasterEvent[];
+  stormsComing: StormComing[];
+  /** Recent headlines that name the province. */
+  news: NewsItem[];
+};
+
+/** A link to an official bulletin page. */
+export type BulletinLink = {
+  id: string;
+  agency: string;
+  label: string;
+  url: string;
 };

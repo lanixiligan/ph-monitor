@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns:media="http://search.yahoo.com/mrss/" xmlns="http://www.w3.org/2005/Atom">
+ <link rel="self" href="http://www.youtube.com/feeds/videos.xml?channel_id=UCqYw-CTd1dU2yGI71sEyqNw"/>
+ <id>yt:channel:qYw-CTd1dU2yGI71sEyqNw</id>
+ <yt:channelId>qYw-CTd1dU2yGI71sEyqNw</yt:channelId>
+ <title>GMA News</title>
+ <link rel="alternate" href="https://www.youtube.com/channel/UCqYw-CTd1dU2yGI71sEyqNw"/>
+ <author>
+  <name>GMA News</name>
+  <uri>https://www.youtube.com/channel/UCqYw-CTd1dU2yGI71sEyqNw</uri>
+ </author>
+ <published>2007-10-29T13:38:42+00:00</published>
+ <entry>
+  <id>yt:video:VCJ-P9LKb_g</id>
+  <yt:videoId>VCJ-P9LKb_g</yt:videoId>
+  <yt:channelId>UCqYw-CTd1dU2yGI71sEyqNw</yt:channelId>
+  <title>Fur dad na naghuhugas ng motor, nilapitan ng asong gustong maligo! | GMA News Feed</title>
+  <link rel="alternate" href="https://www.youtube.com/watch?v=VCJ-P9LKb_g"/>
+  <author>
+   <name>GMA News</name>
+   <uri>https://www.youtube.com/channel/UCqYw-CTd1dU2yGI71sEyqNw</uri>
+  </author>
+  <published>2026-11-16T04:00:08+00:00</published>
+  <updated>2026-11-16T04:04:21+00:00</updated>
+  <media:group>
+   <media:title>Fur dad na naghuhugas ng motor, nilapitan ng asong gustong maligo! | GMA News Feed</media:title>
+   <media:content url="https://www.youtube.com/v/VCJ-P9LKb_g?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i3.ytimg.com/vi/VCJ-P9LKb_g/hqdefault.jpg" width="480" height="360"/>
+   <media:description>(trimmed)</media:description>
+   
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:Yc3PuoXV2Es</id>
+  <yt:videoId>Yc3PuoXV2Es</yt:videoId>
+  <yt:channelId>UCqYw-CTd1dU2yGI71sEyqNw</yt:channelId>
+  <title>Ama, napaiyak sa unang pagsasama-sama ng pamilya matapos ang 9 na taon! | GMA News Feed</title>
+  <link rel="alternate" href="https://www.youtube.com/watch?v=Yc3PuoXV2Es"/>
+  <author>
+   <name>GMA News</name>
+   <uri>https://www.youtube.com/channel/UCqYw-CTd1dU2yGI71sEyqNw</uri>
+  </author>
+  <published>2026-11-16T03:52:58+00:00</published>
+  <updated>2026-11-16T04:11:08+00:00</updated>
+  <media:group>
+   <media:title>Ama, napaiyak sa unang pagsasama-sama ng pamilya matapos ang 9 na taon! | GMA News Feed</media:title>
+   <media:content url="https://www.youtube.com/v/Yc3PuoXV2Es?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i2.ytimg.com/vi/Yc3PuoXV2Es/hqdefault.jpg" width="480" height="360"/>
+   <media:description>(trimmed)</media:description>
+   
+  </media:group>
+ </entry>
+ <entry>
+  <id>yt:video:6csg_AQ5VJM</id>
+  <yt:videoId>6csg_AQ5VJM</yt:videoId>
+  <yt:channelId>UCqYw-CTd1dU2yGI71sEyqNw</yt:channelId>
+  <title>Sino si Carmelle Collado, ang grand winner ng Eurovision Song Contest Asia 2026? | GMA News Feed</title>
+  <link rel="alternate" href="https://www.youtube.com/watch?v=6csg_AQ5VJM"/>
+  <author>
+   <name>GMA News</name>
+   <uri>https://www.youtube.com/channel/UCqYw-CTd1dU2yGI71sEyqNw</uri>
+  </author>
+  <published>2026-11-16T03:52:46+00:00</published>
+  <updated>2026-11-16T04:09:47+00:00</updated>
+  <media:group>
+   <media:title>Sino si Carmelle Collado, ang grand winner ng Eurovision Song Contest Asia 2026? | GMA News Feed</media:title>
+   <media:content url="https://www.youtube.com/v/6csg_AQ5VJM?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+   <media:thumbnail url="https://i3.ytimg.com/vi/6csg_AQ5VJM/hqdefault.jpg" width="480" height="360"/>
+   <media:description>(trimmed)</media:description>
+   
+  </media:group>
+ </entry>
+</feed>
