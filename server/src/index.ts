@@ -7,6 +7,7 @@ import { APP_NAME } from '@ph-monitor/shared';
 import { config } from './config.ts';
 import { pool } from './db.ts';
 import { startScheduler } from './jobs/scheduler.ts';
+import { conditionsRouter } from './routes/conditions.ts';
 import { pointRouter } from './routes/point.ts';
 import { provincesRouter } from './routes/provinces.ts';
 
@@ -20,6 +21,8 @@ app.get('/api/health', async (_req, res) => {
 
 app.use('/api/provinces', provincesRouter);
 app.use('/api/point', pointRouter);
+// Phase 2: /api/events, /api/storms, /api/news, /api/streams, /api/bulletins
+app.use('/api', conditionsRouter);
 
 // Any error thrown in a route above ends up here. Having four parameters is
 // how Express recognises an error handler, so `_next` must stay even if unused.

@@ -8,8 +8,10 @@ that exact spot, with the reasons and the raw events behind it.
 > untuned starting weights. For official warnings, follow [PAGASA](https://www.pagasa.dost.gov.ph/)
 > and [PHIVOLCS](https://www.phivolcs.dost.gov.ph/).
 
-**Status: work in progress.** Phase 1 only (earthquakes and weather). Expect rough edges, and
-scores that change as the formula is tuned.
+**Status: work in progress.** The map and score use earthquakes and weather. The server also
+collects disaster events, storm tracks, a 7-day outlook, news headlines and stream links
+(`/api/events`, `/api/storms`, `/api/news`, `/api/streams`), but the page does not show them
+yet. Expect rough edges, and scores that change as the formula is tuned.
 
 "PH Monitor" is a placeholder name (set in `shared/src/appInfo.ts`). Non-commercial project.
 
@@ -29,8 +31,13 @@ npm run dev:server        # terminal 1: API + data fetching, http://localhost:30
 npm run dev:web           # terminal 2: the map, http://localhost:5173
 ```
 
-The server fetches earthquakes every 15 minutes and weather every 30 minutes, and once at startup.
+The server fetches earthquakes and news every 15 minutes; weather, disaster events, storm tracks
+and the stream check every 30 minutes; the feed check every hour; and the 7-day outlook every
+6 hours. Everything also runs once at startup (the outlook only if it is over 6 hours old).
 Weather for a clicked spot is fetched when you click, and reused for 30 minutes.
+
+Optional: put a free YouTube Data API key in `.env` as `YOUTUBE_API_KEY` so the stream check can
+tell which channels are live. The key stays on the server.
 
 A link can open a spot directly: `http://localhost:5173/?lat=10.3157&lon=123.8854`.
 
@@ -41,6 +48,9 @@ A link can open a spot directly: `http://localhost:5173/?lat=10.3157&lon=123.885
 | `npm test` | Run the tests (scoring and feed checks) |
 | `npm run typecheck` | Check all TypeScript |
 | `npm run ingest:earthquakes` / `ingest:weather` / `compute:scores` | Run one job by hand |
+| `npm run ingest:events` / `ingest:storms` / `ingest:forecast` / `ingest:news` | Run one of the newer jobs by hand |
+| `npm run check:sources` | Check every news feed and stream link and print a table |
+| `npm run sample-storm` (add `-- remove` to delete it) | Load a sample storm track, clearly labelled as not real |
 | `npm run build` | Build the web app into `web/dist` |
 | `npm run db:psql` | Open a database prompt |
 | `npm run db:down` | Stop the database (data is kept) |

@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import type { HazardEvent, PointDetail } from '@ph-monitor/shared';
+import { getConditions } from '../conditions.ts';
 import { pool } from '../db.ts';
 import { buildFreshness, getLastOk } from '../freshness.ts';
 import { getPointWeather } from '../pointWeather.ts';
@@ -173,6 +174,7 @@ pointRouter.get('/', async (req, res) => {
     events,
     // Earthquakes come from the scheduled fetch; weather was fetched for this spot.
     freshness: buildFreshness(lastOk.earthquakes, pointWeather?.fetchedAt ?? null),
+    conditions: await getConditions(province.psgc, { lat, lon }),
   };
   res.json(detail);
 });

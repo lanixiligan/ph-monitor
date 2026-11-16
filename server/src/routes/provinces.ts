@@ -9,6 +9,7 @@ import type {
   ProvinceDetail,
   ProvinceMapProperties,
 } from '@ph-monitor/shared';
+import { getConditions } from '../conditions.ts';
 import { pool } from '../db.ts';
 import { buildFreshness, getLastOk } from '../freshness.ts';
 import { WEIGHTS } from '../scoring/scoring.ts';
@@ -183,6 +184,7 @@ provincesRouter.get('/:psgc', async (req, res) => {
       : null,
     events,
     freshness: buildFreshness(lastOk.earthquakes, lastOk.weather),
+    conditions: await getConditions(psgc, null),
   };
   res.json(detail);
 });
