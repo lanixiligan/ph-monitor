@@ -117,13 +117,27 @@ export const en = {
 
   // Outlet groups for news and streams.
   categories: {
-    all: 'All',
     official: 'Official',
     tv: 'TV',
     radio: 'Radio',
     online: 'Online and newspapers',
     regional: 'Regional',
     international: 'International',
+  },
+
+  // Kinds of disaster in the headlines panel (see shared/src/newsTypes.ts).
+  newsTypes: {
+    all: 'All',
+    typhoon: 'Typhoons',
+    flood: 'Floods',
+    earthquake: 'Earthquakes',
+    volcano: 'Volcanoes',
+    landslide: 'Landslides',
+    tsunami: 'Tsunamis and storm surges',
+    drought: 'Droughts and dry spells',
+    wildfire: 'Wildfires',
+    heat: 'Extreme heat',
+    general: 'General',
   },
 
   // Kinds of disaster event.
@@ -274,8 +288,8 @@ export const en = {
   // The headlines panel.
   news: {
     title: 'Disaster headlines',
-    note: 'The group is only a label for the kind of outlet. It is not a ranking of how far to trust it.',
-    filterLabel: 'Filter by outlet group',
+    note: 'Sorted by the words in each headline, so a few may be in the wrong group. "General" means the headline names no kind of disaster, only a response such as an evacuation. The map shows the same group.',
+    filterLabel: 'Filter by kind of disaster',
     failed: 'Could not load headlines right now.',
     none: 'No headlines to show.',
     alsoAt: 'Also at:',

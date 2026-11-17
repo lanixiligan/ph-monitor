@@ -101,6 +101,8 @@ type Props = {
    */
   // `'outside' | 'failed' | null` is a union: exactly one of these three values.
   onLocateResult: (problem: 'outside' | 'failed' | null) => void;
+  /** The headline filter chosen in the headlines panel; the news dots follow it. */
+  newsType: string;
 };
 
 // The box a spot must be in to have a score (the same limits as the server's /api/point).
@@ -114,7 +116,7 @@ const MATCH_NONE: maplibregl.FilterSpecification = ['in', ['get', 'psgc'], ['lit
 // `ExpressionSpecification` is MapLibre's type for a rule like this one.
 const FADE_WITH_ZOOM: maplibregl.ExpressionSpecification = ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 0.45];
 
-export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocateResult }: Props) {
+export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocateResult, newsType }: Props) {
   // A "ref" holds a value that survives re-renders without causing one.
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -382,7 +384,7 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
   // Event markers and storm tracks (see mapOverlays.ts).
   useOverlays(mapRef, ready);
   // Headline dots (see newsOverlay.ts).
-  useNewsDots(mapRef, ready, data);
+  useNewsDots(mapRef, ready, data, newsType);
 
   // A place picked from a headline: outline it and move the map to it.
   useEffect(() => {

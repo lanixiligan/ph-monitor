@@ -114,13 +114,27 @@ export const fil: Strings = {
 
   // Outlet groups for news and streams.
   categories: {
-    all: 'Lahat', // REVIEW
     official: 'Opisyal', // REVIEW
     tv: 'Telebisyon', // REVIEW
     radio: 'Radyo', // REVIEW
     online: 'Online at diyaryo', // REVIEW
     regional: 'Panrehiyon', // REVIEW
     international: 'Pandaigdig', // REVIEW
+  },
+
+  // Kinds of disaster in the headlines panel (see shared/src/newsTypes.ts).
+  newsTypes: {
+    all: 'Lahat', // REVIEW
+    typhoon: 'Bagyo', // REVIEW
+    flood: 'Baha', // REVIEW
+    earthquake: 'Lindol', // REVIEW
+    volcano: 'Bulkan', // REVIEW
+    landslide: 'Pagguho ng lupa', // REVIEW
+    tsunami: 'Tsunami at daluyong', // REVIEW
+    drought: 'Tagtuyot', // REVIEW
+    wildfire: 'Sunog sa gubat', // REVIEW
+    heat: 'Matinding init', // REVIEW
+    general: 'Pangkalahatan', // REVIEW
   },
 
   // Kinds of disaster event.
@@ -269,8 +283,8 @@ export const fil: Strings = {
   // The headlines panel.
   news: {
     title: 'Mga balita tungkol sa sakuna', // REVIEW
-    note: 'Label lang ang grupo para sa uri ng outlet. Hindi ito ranggo kung gaano ito dapat pagkatiwalaan.', // REVIEW
-    filterLabel: 'I-filter ayon sa grupo ng outlet', // REVIEW
+    note: 'Inayos ayon sa mga salita sa bawat headline, kaya maaaring mali ang grupo ng ilan. Ang "Pangkalahatan" ay headline na walang binanggit na uri ng sakuna, tulad ng paglikas lang. Ganito rin ang ipinapakita sa mapa.', // REVIEW
+    filterLabel: 'I-filter ayon sa uri ng sakuna', // REVIEW
     failed: 'Hindi ma-load ang mga balita ngayon.', // REVIEW
     none: 'Walang balitang maipapakita.', // REVIEW
     alsoAt: 'Makikita rin sa:', // REVIEW

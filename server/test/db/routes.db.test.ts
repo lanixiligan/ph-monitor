@@ -4,14 +4,14 @@
 // out to the internet. Run with: npm run test:db
 
 import {
-  addQuake, addWeather, ALPHA, ALPHA_CITY, BRAVO, hoursAgo, minutesAgo, pool, resetDb, setFeedRuns, SPOT,
+  addNews, addQuake, addWeather, ALPHA, ALPHA_CITY, BRAVO, hoursAgo, minutesAgo, pool, resetDb, setFeedRuns, SPOT,
 } from './testDb.ts';
 import assert from 'node:assert/strict';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import express from 'express';
-import type { PlaceMatch, PointDetail, ProvinceDetail, StatusReport } from '@ph-monitor/shared';
+import type { NewsItem, PlaceMatch, PointDetail, ProvinceDetail, StatusReport } from '@ph-monitor/shared';
 import { computeScores } from '../../src/jobs/computeScores.ts';
 import { readDueJobs } from '../../src/jobs/due.ts';
 import { conditionsRouter } from '../../src/routes/conditions.ts';
@@ -179,4 +179,20 @@ test('feed status and due jobs: both read the same record of when each feed last
   const later = (await get('/api/status')).body as StatusReport;
   assert.deepEqual(later.feeds.filter((feed) => feed.isStale).map((feed) => feed.id), ['earthquakes']);
   assert.deepEqual(await readDueJobs(), ['earthquakes']);
+});
+
+test('headlines: filtered by kind of disaster; "general" means no kind; an unknown kind is refused', async () => {
+  await addNews('Floods in Alpha', hoursAgo(1), [ALPHA], ['flood']);
+  await addNews('Storm surge hits Alpha', hoursAgo(2), [ALPHA], ['typhoon', 'tsunami']);
+  await addNews('Evacuees in Bravo get food packs', hoursAgo(3), [BRAVO], []);
+
+  const titles = async (path: string) => ((await get(path)).body as NewsItem[]).map((item) => item.title);
+  assert.deepEqual(await titles('/api/news?type=flood'), ['Floods in Alpha']);
+  assert.deepEqual(await titles('/api/news?type=tsunami'), ['Storm surge hits Alpha']);
+  assert.deepEqual(await titles('/api/news?type=general'), ['Evacuees in Bravo get food packs']);
+  assert.deepEqual(await titles('/api/news'), ['Floods in Alpha', 'Storm surge hits Alpha', 'Evacuees in Bravo get food packs']);
+
+  const one = ((await get('/api/news?type=typhoon')).body as NewsItem[])[0];
+  assert.deepEqual(one?.types, ['typhoon', 'tsunami']);
+  assert.equal((await get('/api/news?type=fire')).status, 400);
 });

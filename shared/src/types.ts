@@ -8,6 +8,8 @@
 // Dates travel between server and browser as text (JSON has no date type),
 // so every time below is an ISO string such as "2026-11-15T10:45:00Z".
 
+import type { NewsType } from './newsTypes.ts';
+
 /**
  * One province, or one Metro Manila district ('Dist').
  * 'Other' covers two areas that are neither: the City of Isabela and
@@ -332,6 +334,8 @@ export type NewsItem = {
   publishedAt: string;
   /** Provinces named in the headline. */
   provincePsgcs: number[];
+  /** Kinds of disaster the headline is about; empty = general (only a response, such as an evacuation). */
+  types: NewsType[];
   /** The same story at other outlets. */
   otherOutlets: NewsOutletLink[];
 };

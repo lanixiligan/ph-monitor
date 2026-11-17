@@ -188,10 +188,10 @@ export async function addAlert(
   );
 }
 
-export async function addNews(title: string, publishedAt: Date, provincePsgcs: number[]): Promise<void> {
+export async function addNews(title: string, publishedAt: Date, provincePsgcs: number[], types: string[] = []): Promise<void> {
   await pool.query(
-    `INSERT INTO news (story_key, title, url, outlet, category, published_at, province_psgcs)
-     VALUES ($1, $1, 'https://example.org/story', 'Test Outlet', 'national', $2, $3::bigint[])`,
-    [title, publishedAt, provincePsgcs],
+    `INSERT INTO news (story_key, title, url, outlet, category, published_at, province_psgcs, types)
+     VALUES ($1, $1, 'https://example.org/story', 'Test Outlet', 'national', $2, $3::bigint[], $4::text[])`,
+    [title, publishedAt, provincePsgcs, types],
   );
 }

@@ -1,4 +1,5 @@
-// Latest disaster headlines, with a filter by outlet group.
+// Latest disaster headlines, with a filter by kind of disaster (typhoon,
+// flood...). The map's headline dots follow the same filter.
 // Headlines and links only: we never show article text.
 // A headline that names a place gets a button that shows the place on the map.
 
@@ -6,19 +7,21 @@ import { useEffect, useState } from 'react';
 import type { NewsItem } from '@ph-monitor/shared';
 import { fetchNews } from '../api.ts';
 import type { ProvinceCollection } from '../api.ts';
-import { CATEGORY_IDS, categoryLabel, formatTime, safeUrl } from '../format.ts';
+import { formatTime, NEWS_FILTER_IDS, newsTypeLabel, newsTypesText, safeUrl } from '../format.ts';
 import { fill, useStrings } from '../i18n/index.ts';
 import { WarnIcon } from './WarnIcon.tsx';
 
 const REFRESH_MS = 5 * 60 * 1000;
-// 'all' first, then the outlet groups. `...` spreads one list into another.
-const FILTER_IDS = ['all', ...CATEGORY_IDS];
 
 type Props = {
   /** Province names come from here. null while the map is still loading. */
   provinces: ProvinceCollection | null;
   /** Called with a headline's province codes when the reader asks to see them. */
   onShowOnMap: (psgcs: number[]) => void;
+  /** The chosen filter: 'all', a kind of disaster, or 'general'. */
+  newsType: string;
+  /** Called when the reader picks another filter. */
+  onNewsTypeChange: (newsType: string) => void;
 };
 
 /** The place names for a headline. The four Metro Manila districts show as one "Metro Manila". */
@@ -44,21 +47,20 @@ function PlaceButton({ places, onClick }: { places: string; onClick: () => void 
   );
 }
 
-export function NewsPanel({ provinces, onShowOnMap }: Props) {
+export function NewsPanel({ provinces, onShowOnMap, newsType, onNewsTypeChange }: Props) {
   // `t` holds all the words in the current language.
   const { t } = useStrings();
   // `useState` keeps a value between renders. The text in <...> is its type.
-  const [category, setCategory] = useState<string>('all');
   const [items, setItems] = useState<NewsItem[] | null>(null);
   const [failed, setFailed] = useState(false);
 
-  // `useEffect` runs after the page draws; it reruns when `category` changes.
+  // `useEffect` runs after the page draws; it reruns when `newsType` changes.
   useEffect(() => {
     // Stops an old answer from overwriting a newer one.
     let cancelled = false;
     async function load() {
       try {
-        const result = await fetchNews(category, 30);
+        const result = await fetchNews(newsType, 30);
         if (!cancelled) {
           setItems(result);
           setFailed(false);
@@ -73,7 +75,7 @@ export function NewsPanel({ provinces, onShowOnMap }: Props) {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [category]);
+  }, [newsType]);
 
   const nameByPsgc = new Map((provinces?.features ?? []).map((f) => [f.properties.psgc, f.properties.name]));
 
@@ -85,14 +87,14 @@ export function NewsPanel({ provinces, onShowOnMap }: Props) {
       <div className="panel-body">
       <p className="muted">{t.news.note}</p>
       <div className="filters" role="group" aria-label={t.news.filterLabel}>
-        {FILTER_IDS.map((id) => (
+        {NEWS_FILTER_IDS.map((id) => (
           <button
             key={id}
             className="filter"
-            aria-pressed={category === id}
-            onClick={() => setCategory(id)}
+            aria-pressed={newsType === id}
+            onClick={() => onNewsTypeChange(id)}
           >
-            {categoryLabel(id)}
+            {newsTypeLabel(id)}
           </button>
         ))}
       </div>
@@ -112,7 +114,7 @@ export function NewsPanel({ provinces, onShowOnMap }: Props) {
               </a>
               <br />
               <span className="muted">
-                {item.outlet} · {categoryLabel(item.category)} · {formatTime(item.publishedAt)}
+                {item.outlet} · {newsTypesText(item.types)} · {formatTime(item.publishedAt)}
               </span>
               <PlaceButton
                 places={placeNames(item.provincePsgcs, nameByPsgc).join(', ')}

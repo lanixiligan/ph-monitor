@@ -183,6 +183,9 @@ CREATE TABLE IF NOT EXISTS news (
   fetched_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS news_time_idx ON news (published_at);
+-- Step 5.4: kinds of disaster a headline is about ('typhoon', 'flood'...; see
+-- shared/src/newsTypes.ts). Empty = general (only a response, such as an evacuation).
+ALTER TABLE news ADD COLUMN IF NOT EXISTS types TEXT[] NOT NULL DEFAULT '{}';
 
 -- The health of every news feed and live stream link, filled by the link
 -- checker (`npm run check:sources`). The links themselves live in

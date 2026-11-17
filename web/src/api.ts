@@ -57,9 +57,9 @@ export async function fetchStorms(): Promise<Storm[]> {
   return (await getJson('/api/storms')) as Storm[];
 }
 
-/** Latest headlines. `category` is an outlet category id, or 'all' for no filter. */
-export async function fetchNews(category: string, limit: number): Promise<NewsItem[]> {
-  const filter = category === 'all' ? '' : `&category=${encodeURIComponent(category)}`;
+/** Latest headlines. `type` is a kind of disaster ('flood'), 'general', or 'all' for no filter. */
+export async function fetchNews(type: string, limit: number): Promise<NewsItem[]> {
+  const filter = type === 'all' ? '' : `&type=${encodeURIComponent(type)}`;
   return (await getJson(`/api/news?limit=${limit}${filter}`)) as NewsItem[];
 }
 

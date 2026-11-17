@@ -34,41 +34,73 @@ newspapers". Social media posts and a few repost sites are dropped (`IGNORED_OUT
 
 ### Categories
 
-Official, TV, Radio, Online and newspapers, Regional, International. They are labels for
-filtering, **not a ranking of trust**.
+Official, TV, Radio, Online and newspapers, Regional, International. They are labels, **not a
+ranking of trust**. Since step 5.4 the headlines panel filters by kind of disaster instead (see
+below); the outlet category is still saved and the API still accepts `?category=`.
+
+### Kinds of disaster
+
+Each headline gets the kinds it names (`shared/src/newsTypes.ts`): typhoon, flood (and heavy
+rain), earthquake, volcano, landslide, tsunami (and storm surge), drought (and El Niño), wildfire
+(forest and grass fires, not building fires) and extreme heat. A headline can have more than
+one: a storm surge is typhoon and tsunami, quakes at a volcano are volcano and earthquake. A
+headline that names no kind, only a response such as an evacuation or a state of calamity, is
+**General**. Man-made disasters (building fires, landfill or mine collapses) are left out for now.
+The panel's filter buttons and the map's headline dots follow the same choice.
 
 ### What we store
 
-Headline, outlet, category, time and link. **Never the article text.** Each headline links to
+Headline, outlet, category, kinds of disaster, provinces, time and link. **Never the article text.** Each headline links to
 the original article on the outlet's own site.
 
 ### How a headline gets onto the page
 
 1. **Read** each feed (`fetchers/rss.ts`). Items older than 3 days, or dated more than an hour
    in the future, are dropped. One failing feed does not stop the others.
-2. **Filter** to disaster headlines (`news/keywords.ts`). The headline must contain a whole
-   keyword in English, Filipino or Cebuano: typhoon, bagyo, flood, baha, earthquake, lindol,
-   linog, landslide, volcano, bulkan, evacuation, PAGASA, PHIVOLCS and so on. Phrases like
-   "flooded with complaints" are cut out first, and quake bulletins below magnitude 4 are
-   dropped.
-3. **Tag provinces** named in the headline (`news/tagProvinces.ts`). The longest name wins
-   ("Davao del Sur" does not also tag "Davao"), and some cities and volcanoes tag their
-   province (Tacloban → Leyte, Mayon → Albay).
+2. **Tag provinces** named in the headline (`news/tagProvinces.ts`). The longest name wins
+   ("Davao del Sur" does not also tag "Davao"), and some cities, islands and volcanoes tag
+   their province (Tacloban → Leyte, Siargao → Surigao del Norte, Mayon → Albay). Towns from
+   the `places` table tag their province too, but only when the headline uses the name as a
+   place ("in Guiuan", "Tabaco City", or first in the headline), only when one province has a
+   town of that name, and never for names that are also surnames or common words (Marcos,
+   Real, Gubat...). People and streets ("Jose Rizal", "Aurora Boulevard") and the Manila
+   Trench tag nothing.
+3. **Filter and sort** (`news/keywords.ts`, both steps together in `news/checkHeadline.ts`).
+   The headline must name a kind of disaster in English, Filipino or Cebuano (typhoon, bagyo,
+   baha, ulan, lindol, "magnitude 6", bulkan, El Niño, tagtuyot, forest fire, heat index...),
+   or the name of a storm seen in the last 14 days (from the storms table and PAGASA's
+   cyclone alerts; a local name such as 'Uwan' counts only in quotes). A response word alone
+   (evacuation, state of calamity, PAGASA, PHIVOLCS) counts as General, unless the headline
+   names another cause (a building fire, a war, a pest, a disease) or a place abroad. Phrases
+   like "flood control", "Pagasa Island" and "landslide win" are cut out first, and quake
+   bulletins below magnitude 4 are dropped. A disaster abroad is dropped unless the headline
+   also names the Philippines or a province.
 4. **Merge the same story** from different outlets (`news/storyKey.ts`). Two headlines are one
    story when they boil down to the same significant words, or share at least half of them
    (and at least 3 words) within 48 hours. The earliest report is the main row; the others are
    listed under it.
-5. **Save** (`jobs/ingestNews.ts`). Headlines older than 14 days are deleted.
+5. **Save** (`jobs/ingestNews.ts`). Headlines older than 14 days are deleted. Saved headlines
+   from the last 6 days are checked again with the current rules on every run: new kinds or
+   provinces are saved, and a headline that no longer counts is removed.
 
-The headlines panel shows the latest 30 by default and can be filtered by category. The status
+The headlines panel shows the latest 30 by default and can be filtered by kind of disaster. The status
 card shows up to 5 headlines from the last 3 days that name the province.
+
+### How well it works
+
+`npm run measure:news` checks the rules against 242 real headlines labelled by hand
+(`server/test/fixtures/news/labelled-headlines.json`), and a test fails if they get clearly
+worse. On 2026-11-17: 93% of the headlines kept are really about a disaster, 99% of the
+disaster headlines are found, the kinds are exactly right for 97% and the provinces for 100%.
+The rules were written while looking at these same headlines, so new headlines will do
+somewhat worse.
 
 ### Known noise
 
-- Aurora, Isabela, Rizal and Quezon are also people's names, so a headline about a person can
-  get a wrong province tag.
+- A person named after a province who is not on the tagger's list can get a wrong tag.
 - Regions ("Bicol", "Eastern Visayas") are not tagged.
-- The keyword filter can let through a non-disaster story that uses a disaster word.
+- Explainers and stories about equipment pass ("FACT SHEET: The heat index, explained").
+- A local storm name without quotes, or one PAGASA has not put in an alert, is not known.
 
 ## Live streams
 

@@ -2,6 +2,7 @@
 // disaster events and storms mean. Each part has a tick box that shows or
 // hides it on the map.
 
+import { newsTypeLabel } from '../format.ts';
 import { useStrings } from '../i18n/index.ts';
 import type { MapLayers } from '../mapSettings.ts';
 import { bandColors, bandLabel, SCORE_BANDS } from '../scoreScale.ts';
@@ -9,11 +10,13 @@ import { useTheme } from '../theme/index.ts';
 
 type Props = {
   layers: MapLayers;
+  /** The headline filter ('all', a kind of disaster, or 'general'), named next to the headlines mark. */
+  newsType: string;
   // Called with the new settings when a tick box changes.
   onChange: (layers: MapLayers) => void;
 };
 
-export function Legend({ layers, onChange }: Props) {
+export function Legend({ layers, onChange, newsType }: Props) {
   // `t` holds all the words in the current language.
   const { t } = useStrings();
   const { theme } = useTheme();
@@ -66,6 +69,7 @@ export function Legend({ layers, onChange }: Props) {
         <input type="checkbox" checked={layers.news} onChange={() => toggle('news')} />
         <span className="mark mark-news" />
         {t.legend.news}
+        {newsType !== 'all' && <span className="muted"> · {newsTypeLabel(newsType)}</span>}
       </label>
     </div>
   );

@@ -1,7 +1,7 @@
 // API routes for the Phase 2 data (none of it changes the score):
 //   GET /api/events     → current disaster events (for map markers)
 //   GET /api/storms     → active storms with their tracks (for the map)
-//   GET /api/news       → latest disaster headlines; ?category=tv  ?psgc=...  ?limit=...
+//   GET /api/news       → latest disaster headlines; ?type=flood (or general)  ?category=tv  ?psgc=...  ?limit=...
 //   GET /api/streams    → live stream slots the page may show
 //   GET /api/bulletins  → links to official PAGASA and PHIVOLCS pages
 //   GET /api/alerts     → official alerts in effect (PAGASA), newest first
@@ -9,6 +9,7 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
+import { NEWS_TYPES } from '@ph-monitor/shared';
 import type { StatusReport, Storm, StormTrackPoint, StreamSlot, OutletCategory } from '@ph-monitor/shared';
 import {
   CURRENT_EVENT_SQL,
@@ -90,6 +91,8 @@ conditionsRouter.get('/storms', async (_req, res) => {
 // TypeScript the list is not empty, which z.enum needs.
 const categoryIds = OUTLET_CATEGORIES.map((category) => category.id) as [string, ...string[]];
 const newsQuerySchema = z.object({
+  // One of the nine kinds, or 'general' for headlines with no kind.
+  type: z.enum([...NEWS_TYPES, 'general']).optional(),
   category: z.enum(categoryIds).optional(),
   psgc: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(30),
@@ -98,10 +101,10 @@ const newsQuerySchema = z.object({
 conditionsRouter.get('/news', async (req, res) => {
   const parsed = newsQuerySchema.safeParse(req.query);
   if (!parsed.success) {
-    res.status(400).json({ error: 'Unknown category, province code or limit.' });
+    res.status(400).json({ error: 'Unknown kind, category, province code or limit.' });
     return;
   }
-  const { category, psgc, limit } = parsed.data;
+  const { type, category, psgc, limit } = parsed.data;
 
   // `$1::text IS NULL OR ...` means "skip this rule when no value was given".
   // A story matches a category when its main outlet or any other outlet has it.
@@ -110,8 +113,9 @@ conditionsRouter.get('/news', async (req, res) => {
      WHERE ($1::text IS NULL OR category = $1
             OR other_outlets @> jsonb_build_array(jsonb_build_object('category', $1::text)))
        AND ($2::bigint IS NULL OR $2 = ANY(province_psgcs))
+       AND ($4::text IS NULL OR ($4 = 'general' AND types = '{}') OR $4 = ANY(types))
      ORDER BY published_at DESC LIMIT $3`,
-    [category ?? null, psgc ?? null, limit],
+    [category ?? null, psgc ?? null, limit, type ?? null],
   );
   res.json(result.rows.map(toNewsItem));
 });

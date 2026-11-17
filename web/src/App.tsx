@@ -50,6 +50,8 @@ export function App() {
   const [spot, setSpot] = useState<Spot | null>(spotFromAddress);
   // Which map layers the legend's tick boxes have switched on.
   const [layers, setLayers] = useState(ALL_LAYERS_ON);
+  // The headline filter (a kind of disaster, 'general' or 'all'), shared by the panel and the map dots.
+  const [newsType, setNewsType] = useState('all');
   // Provinces picked from a headline, outlined on the map. A new object on
   // every click, so picking the same place twice still moves the map.
   const [focus, setFocus] = useState<{ psgcs: number[] } | null>(null);
@@ -179,8 +181,9 @@ export function App() {
             focus={focus}
             goTo={goTo}
             onLocateResult={setLocateProblem}
+            newsType={newsType}
           />
-          <Legend layers={layers} onChange={setLayers} />
+          <Legend layers={layers} onChange={setLayers} newsType={newsType} />
         </main>
 
         <div className="side">
@@ -193,7 +196,7 @@ export function App() {
           </div>
           <div className="side-feeds">
             <StreamsPanel />
-            <NewsPanel provinces={provinces} onShowOnMap={showOnMap} />
+            <NewsPanel provinces={provinces} onShowOnMap={showOnMap} newsType={newsType} onNewsTypeChange={setNewsType} />
           </div>
         </div>
       </div>

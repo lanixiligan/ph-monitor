@@ -21,6 +21,7 @@
     "ingest:alerts": "tsx scripts/run-job.ts alerts",
     "weather-points": "tsx scripts/pick-weather-points.ts",
     "check:sources": "tsx scripts/check-sources.ts",
+    "measure:news": "tsx scripts/measure-news.ts",
     "replay": "tsx scripts/replay.ts",
     "test": "tsx --test test/*.test.ts",
     "test:db": "tsx --test --test-concurrency=1 test/db/*.test.ts",

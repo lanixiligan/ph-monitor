@@ -1,6 +1,7 @@
 // Small helpers for showing times, numbers and links. Shared by all panels.
 // Words and date style follow the language chosen now (see i18n/).
 
+import { NEWS_TYPES } from '@ph-monitor/shared';
 import { getI18n, localeFor, lookup } from './i18n/index.ts';
 
 /** "2026-11-15T03:00:00Z" becomes "Nov 15, 2026, 11:00 AM" in the reader's time zone. */
@@ -36,8 +37,18 @@ export function safeUrl(url: string | null): string | null {
   return /^https?:\/\//i.test(url) ? url : null;
 }
 
-/** The six outlet group ids, in the order shown. A label, not a ranking of trust. */
-export const CATEGORY_IDS: string[] = ['official', 'tv', 'radio', 'online', 'regional', 'international'];
+/** The headline filters, in the order shown: all, the nine kinds of disaster, then general. */
+export const NEWS_FILTER_IDS: string[] = ['all', ...NEWS_TYPES, 'general'];
+
+/** The readable name of a headline filter or kind ('flood' becomes 'Floods'). */
+export function newsTypeLabel(id: string): string {
+  return lookup(getI18n().t.newsTypes, id);
+}
+
+/** A headline's kinds as one line: "Typhoons, Tsunamis and storm surges", or "General". */
+export function newsTypesText(types: string[]): string {
+  return types.length === 0 ? newsTypeLabel('general') : types.map(newsTypeLabel).join(', ');
+}
 
 /** The readable name of a category id, in the current language; falls back to the id itself. */
 export function categoryLabel(id: string): string {

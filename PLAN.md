@@ -216,7 +216,7 @@ refer to the audit report.
 | 2 | Official warnings: PAGASA alert feed, three-tier labels, official block at the top of the card | Built, not committed |
 | 3 | Geography and hazards: storm distance to the track line, JTWC fallback, extra weather points, "not covered" list, per-hazard levels | Built, not committed |
 | 4 | Stability: jobs run only when due (1.11), score history with part-scores (1.12), database tests in CI, historical replay (results: `docs/replay-results.md`) | Built, not committed. Deployment basics (1.13) skipped for now: no plan to go online soon |
-| 5 | Experience: place search and "use my location" (1.17), card order (1.18), keyboard and touch (1.19), Filipino review, news fixes (1.14, 1.15) | Not started |
+| 5 | Experience: place search and "use my location" (1.17), card order (1.18), keyboard and touch (1.19), Filipino review, news fixes (1.14, 1.15) | 5.1–5.4 built, not committed (5.4: headlines sorted into nine kinds of disaster, owner's choice); 5.5 next |
 | 6 | Later: see below | Replay has run; not started |
 
 ### Phase 6 — later
@@ -237,6 +237,10 @@ the replay shows.
   (for example government geohazard maps) could mark areas at risk, but only if their licence
   allows reuse with credit. Check the licence first; if none allows it, keep the "not
   covered" line on the card.
+- **Man-made disasters in the headlines.** Step 5.4 sorts headlines into nine natural types
+  (the owner's list plus extreme heat). Building fires and garbage, landfill or mine
+  collapses are disasters too, but man-made; the owner chose to leave them out for now
+  (2026-11-17). A later "Man-made" group could bring them back.
 
 Small leftovers with no phase: a repeated identical headline is dropped for 14 days (1.16),
 and a few outdated comments (1.20).

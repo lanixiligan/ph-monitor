@@ -1,5 +1,6 @@
 // The headlines layer: a dot on every province named in recent headlines.
 // A bigger dot means more headlines. A click lists them with their links.
+// Only headlines of the kind chosen in the headlines panel are placed.
 
 import * as maplibregl from 'maplibre-gl';
 import { useEffect, useRef } from 'react';
@@ -7,7 +8,7 @@ import type { RefObject } from 'react';
 import type { NewsItem } from '@ph-monitor/shared';
 import type { ProvinceCollection } from './api.ts';
 import { fetchNews } from './api.ts';
-import { formatTime, safeUrl } from './format.ts';
+import { formatTime, newsTypesText, safeUrl } from './format.ts';
 import { fill, getI18n } from './i18n/index.ts';
 import type { NewsDot } from './newsGeo.ts';
 import { readPalette } from './palette.ts';
@@ -70,7 +71,7 @@ function newsPopup(dot: NewsDot): HTMLElement {
     link.textContent = item.title;
     const meta = document.createElement('div');
     meta.className = 'muted';
-    meta.textContent = `${item.outlet} · ${formatTime(item.publishedAt)}`;
+    meta.textContent = `${item.outlet} · ${newsTypesText(item.types)} · ${formatTime(item.publishedAt)}`;
     row.append(link, meta);
     list.appendChild(row);
   }
@@ -91,6 +92,7 @@ export function useNewsDots(
   mapRef: RefObject<maplibregl.Map | null>,
   ready: boolean,
   provinces: ProvinceCollection | null,
+  newsType: string,
 ) {
   // The latest headlines, kept so the dots can be redrawn when provinces reload.
   const newsRef = useRef<NewsItem[]>([]);
@@ -129,7 +131,7 @@ export function useNewsDots(
     let cancelled = false;
     async function refresh() {
       try {
-        const news = await fetchNews('all', NEWS_LIMIT);
+        const news = await fetchNews(newsType, NEWS_LIMIT);
         if (cancelled || !map) return;
         newsRef.current = news;
         draw(map);
@@ -146,7 +148,8 @@ export function useNewsDots(
       map.off('mouseenter', 'news-dot', onEnter);
       map.off('mouseleave', 'news-dot', onLeave);
     };
-  }, [ready, mapRef]);
+    // A new filter fetches its headlines straight away.
+  }, [ready, mapRef, newsType]);
 
   // New province data (every few minutes): place the dots again.
   useEffect(() => {

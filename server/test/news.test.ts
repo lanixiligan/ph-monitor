@@ -7,8 +7,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { decodeEntities, parseFeed } from '../src/fetchers/rss.ts';
-import { isDisasterHeadline } from '../src/news/keywords.ts';
+import { classifyHeadline, isDisasterHeadline } from '../src/news/keywords.ts';
 import { categoryForOutlet, outletFor, outletKey } from '../src/news/outlets.ts';
+import { checkHeadline } from '../src/news/checkHeadline.ts';
+import { stormNamesFromAlerts } from '../src/news/stormNames.ts';
 import { isSameStory, storyKey } from '../src/news/storyKey.ts';
 import { tagProvinces } from '../src/news/tagProvinces.ts';
 import { NEWS_FEEDS } from '../src/sources.ts';
@@ -131,6 +133,117 @@ test('keywords: ordinary headlines and false-positive words do not pass', () => 
 test('keywords: case and accents are ignored', () => {
   assert.equal(isDisasterHeadline('TYPHOON hits Parañaque'), true);
   assert.equal(isDisasterHeadline('lindol'), true);
+});
+
+test('keywords: the misses found in step 5.4 now pass', () => {
+  const yes = [
+    'Magnitude 6.9 jolts Cebu',
+    'Malakas na ulan sa Bicol, klase suspendido',
+    'El Niño to bring drought to all provinces by March 2027 – DOST',
+    'Lambunao under state of calamity as dry spell hits farmers',
+    'Tagtuyot sa Mindanao, palay nasira',
+    'Forest fire hits Tuba in Benguet',
+    '287 hectares of land razed by grass fire in Ilocos Norte – OCD',
+    'Wildfire razes section of mountain in Zambales tourist town',
+    'Puerto Princesa heat index to hit 45°C Monday',
+    'DOH cautions public on heatstroke risk amid soaring temperatures',
+    '‘So hot you can’t breathe’: Extreme heat hits the Philippines',
+    'Indonesia forest-fire smoke reaches Philippines, may persist for days',
+  ];
+  for (const title of yes) assert.equal(isDisasterHeadline(title), true, title);
+});
+
+test('keywords: false matches found in step 5.4 no longer pass', () => {
+  const no = [
+    // Pagasa Island is a place in the West Philippine Sea, not the weather agency.
+    'Chinese vessel harasses 3 BFAR ships off Pagasa Island',
+    'Far from home, teachers keep classes going on Pagasa Island',
+    // Evacuations and calamities with a cause that is not a natural hazard.
+    '81 families seek shelter in evacuation center after Pasig fire',
+    'Fire hits hotel in Manila; over 700 guests, employees evacuated',
+    'Philippines orders evacuation of Filipinos from Iraq and Iran',
+    'AFP: Middle East evacuation operations require careful planning',
+    'Capiz under State of Calamity due to RSSI infestation',
+    'State of calamity declared in Baguio amid energy crisis',
+    'Proclamation No. 1143: Declaring a state of calamity throughout the Philippines due to the African Swine Fever',
+    // The flood-control corruption scandal is not a flood.
+    'BSP tightens ownership checks on money changers amid flood control scandal',
+    'Iloilo solon prioritizes basic infra over flood control',
+    // Disasters abroad.
+    'Landslide kills toddler in Aceh amid unfinished disaster recovery',
+    'Moderate mag. 4.4 earthquake - Philippine Sea, 93 km northwest of Pulau Karakelang Island, Indonesia',
+    'World Earthquake Report for Sunday, 15 November 2026',
+    // Elections, and man-made collapses (left out while the focus is natural disasters).
+    'Mayor wins by a landslide in Cebu',
+    'The 8 January 2026 Binaliw garbage landslide in the Philippines.',
+  ];
+  for (const title of no) assert.equal(isDisasterHeadline(title), false, title);
+});
+
+test('keywords: a disaster abroad still passes when it names the Philippines or a province', () => {
+  assert.equal(isDisasterHeadline('Landslide kills toddler in Aceh'), false);
+  assert.equal(isDisasterHeadline('Landslide kills toddler in Aceh', { namesProvince: true }), true);
+  assert.equal(isDisasterHeadline('Typhoon heads to Taiwan after leaving the Philippines'), true);
+});
+
+test('types: each headline gets the kinds of disaster it names', () => {
+  const cases: [string, string[]][] = [
+    ['Super Typhoon Champi enters PAR, named Rosal', ['typhoon']],
+    ['Floods displace 3,000 families in Pampanga', ['flood']],
+    ['Habagat nagpaulan sa Metro Manila', ['flood']],
+    ['Magnitude 6.1 earthquake jolts Davao Oriental', ['earthquake']],
+    ['PHIVOLCS: Kanlaon Volcano emits ash anew', ['volcano']],
+    ['NDRRMC: 12 dead after landslide', ['landslide']],
+    ['Phivolcs: Manila Trench movement could generate 5.5-meter tsunami', ['tsunami']],
+    ['Rice imports balloon as El Niño ravages farms', ['drought']],
+    ['Surigao del Norte forest fire threatens Philippine eagle nests', ['wildfire']],
+    ['Taytay, Rizal logs danger-level heat index', ['heat']],
+    // More than one kind.
+    ['Bulusan Volcano Logs Over 430 Quakes in 24 Hours', ['earthquake', 'volcano']],
+    ['Storm surge affects coastal communities in La Union', ['tsunami', 'typhoon']],
+    ['Public warned vs heat stroke amid El Niño', ['drought', 'heat']],
+    // A disaster, but only a response: general (no kind).
+    ['Over 200 food packs given to evacuees in Tabaco City — DSWD', []],
+    ['State of calamity declared in Albay', []],
+  ];
+  for (const [title, types] of cases) {
+    const result = classifyHeadline(title);
+    assert.equal(result.disaster, true, title);
+    // The kinds come back in the panel's order; sort both to compare.
+    assert.deepEqual([...result.types].sort(), types, title);
+  }
+});
+
+test('types: a headline that is not about a disaster has no kinds', () => {
+  assert.deepEqual(classifyHeadline('PBBM opens ASEAN Summit'), { disaster: false, types: [] });
+});
+
+test('types: names of current storms count, local names only in quotes', () => {
+  const storms = [
+    { name: 'Fung-wong', needsQuotes: false },
+    { name: 'Uwan', needsQuotes: true },
+  ];
+  assert.deepEqual(classifyHeadline('Fung-wong leaves 5 dead in Catanduanes', { storms }).types, ['typhoon']);
+  assert.deepEqual(classifyHeadline('‘Uwan’ leaves 5 dead in Catanduanes', { storms }).types, ['typhoon']);
+  assert.deepEqual(classifyHeadline("Death toll from 'Uwan' rises to 20", { storms }).types, ['typhoon']);
+  // A local name without quotes is too often a person's name.
+  assert.equal(isDisasterHeadline('Uwan Santos wins chess title', { storms }), false);
+  // Without the list, the name alone means nothing.
+  assert.equal(isDisasterHeadline('‘Uwan’ leaves 5 dead in Catanduanes'), false);
+});
+
+test('storm names: PAGASA cyclone alerts give the local name (quotes needed) and the international one', () => {
+  assert.deepEqual(stormNamesFromAlerts(['Tropical Cyclone Alert : Typhoon Samuel (CEMPAKA)']), [
+    { name: 'Samuel', needsQuotes: true },
+    { name: 'CEMPAKA', needsQuotes: false },
+  ]);
+  assert.deepEqual(stormNamesFromAlerts(['Tropical Cyclone Alert : Severe Tropical Storm Uwan (FUNG-WONG)']), [
+    { name: 'Uwan', needsQuotes: true },
+    { name: 'FUNG-WONG', needsQuotes: false },
+  ]);
+  assert.deepEqual(stormNamesFromAlerts(['Tropical Depression Ada']), [{ name: 'Ada', needsQuotes: true }]);
+  // Other alerts name no storm.
+  assert.deepEqual(stormNamesFromAlerts(['General Flood Advisory', 'Heavy Rainfall Warning']), []);
 });
 
 // ---- Outlet category ----
@@ -269,6 +382,29 @@ const PROVINCES = [
   { psgc: 907300000, name: 'Zamboanga del Sur' },
   { psgc: 907200000, name: 'Zamboanga del Norte' },
   { psgc: 1907000000, name: 'Tawi-Tawi' },
+  { psgc: 405800000, name: 'Rizal' },
+  { psgc: 307700000, name: 'Aurora' },
+  { psgc: 1705300000, name: 'Palawan' },
+  { psgc: 1606700000, name: 'Surigao del Norte' },
+  { psgc: 1606800000, name: 'Surigao del Sur' },
+  { psgc: 603000000, name: 'Iloilo' },
+  { psgc: 102800000, name: 'Ilocos Norte' },
+  { psgc: 506200000, name: 'Sorsogon' },
+];
+
+// A few real rows from the places table (cities and municipalities).
+const TOWNS = [
+  { name: 'City of Tabaco', provincePsgc: 500500000 },
+  { name: 'City of Tandag', provincePsgc: 1606800000 },
+  { name: 'Lambunao', provincePsgc: 603000000 },
+  { name: 'Guiuan', provincePsgc: 802600000 },
+  { name: 'Coron', provincePsgc: 1705300000 },
+  // Two towns called Taytay, in Rizal and in Palawan: the name alone cannot say which.
+  { name: 'Taytay', provincePsgc: 405800000 },
+  { name: 'Taytay', provincePsgc: 1705300000 },
+  // Also a surname, and also a Filipino word (gubat = forest).
+  { name: 'Marcos', provincePsgc: 102800000 },
+  { name: 'Gubat', provincePsgc: 506200000 },
 ];
 
 test('provinces: plain names, with accents and case ignored', () => {
@@ -328,4 +464,89 @@ test('provinces: cities and volcanoes name their province', () => {
 
 test('provinces: two provinces in one headline', () => {
   assert.deepEqual(tagProvinces('Floods in Cebu and Leyte', PROVINCES), [702200000, 803700000]);
+});
+
+test('provinces: islands and spellings that name a province', () => {
+  assert.deepEqual(tagProvinces('Pagasa Island in West Philippine Sea suffers typhoon damage', PROVINCES), [1705300000]);
+  assert.deepEqual(tagProvinces('Quake southeast of Siargao Island', PROVINCES), [1606700000]);
+  assert.deepEqual(tagProvinces('Lagusnilad sa Maynila, abot bewang pa rin ang baha', PROVINCES), [1303900000]);
+});
+
+test('provinces: a sea trench and people named after places tag nothing', () => {
+  assert.deepEqual(tagProvinces('Phivolcs: Manila Trench movement could generate tsunami', PROVINCES), []);
+  assert.deepEqual(tagProvinces('Jose Rizal monument damaged by quake', PROVINCES), []);
+  assert.deepEqual(tagProvinces('Manuel Quezon III: lessons from the typhoon', PROVINCES), []);
+  assert.deepEqual(tagProvinces('Aurora Boulevard flooded again', PROVINCES), []);
+  // Rizal Park is in the City of Manila.
+  assert.deepEqual(tagProvinces('Flood at Rizal Park', PROVINCES), [1303900000]);
+  // The provinces themselves still work.
+  assert.deepEqual(tagProvinces('Landslide in Rizal and Aurora', PROVINCES), [307700000, 405800000]);
+});
+
+test('towns: a town or city names its province', () => {
+  assert.deepEqual(tagProvinces('Food packs given to evacuees in Tabaco City', PROVINCES, TOWNS), [500500000]);
+  assert.deepEqual(tagProvinces('Magnitude 5.4 Earthquake 61 km Northeast of Tandag, Philippines', PROVINCES, TOWNS), [1606800000]);
+  assert.deepEqual(tagProvinces('Lambunao under state of calamity as dry spell hits farmers', PROVINCES, TOWNS), [603000000]);
+  assert.deepEqual(tagProvinces('Guiuan declares state of calamity', PROVINCES, TOWNS), [802600000]);
+  assert.deepEqual(tagProvinces('Heat index in Coron may reach danger level', PROVINCES, TOWNS), [1705300000]);
+});
+
+test('towns: only where the headline uses the name as a place', () => {
+  // Without "in", "of", "City" and the like, and not first, a town name is not used.
+  assert.deepEqual(tagProvinces('Evacuees thank Lambunao volunteers', PROVINCES, TOWNS), []);
+  // A name used by towns in two provinces is skipped.
+  assert.deepEqual(tagProvinces('Flood in Taytay', PROVINCES, TOWNS), []);
+  // ...but a province named next to it still counts.
+  assert.deepEqual(tagProvinces('Taytay, Rizal logs danger-level heat index', PROVINCES, TOWNS), [405800000]);
+  // Town names that are also surnames or common words are never used.
+  assert.deepEqual(tagProvinces('Marcos declares state of calamity', PROVINCES, TOWNS), []);
+  assert.deepEqual(tagProvinces('Sunog sa gubat, apektado ang mga magsasaka', PROVINCES, TOWNS), []);
+});
+
+test('check: places are found first, so a disaster abroad that names a province is kept', () => {
+  const context = { provinces: PROVINCES, towns: TOWNS, storms: [{ name: 'Uwan', needsQuotes: true }] };
+  assert.deepEqual(checkHeadline('Smoke from Indonesia forest fire reaches Palawan', context), {
+    disaster: true,
+    types: ['wildfire'],
+    provincePsgcs: [1705300000],
+  });
+  assert.deepEqual(checkHeadline('Guiuan declares state of calamity after ‘Uwan’ impact', context), {
+    disaster: true,
+    types: ['typhoon'],
+    provincePsgcs: [802600000],
+  });
+  assert.equal(checkHeadline('Landslide kills toddler in Aceh', context).disaster, false);
+});
+
+// ---- The labelled headlines (fixtures/news/labelled-headlines.json) ----
+// Real headlines with the right answers filled in by hand. `npm run
+// measure:news` prints the details; this test fails if a change makes the
+// news check clearly worse than it was in step 5.4 (2026-11-17).
+
+type Labelled = { title: string; disaster: boolean; types: string[]; provinces: string[] };
+
+test('labelled headlines: the news check stays at least as good as in step 5.4', () => {
+  const headlines = JSON.parse(fixture('labelled-headlines.json')) as Labelled[];
+  const provinces = JSON.parse(fixture('provinces.json')) as { psgc: number; name: string }[];
+  const towns = JSON.parse(fixture('towns.json')) as { name: string; provincePsgc: number }[];
+  const nameOf = new Map(provinces.map((province) => [province.psgc, province.name]));
+  const context = { provinces, towns, storms: [] };
+  const results = headlines.map((headline) => ({ headline, result: checkHeadline(headline.title, context) }));
+
+  const kept = results.filter(({ result }) => result.disaster);
+  const keptRight = kept.filter(({ headline }) => headline.disaster);
+  const disasters = results.filter(({ headline }) => headline.disaster);
+  const sorted = (list: string[]) => [...list].sort().join('|');
+  const typesRight = keptRight.filter(({ headline, result }) => sorted(result.types) === sorted(headline.types));
+  const placesRight = disasters.filter(
+    ({ headline, result }) =>
+      sorted(result.provincePsgcs.map((psgc) => nameOf.get(psgc) ?? '')) === sorted(headline.provinces),
+  );
+
+  // In step 5.4: 93% of kept headlines right, 99% of disasters found,
+  // kinds 97% right, provinces 100% right.
+  assert.ok(keptRight.length / kept.length >= 0.9, `kept and right: ${keptRight.length} of ${kept.length}`);
+  assert.ok(keptRight.length / disasters.length >= 0.95, `found: ${keptRight.length} of ${disasters.length}`);
+  assert.ok(typesRight.length / keptRight.length >= 0.95, `kinds right: ${typesRight.length} of ${keptRight.length}`);
+  assert.ok(placesRight.length / disasters.length >= 0.97, `places right: ${placesRight.length} of ${disasters.length}`);
 });

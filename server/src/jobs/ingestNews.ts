@@ -1,14 +1,18 @@
-// Job: read the news feeds, keep headlines about disasters, tag the provinces
-// they name, merge the same story from different outlets, and save them.
+// Job: read the news feeds, keep headlines about natural disasters, note
+// which kinds (typhoon, flood...) and which provinces they name, merge the
+// same story from different outlets, and save them. Saved headlines from the
+// last few days are checked again with the current rules.
 // Only headline, outlet, category, time and link are stored (never the text).
 
-import type { NewsOutletLink, OutletCategory } from '@ph-monitor/shared';
+import type { NewsOutletLink, NewsType, OutletCategory } from '@ph-monitor/shared';
 import { pool } from '../db.ts';
 import { fetchFeed, type FeedItem } from '../fetchers/rss.ts';
-import { isDisasterHeadline } from '../news/keywords.ts';
+import { checkHeadline } from '../news/checkHeadline.ts';
+import type { NewsContext } from '../news/checkHeadline.ts';
+import type { StormName } from '../news/keywords.ts';
 import { outletFor, outletKey } from '../news/outlets.ts';
+import { stormNamesFromAlerts } from '../news/stormNames.ts';
 import { isSameStory, storyKey } from '../news/storyKey.ts';
-import { tagProvinces } from '../news/tagProvinces.ts';
 import { NEWS_FEEDS } from '../sources.ts';
 
 const KEEP_DAYS = 14;
@@ -16,6 +20,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // Rows this recent are compared with new headlines. Feeds carry at most
 // 3 days of items and the story window is 2 days, so 6 days is enough.
 const COMPARE_DAYS = 6;
+// Storms seen within this many days count by name ("'Uwan' leaves 5 dead").
+const STORM_NAME_DAYS = 14;
 
 // A headline that passed every check, ready to be merged or saved.
 type Candidate = {
@@ -25,6 +31,7 @@ type Candidate = {
   category: OutletCategory;
   publishedAt: Date;
   provincePsgcs: number[];
+  types: NewsType[];
 };
 
 // A row already in the `news` table.
@@ -48,8 +55,44 @@ function alreadyListed(story: SavedStory, candidate: Candidate): boolean {
   );
 }
 
+// True if two lists hold the same items in the same order.
+function sameList<T>(a: T[], b: T[]): boolean {
+  return a.length === b.length && a.every((item, index) => item === b[index]);
+}
+
+/** Provinces, towns, and the names of storms seen lately, for checking headlines. */
+export async function loadNewsContext(): Promise<NewsContext> {
+  // BIGINT codes come back as text, so they are turned into numbers.
+  const provinces = await pool.query<{ psgc: string; name: string }>('SELECT psgc, name FROM provinces');
+  const towns = await pool.query<{ name: string; province_psgc: string }>('SELECT name, province_psgc FROM places');
+  const since = new Date(Date.now() - STORM_NAME_DAYS * DAY_MS);
+  const storms = await pool.query<{ name: string }>('SELECT DISTINCT name FROM storms WHERE updated_at >= $1', [since]);
+  const alerts = await pool.query<{ headline: string }>(
+    'SELECT headline FROM official_alerts WHERE sent_at >= $1',
+    [since],
+  );
+
+  // International names from the storms table, then both names from PAGASA's
+  // cyclone alerts. Each name once; a name that needs no quotes wins.
+  const byName = new Map<string, StormName>();
+  const all = [
+    ...storms.rows.map((row) => ({ name: row.name, needsQuotes: false })),
+    ...stormNamesFromAlerts(alerts.rows.map((row) => row.headline)),
+  ];
+  for (const storm of all) {
+    const key = storm.name.toLowerCase();
+    const known = byName.get(key);
+    if (!known || (known.needsQuotes && !storm.needsQuotes)) byName.set(key, storm);
+  }
+  return {
+    provinces: provinces.rows.map((row) => ({ psgc: Number(row.psgc), name: row.name })),
+    towns: towns.rows.map((row) => ({ name: row.name, provincePsgc: Number(row.province_psgc) })),
+    storms: [...byName.values()],
+  };
+}
+
 export async function ingestNews(): Promise<void> {
-  const provinceRows = await pool.query<{ psgc: number; name: string }>('SELECT psgc, name FROM provinces');
+  const context = await loadNewsContext();
 
   // 1. Read every feed. One failing feed is logged and the others go on.
   const candidates: Candidate[] = [];
@@ -80,7 +123,8 @@ export async function ingestNews(): Promise<void> {
         itemsDropped += 1;
         continue;
       }
-      if (!isDisasterHeadline(item.title)) continue;
+      const check = checkHeadline(item.title, context);
+      if (!check.disaster) continue;
       // The same link can come from two feeds (for example PhilStar's two).
       if (seenUrls.has(item.url)) continue;
       seenUrls.add(item.url);
@@ -91,7 +135,8 @@ export async function ingestNews(): Promise<void> {
         outlet: outlet.outlet,
         category: outlet.category,
         publishedAt: item.publishedAt,
-        provincePsgcs: tagProvinces(item.title, provinceRows.rows),
+        provincePsgcs: check.provincePsgcs,
+        types: check.types,
       });
     }
   }
@@ -109,15 +154,17 @@ export async function ingestNews(): Promise<void> {
   let merged = 0;
   let unchanged = 0;
   let removed = 0;
+  let rechecked = 0;
+  let droppedNow = 0;
   try {
     await client.query('BEGIN');
 
     const saved = await client.query(
-      `SELECT id, story_key, title, url, outlet, category, published_at, province_psgcs, other_outlets
+      `SELECT id, story_key, title, url, outlet, category, published_at, province_psgcs, types, other_outlets
        FROM news WHERE published_at >= $1`,
       [new Date(Date.now() - COMPARE_DAYS * DAY_MS)],
     );
-    const stories: SavedStory[] = saved.rows.map((row) => ({
+    const savedStories: SavedStory[] = saved.rows.map((row) => ({
       id: row.id,
       storyKey: row.story_key,
       title: row.title,
@@ -127,8 +174,32 @@ export async function ingestNews(): Promise<void> {
       publishedAt: row.published_at,
       // BIGINT arrays arrive as text, so turn them into numbers.
       provincePsgcs: (row.province_psgcs as string[]).map(Number),
+      types: row.types,
       otherOutlets: row.other_outlets,
     }));
+
+    // Check recent saved headlines again with today's rules: a headline that
+    // no longer counts is removed; new kinds or places are saved.
+    const stories: SavedStory[] = [];
+    for (const story of savedStories) {
+      const check = checkHeadline(story.title, context);
+      if (!check.disaster) {
+        await client.query('DELETE FROM news WHERE id = $1', [story.id]);
+        droppedNow += 1;
+        continue;
+      }
+      if (!sameList(check.types, story.types) || !sameList(check.provincePsgcs, story.provincePsgcs)) {
+        await client.query('UPDATE news SET types = $2::text[], province_psgcs = $3::bigint[] WHERE id = $1', [
+          story.id,
+          check.types,
+          check.provincePsgcs,
+        ]);
+        story.types = check.types;
+        story.provincePsgcs = check.provincePsgcs;
+        rechecked += 1;
+      }
+      stories.push(story);
+    }
 
     for (const candidate of candidates) {
       const key = storyKey(candidate.title);
@@ -150,11 +221,20 @@ export async function ingestNews(): Promise<void> {
       }
 
       const inserted = await client.query(
-        `INSERT INTO news (story_key, title, url, outlet, category, published_at, province_psgcs)
-         VALUES ($1, $2, $3, $4, $5, $6, $7::bigint[])
+        `INSERT INTO news (story_key, title, url, outlet, category, published_at, province_psgcs, types)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::bigint[], $8::text[])
          ON CONFLICT (story_key) DO NOTHING
          RETURNING id`,
-        [key, candidate.title, candidate.url, candidate.outlet, candidate.category, candidate.publishedAt, candidate.provincePsgcs],
+        [
+          key,
+          candidate.title,
+          candidate.url,
+          candidate.outlet,
+          candidate.category,
+          candidate.publishedAt,
+          candidate.provincePsgcs,
+          candidate.types,
+        ],
       );
       // No row back means an old row (past the compare window) has this exact key.
       if (inserted.rows[0] === undefined) {
@@ -184,6 +264,7 @@ export async function ingestNews(): Promise<void> {
 
   console.log(
     `News: feeds ok ${feedsOk}, failed ${feedsFailed}; items read ${itemsRead}, skipped ${itemsDropped}; ` +
-      `disaster ${disasterItems}; new ${newRows}, merged ${merged}, already saved ${unchanged}, removed old ${removed}.`,
+      `disaster ${disasterItems}; new ${newRows}, merged ${merged}, already saved ${unchanged}, removed old ${removed}; ` +
+      `saved headlines re-checked: ${rechecked} updated, ${droppedNow} no longer count.`,
   );
 }

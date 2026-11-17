@@ -81,7 +81,7 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/places?q=..` | Place search: cities, municipalities and provinces by name, from our own database |
 | `GET /api/events` | Current disaster events, for map markers |
 | `GET /api/storms` | Active storms with their tracks |
-| `GET /api/news` | Latest headlines; optional `category`, `psgc`, `limit` (1–100, default 30) |
+| `GET /api/news` | Latest headlines; optional `type` (a kind of disaster or `general`), `category`, `psgc`, `limit` (1–100, default 30) |
 | `GET /api/streams` | Stream slots the page may show |
 | `GET /api/bulletins` | Links to official PAGASA and PHIVOLCS pages |
 | `GET /api/alerts` | Official alerts in effect (PAGASA) |

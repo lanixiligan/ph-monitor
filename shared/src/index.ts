@@ -5,3 +5,5 @@
 export type * from './types.ts';
 
 export { APP_NAME } from './appInfo.ts';
+export { NEWS_TYPES } from './newsTypes.ts';
+export type { NewsType } from './newsTypes.ts';

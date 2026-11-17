@@ -21,7 +21,7 @@ TypeScript is pinned to 5.9.3 on purpose (do not move to 7 without asking).
 ## Folder map
 
 ```
-shared/src/        types.ts (shared types), appInfo.ts (APP_NAME)
+shared/src/        types.ts (shared types), appInfo.ts (APP_NAME), newsTypes.ts (kinds of disaster)
 server/db/         schema.sql (all tables; re-runnable)
 server/scripts/    migrate.ts, load-provinces.ts, load-places.ts, run-job.ts,
                    check-sources.ts, load-sample-storm.ts, pick-weather-points.ts,
@@ -39,7 +39,8 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
   jobs/            ingestEarthquakes, ingestWeather, ingestEvents, ingestStorms, ingestAlerts,
                    ingestForecast, ingestNews, checkSources, computeScores, scheduler,
                    due (which jobs are due; every job's interval)
-  news/            keyword filter, same-story merging, province tagging
+  news/            keyword filter and kinds of disaster, province and town tagging,
+                   checkHeadline (both together), storm names, same-story merging
   checker/         link checks for feeds and YouTube streams
   scoring/         scoring.ts (WEIGHTS + all formulas)
   replay/          replay.ts (archived records → score inputs for a past hour)
@@ -70,6 +71,7 @@ npm run dev:web          map on :5173
 npm test                 tests
 npm run test:db          database tests (real SQL, separate phmonitor_test database; needs db:up)
 npm run replay           replay past disasters through the score formula, print a table
+npm run measure:news     check the news rules against the hand-labelled headlines
 npm run typecheck        tsc over all workspaces
 npm run ingest:earthquakes | ingest:weather | compute:scores   one job by hand
 npm run ingest:events | ingest:storms | ingest:forecast | ingest:news | ingest:alerts

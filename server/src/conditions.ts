@@ -11,10 +11,12 @@ import type {
   ForecastDay,
   NewsItem,
   NewsOutletLink,
+  NewsType,
   OfficialAlert,
   OutletCategory,
   StormComing,
 } from '@ph-monitor/shared';
+import { NEWS_TYPES } from '@ph-monitor/shared';
 import { pool } from './db.ts';
 import { isAlertInEffect } from './fetchers/pagasa.ts';
 
@@ -95,11 +97,17 @@ export type NewsRow = {
   category: OutletCategory;
   published_at: Date;
   province_psgcs: string[]; // BIGINT[] comes back as a list of text
+  types: string[];
   other_outlets: NewsOutletLink[];
 };
 
 export const NEWS_COLUMNS =
-  'id, title, url, outlet, category, published_at, province_psgcs, other_outlets';
+  'id, title, url, outlet, category, published_at, province_psgcs, types, other_outlets';
+
+// `type is NewsType` tells TypeScript the text is one of the nine kinds when this returns true.
+function isNewsType(text: string): text is NewsType {
+  return (NEWS_TYPES as readonly string[]).includes(text);
+}
 
 export function toNewsItem(row: NewsRow): NewsItem {
   return {
@@ -110,6 +118,7 @@ export function toNewsItem(row: NewsRow): NewsItem {
     category: row.category,
     publishedAt: row.published_at.toISOString(),
     provincePsgcs: row.province_psgcs.map(Number),
+    types: row.types.filter(isNewsType),
     otherOutlets: row.other_outlets,
   };
 }
