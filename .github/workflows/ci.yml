@@ -18,6 +18,23 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # A throwaway PostgreSQL + PostGIS for the database tests, the same image
+    # as docker-compose.yml. The name, password and port match .env.example.
+    services:
+      db:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_USER: phmonitor
+          POSTGRES_PASSWORD: change_me
+          POSTGRES_DB: phmonitor
+        ports:
+          - 5433:5432
+        # The steps below wait until the database answers.
+        options: >-
+          --health-cmd "pg_isready -U phmonitor -d phmonitor"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -29,10 +46,14 @@ jobs:
       # Installs exactly what package-lock.json lists.
       - run: npm ci
 
-      # The server reads its settings from .env; the example values are enough
-      # here because the tests never open the database.
+      # The server reads its settings from .env; the example values match
+      # the database service above.
       - run: cp .env.example .env
 
       - run: npm run typecheck
+      # Unit tests: no database, no internet.
       - run: npm test
+      # Database tests: the real SQL against a small seeded map, in a separate
+      # "phmonitor_test" database that the tests create themselves.
+      - run: npm run test:db
       - run: npm run build
