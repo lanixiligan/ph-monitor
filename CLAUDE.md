@@ -24,23 +24,28 @@ TypeScript is pinned to 5.9.3 on purpose (do not move to 7 without asking).
 shared/src/        types.ts (shared types), appInfo.ts (APP_NAME)
 server/db/         schema.sql (all tables; re-runnable)
 server/scripts/    migrate.ts, load-provinces.ts, load-places.ts, run-job.ts,
-                   check-sources.ts, load-sample-storm.ts, pick-weather-points.ts
+                   check-sources.ts, load-sample-storm.ts, pick-weather-points.ts,
+                   replay.ts (historical replay; downloads archives into data/replay/)
 server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    pointWeather.ts (on-demand weather for one spot),
                    weatherPoints.ts (extra sample points, worst reading per province),
                    sources.ts (every news feed and stream link, outlet categories),
-                   conditions.ts (outlook, nearby events, storms, news, official alerts)
+                   conditions.ts (outlook, nearby events, storms, news, official alerts),
+                   scoreHistory.ts (a history row only when a score changed)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
                    jma, jtwc, openMeteoDaily, openMeteoFlood, rss, pagasa (official
                    alerts), retry (one more try for a failed download)
   jobs/            ingestEarthquakes, ingestWeather, ingestEvents, ingestStorms, ingestAlerts,
-                   ingestForecast, ingestNews, checkSources, computeScores, scheduler
+                   ingestForecast, ingestNews, checkSources, computeScores, scheduler,
+                   due (which jobs are due; every job's interval)
   news/            keyword filter, same-story merging, province tagging
   checker/         link checks for feeds and YouTube streams
   scoring/         scoring.ts (WEIGHTS + all formulas)
+  replay/          replay.ts (archived records → score inputs for a past hour)
   routes/          provinces.ts (map data), point.ts (score for one spot),
                    conditions.ts (events, storms, news, streams, bulletins)
 server/test/       one test file per area, real feed samples in fixtures/
+  db/              database tests (testDb.ts seeds a small map; import it first)
 web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (time, number
                    and link helpers), mapOverlays.ts + stormGeo.ts (event markers and
                    storm tracks), styles.css (all colours and layout), palette.ts (CSS
@@ -61,6 +66,8 @@ npm run load-places      load city and municipality boundaries
 npm run dev:server       API + scheduler on :3001
 npm run dev:web          map on :5173
 npm test                 tests
+npm run test:db          database tests (real SQL, separate phmonitor_test database; needs db:up)
+npm run replay           replay past disasters through the score formula, print a table
 npm run typecheck        tsc over all workspaces
 npm run ingest:earthquakes | ingest:weather | compute:scores   one job by hand
 npm run ingest:events | ingest:storms | ingest:forecast | ingest:news | ingest:alerts

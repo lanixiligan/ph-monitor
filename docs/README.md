@@ -12,6 +12,7 @@ Short reference pages about where the data comes from and how it moves through t
 | [news-and-streams.md](news-and-streams.md) | Where headlines and live videos come from, and how they are filtered and checked |
 | [how-it-works.md](how-it-works.md) | How data flows from a feed to the map: jobs, schedule, database tables, API |
 | [privacy-and-limits.md](privacy-and-limits.md) | What the reader's browser contacts, API keys, call budgets, known gaps |
+| [replay-results.md](replay-results.md) | How the score behaved in past disasters and in an ordinary week |
 
 Elsewhere in the project:
 

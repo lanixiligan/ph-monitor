@@ -31,6 +31,7 @@
     "ingest:alerts": "npm run ingest:alerts --workspace server",
     "weather-points": "npm run weather-points --workspace server",
     "check:sources": "npm run check:sources --workspace server",
+    "replay": "npm run replay --workspace server",
     "test": "npm test --workspaces --if-present",
     "test:db": "npm run test:db --workspace server",
     "typecheck": "npm run typecheck --workspaces --if-present"

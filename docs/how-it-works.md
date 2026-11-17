@@ -37,8 +37,10 @@ The scheduler (`server/src/jobs/scheduler.ts`) ticks every 15 minutes while the 
 | Feed check | 1 hour | `npm run check:sources` |
 | 7-day outlook | 6 hours | `npm run ingest:forecast` |
 
-Everything also runs once when the server starts. The outlook is skipped at startup if it was
-fetched less than 6 hours ago. A job that fails is logged and the next jobs still run.
+When the server starts, it runs only the jobs that are due: a job is skipped if it last
+succeeded less than its own interval ago (`server/src/jobs/due.ts` asks the database). So
+restarting the server again and again does not fetch the feeds again. The scores are always
+worked out at start. A job that fails is logged and the next jobs still run.
 
 ## Database tables
 

@@ -215,9 +215,9 @@ refer to the audit report.
 | 1 | Data integrity: unknown is never calm, `/api/status` and banner, close dropped events, retries, wording | Built, not committed |
 | 2 | Official warnings: PAGASA alert feed, three-tier labels, official block at the top of the card | Built, not committed |
 | 3 | Geography and hazards: storm distance to the track line, JTWC fallback, extra weather points, "not covered" list, per-hazard levels | Built, not committed |
-| 4 | Stability: jobs run only when due (1.11), score history with part-scores (1.12), deployment basics (1.13), database tests in CI, historical replay | Not started |
+| 4 | Stability: jobs run only when due (1.11), score history with part-scores (1.12), database tests in CI, historical replay (results: `docs/replay-results.md`) | Built, not committed. Deployment basics (1.13) skipped for now: no plan to go online soon |
 | 5 | Experience: place search and "use my location" (1.17), card order (1.18), keyboard and touch (1.19), Filipino review, news fixes (1.14, 1.15) | Not started |
-| 6 | Later: see below | Waits for Phase 4's replay |
+| 6 | Later: see below | Replay has run; not started |
 
 ### Phase 6 — later
 
