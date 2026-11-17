@@ -247,6 +247,8 @@ export const fil: Strings = {
     eventsTitle: 'Mga sakuna sa malapit', // REVIEW
     eventAway: '{distance} ang layo, ', // REVIEW
     eventAlert: ', antas ng alerto: {level}', // REVIEW
+    eventEnded: ', natapos {time}', // REVIEW
+    otherEventsTitle: 'Iba pang sakuna sa malapit', // REVIEW
     stormsTitle: 'Mga bagyong inaasahang dadaan sa malapit', // REVIEW
     stormLine: 'mga {distance} ang layo bandang {time}', // REVIEW
     stormNote: 'Hindi tiyak ang sentro ng forecast; maaaring iba ang tunay na landas.', // REVIEW

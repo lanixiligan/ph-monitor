@@ -508,6 +508,36 @@ label.legend-row {
   font-size: 13px;
 }
 
+/* A section of the card that starts closed (Fold.tsx). The title line looks
+   like the other section titles; the browser draws the little arrow. */
+.fold {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.fold summary {
+  cursor: pointer;
+}
+
+/* The title sits on the arrow's line, so its own spacing and line are dropped. */
+.panel .fold summary h3 {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fold summary .tag {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* A little air between the title and what opens under it. */
+.fold[open] summary {
+  margin-bottom: 8px;
+}
+
 /* Official alerts: one block per alert. */
 .alert {
   margin-bottom: 8px;

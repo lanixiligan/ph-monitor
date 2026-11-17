@@ -1,10 +1,12 @@
-// The Phase 2 part of the status card: 7-day outlook, nearby events, storms
-// forecast to pass near, recent headlines and official bulletin links.
+// The status card's sections beyond the score: storms and events near here
+// (above the score), official bulletin links, and the sections that start
+// closed: other events, the 7-day outlook and recent headlines.
 // A section with nothing to show is left out, except the bulletin links.
 
 import { useEffect, useState } from 'react';
-import type { BulletinLink, Conditions } from '@ph-monitor/shared';
+import type { BulletinLink, Conditions, DisasterEvent } from '@ph-monitor/shared';
 import { fetchBulletins } from '../api.ts';
+import { isTopEvent } from '../cardOrder.ts';
 import {
   bulletinLabel,
   formatDay,
@@ -14,21 +16,50 @@ import {
   safeUrl,
 } from '../format.ts';
 import { fill, lookup, useStrings } from '../i18n/index.ts';
+import { Fold } from './Fold.tsx';
 
 // Props lists what the parent hands to this component. `{ conditions }` below
 // pulls that one value out of the props object.
 type Props = { conditions: Conditions };
 
+/** A list of disaster events: title, distance, kind, alert level, source and times. */
+function EventList({ events }: { events: DisasterEvent[] }) {
+  const { t } = useStrings();
+  const c = t.conditions;
+  return (
+    <ul>
+      {events.map((event) => (
+        <li key={event.id}>
+          {event.title}
+          <br />
+          <span className="muted">
+            {event.distanceKm === undefined
+              ? ''
+              : fill(c.eventAway, { distance: formatKm(event.distanceKm) })}
+            {lookup(t.kinds, event.kind)}
+            {event.alertLevel
+              ? fill(c.eventAlert, { level: lookup(t.alertLevels, event.alertLevel) })
+              : ''}
+            , {event.source === 'gdacs' ? 'GDACS' : 'NASA EONET'}, {formatTime(event.startedAt)}
+            {event.endedAt !== null && fill(c.eventEnded, { time: formatTime(event.endedAt) })}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
- * Storms forecast to pass near, and disaster events nearby. Shown at the very
- * top of the card, above the score: a low score must never hide these.
- * Draws nothing when there are none.
+ * Storms forecast to pass near, and the nearby disaster events that are still
+ * going or are orange or red (see isTopEvent). Shown above the score: a low
+ * score must never hide these. Draws nothing when there are none.
  */
 export function NearHere({ conditions }: Props) {
   const { t } = useStrings();
   const c = t.conditions;
-  const { nearbyEvents, stormsComing } = conditions;
-  if (nearbyEvents.length === 0 && stormsComing.length === 0) return null;
+  const { stormsComing } = conditions;
+  const topEvents = conditions.nearbyEvents.filter(isTopEvent);
+  if (topEvents.length === 0 && stormsComing.length === 0) return null;
 
   return (
     <div className="near-here">
@@ -53,46 +84,38 @@ export function NearHere({ conditions }: Props) {
         </>
       )}
 
-      {nearbyEvents.length > 0 && (
+      {topEvents.length > 0 && (
         <>
           <h4>{c.eventsTitle}</h4>
-          <ul>
-            {nearbyEvents.map((event) => (
-              <li key={event.id}>
-                {event.title}
-                <br />
-                <span className="muted">
-                  {event.distanceKm === undefined
-                    ? ''
-                    : fill(c.eventAway, { distance: formatKm(event.distanceKm) })}
-                  {lookup(t.kinds, event.kind)}
-                  {event.alertLevel
-                    ? fill(c.eventAlert, { level: lookup(t.alertLevels, event.alertLevel) })
-                    : ''}
-                  , {event.source === 'gdacs' ? 'GDACS' : 'NASA EONET'}, {formatTime(event.startedAt)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <EventList events={topEvents} />
         </>
       )}
-
     </div>
   );
 }
 
+/**
+ * The sections that start closed: nearby events that did not make the top
+ * block (finished, and green or with no level), the 7-day outlook and the
+ * recent headlines.
+ */
 export function ConditionsSections({ conditions }: Props) {
   const { t } = useStrings();
   const c = t.conditions;
   const { outlook, news } = conditions;
+  // `!isTopEvent(event)` = every event the top block left out.
+  const otherEvents = conditions.nearbyEvents.filter((event) => !isTopEvent(event));
 
   return (
     <>
+      {otherEvents.length > 0 && (
+        <Fold title={c.otherEventsTitle} count={otherEvents.length} tag={t.tiers.global}>
+          <EventList events={otherEvents} />
+        </Fold>
+      )}
+
       {outlook.length > 0 && (
-        <>
-          <h3>
-            {c.outlookTitle} <span className="tag">{t.tiers.model}</span>
-          </h3>
+        <Fold title={c.outlookTitle} tag={t.tiers.model}>
           <div className="outlook">
             {outlook.map((day) => (
               <div className="outlook-day" key={day.day}>
@@ -106,12 +129,11 @@ export function ConditionsSections({ conditions }: Props) {
             ))}
           </div>
           <p className="muted">{c.outlookNote}</p>
-        </>
+        </Fold>
       )}
 
       {news.length > 0 && (
-        <>
-          <h3>{c.newsTitle}</h3>
+        <Fold title={c.newsTitle} count={news.length}>
           <ul>
             {news.map((item) => (
               <li key={item.id}>
@@ -126,16 +148,14 @@ export function ConditionsSections({ conditions }: Props) {
               </li>
             ))}
           </ul>
-        </>
+        </Fold>
       )}
-
-      <Bulletins />
     </>
   );
 }
 
-/** Plain links to the official agency pages. Always shown. */
-function Bulletins() {
+/** Plain links to the official agency pages. Always shown, right under the score's reasons. */
+export function Bulletins() {
   const { t } = useStrings();
   const [links, setLinks] = useState<BulletinLink[]>([]);
 

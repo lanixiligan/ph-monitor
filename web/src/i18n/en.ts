@@ -251,6 +251,8 @@ export const en = {
     eventsTitle: 'Disaster events nearby',
     eventAway: '{distance} away, ',
     eventAlert: ', alert level {level}',
+    eventEnded: ', ended {time}',
+    otherEventsTitle: 'Other disaster events nearby',
     stormsTitle: 'Storms forecast to pass near',
     stormLine: 'about {distance} away around {time}',
     stormNote: 'The forecast centre is uncertain; the real path can be different.',

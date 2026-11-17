@@ -1,5 +1,6 @@
-// The status card: everything we know about the spot the reader clicked.
-// Shows the score, why it is what it is, the raw events, and how fresh the data is.
+// The status card: everything we know about the spot the reader picked.
+// Order: the place, official alerts, storms and serious events, the score
+// with its reasons, official links, then the details (each starts closed).
 
 import { useEffect, useState } from 'react';
 import type { EarthquakeEvent, PointDetail, WeatherEvent } from '@ph-monitor/shared';
@@ -11,7 +12,8 @@ import { fill, useStrings } from '../i18n/index.ts';
 import { bandColors, bandFor, bandLabel, scoreText } from '../scoreScale.ts';
 import { useTheme } from '../theme/index.ts';
 import { WarnIcon } from './WarnIcon.tsx';
-import { ConditionsSections, NearHere } from './Conditions.tsx';
+import { Bulletins, ConditionsSections, NearHere } from './Conditions.tsx';
+import { Fold } from './Fold.tsx';
 import { OfficialAlerts } from './OfficialAlerts.tsx';
 import { Disclaimer } from './Disclaimer.tsx';
 import { Ladder } from './Ladder.tsx';
@@ -181,7 +183,11 @@ export function StatusCard({ spot, onClose }: Props) {
         ))}
       </ul>
 
-      <h3>{t.card.quakesTitle}</h3>
+      {/* Links to the official pages, straight after the score and its reasons. */}
+      <Bulletins />
+
+      {/* Everything else starts closed; each title opens its section. */}
+      <Fold title={t.card.quakesTitle} count={quakes.length}>
       {quakes.length === 0 ? (
         <p className="muted">{t.card.quakesNone}</p>
       ) : (
@@ -213,10 +219,9 @@ export function StatusCard({ spot, onClose }: Props) {
           ))}
         </ul>
       )}
+      </Fold>
 
-      <h3>
-        {t.card.weatherTitle} <span className="tag">{t.tiers.model}</span>
-      </h3>
+      <Fold title={t.card.weatherTitle} tag={t.tiers.model}>
       {weather ? (
         <>
           <table>
@@ -250,10 +255,11 @@ export function StatusCard({ spot, onClose }: Props) {
       ) : (
         <p className="muted">{t.card.weatherNone}</p>
       )}
+      </Fold>
 
       <ConditionsSections conditions={detail.conditions} />
 
-      <h3>{t.card.updatedTitle}</h3>
+      <Fold title={t.card.updatedTitle}>
       <table>
         <tbody>
           <tr>
@@ -270,6 +276,7 @@ export function StatusCard({ spot, onClose }: Props) {
           </tr>
         </tbody>
       </table>
+      </Fold>
 
       <p className="muted">
         <Disclaimer />
