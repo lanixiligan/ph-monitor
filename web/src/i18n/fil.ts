@@ -184,6 +184,7 @@ export const fil: Strings = {
 
   // Map popups and hover labels.
   map: {
+    label: 'Mapa ng Pilipinas, may kulay ang mga lalawigan ayon sa score. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
     sampleNotice: 'Sample na datos, hindi totoong bagyo', // REVIEW
     noScoreYet: 'wala pang score', // REVIEW
     atLeast: 'hindi bababa sa {score}', // REVIEW

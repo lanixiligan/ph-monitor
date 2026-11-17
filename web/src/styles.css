@@ -806,12 +806,48 @@ label.legend-row {
 }
 
 .panel-body .ranking li {
+  margin: 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+/* Each row is a button that opens that province. It looks like plain text
+   until the pointer or the keyboard reaches it. */
+.ranking-row {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin: 0;
-  padding: 5px 0;
-  border-bottom: 1px solid var(--line-soft);
+  width: 100%;
+  padding: 5px 4px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ranking-row:hover {
+  background: var(--sea);
+}
+
+/* A finger needs a bigger target than a mouse pointer: rows at least 44px tall.
+   `pointer: coarse` is true on touch screens. */
+@media (pointer: coarse) {
+  .ranking-row,
+  .search-list li {
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .search input {
+    min-height: 44px;
+    /* 16px or more stops phones from zooming the page when the box is tapped. */
+    font-size: 16px;
+  }
+
+  .fold summary {
+    padding: 8px 0;
+  }
 }
 
 .ranking-name {

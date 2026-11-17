@@ -128,6 +128,8 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
   const dataRef = useRef(data);
   dataRef.current = data;
   const { theme } = useTheme();
+  // The small name-and-score label, kept so it can be removed when the spot is closed.
+  const popupRef = useRef<maplibregl.Popup | null>(null);
   // Where the reader was looking, kept so a theme change doesn't move the map.
   const cameraRef = useRef<{ center: maplibregl.LngLat; zoom: number } | null>(null);
 
@@ -306,11 +308,12 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
           // Sit a little away from the pointer so it doesn't cover the dot.
           offset: 14,
         });
-        theMap.on('mousemove', 'province-fill', (event) => {
+        popupRef.current = popup;
+        // `MapLayerMouseEvent` is MapLibre's type for a pointer event on one of our layers.
+        const showLabel = (event: maplibregl.MapLayerMouseEvent) => {
           const properties = event.features?.[0]?.properties;
           if (!properties) return;
-          theMap.getCanvas().style.cursor = 'pointer';
-          // Read at hover time, so the label follows the language chosen now.
+          // Read at this moment, so the label follows the language chosen now.
           const score = scoreText(
             typeof properties.score === 'number' ? properties.score : null,
             properties.incomplete === true,
@@ -319,7 +322,13 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
             .setLngLat(event.lngLat)
             .setText(`${properties.name}: ${score}`)
             .addTo(theMap);
+        };
+        theMap.on('mousemove', 'province-fill', (event) => {
+          theMap.getCanvas().style.cursor = 'pointer';
+          showLabel(event);
         });
+        // A touch screen has no hover, so a tap shows the label too. It stays
+        // beside the dot until the next tap or until the card is closed.
         theMap.on('mouseleave', 'province-fill', () => {
           theMap.getCanvas().style.cursor = '';
           popup.remove();
@@ -333,6 +342,7 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
           if (hits.length > 0 && theMap.queryRenderedFeatures(event.point, { layers: hits }).length > 0) {
             return;
           }
+          showLabel(event);
           onSelectRef.current({
             lat: Number(event.lngLat.lat.toFixed(4)),
             lon: Number(event.lngLat.lng.toFixed(4)),
@@ -393,12 +403,14 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
     map.flyTo({ center: [goTo.lon, goTo.lat], zoom: Math.max(map.getZoom(), 9) });
   }, [ready, goTo]);
 
-  // Keep the locate button's tooltip in the reader's language when it changes.
+  // Keep the locate button's tooltip and the map's own name in the reader's language.
   useEffect(() => {
     if (!ready) return;
     const button = containerRef.current?.querySelector('.maplibregl-ctrl-geolocate');
     button?.setAttribute('title', t.search.locate);
     button?.setAttribute('aria-label', t.search.locate);
+    // What a screen reader says when it reaches the map itself.
+    mapRef.current?.getCanvas().setAttribute('aria-label', t.map.label);
   }, [ready, t]);
 
   // Show or hide layers when a legend tick box changes.
@@ -427,6 +439,8 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
   // Whenever the picked spot changes, move the dot (or remove it).
   useEffect(() => {
     if (!ready) return;
+    // Closing the card also takes away the label a tap left behind.
+    if (spot === null) popupRef.current?.remove();
     const source = mapRef.current?.getSource('spot') as maplibregl.GeoJSONSource | undefined;
     source?.setData({
       type: 'FeatureCollection',

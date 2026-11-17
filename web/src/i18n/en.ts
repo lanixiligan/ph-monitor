@@ -187,6 +187,8 @@ export const en = {
 
   // Map popups and hover labels.
   map: {
+    // Read out by a screen reader when it reaches the map.
+    label: 'Map of the Philippines, provinces coloured by score. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
     sampleNotice: 'Sample data, not a real storm',
     noScoreYet: 'no score yet',
     atLeast: 'at least {score}',

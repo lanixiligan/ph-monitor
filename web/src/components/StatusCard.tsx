@@ -2,7 +2,8 @@
 // Order: the place, official alerts, storms and serious events, the score
 // with its reasons, official links, then the details (each starts closed).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { RefObject } from 'react';
 import type { EarthquakeEvent, PointDetail, WeatherEvent } from '@ph-monitor/shared';
 import { fetchPointDetail } from '../api.ts';
 import type { Spot } from '../api.ts';
@@ -33,6 +34,21 @@ export function StatusCard({ spot, onClose }: Props) {
   const [detail, setDetail] = useState<PointDetail | null>(null);
   // true when the last load failed (the message itself is looked up when drawn).
   const [failed, setFailed] = useState(false);
+  // The card's title, so the keyboard and screen readers can be moved to it.
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  // true from the moment a new spot is picked until its card has been announced.
+  const announceRef = useRef(false);
+
+  // When a new spot's details arrive, move the keyboard focus to the card's
+  // title: a screen reader then reads the place name, and Tab continues into
+  // the card. Not while the reader is steering the map with the keyboard, and
+  // without scrolling the page.
+  useEffect(() => {
+    if (!detail || !announceRef.current) return;
+    announceRef.current = false;
+    if (document.activeElement?.closest('.map')) return;
+    titleRef.current?.focus({ preventScroll: true });
+  }, [detail]);
 
   // Load the details when a spot is chosen, then refresh now and then.
   useEffect(() => {
@@ -41,6 +57,7 @@ export function StatusCard({ spot, onClose }: Props) {
     let cancelled = false;
     setDetail(null);
     setFailed(false);
+    announceRef.current = true;
 
     async function load() {
       try {
@@ -65,7 +82,7 @@ export function StatusCard({ spot, onClose }: Props) {
   if (failed) {
     return (
       <aside className="panel card">
-        <CardHead title={t.card.thisSpot} onClose={onClose} />
+        <CardHead title={t.card.thisSpot} onClose={onClose} titleRef={titleRef} />
         <div className="panel-body">
           <p className="notice">
             <WarnIcon /> {t.card.loadError}
@@ -77,7 +94,7 @@ export function StatusCard({ spot, onClose }: Props) {
   if (!detail) {
     return (
       <aside className="panel card">
-        <CardHead title={t.card.loading} onClose={onClose} />
+        <CardHead title={t.card.loading} onClose={onClose} titleRef={titleRef} />
       </aside>
     );
   }
@@ -104,7 +121,7 @@ export function StatusCard({ spot, onClose }: Props) {
   return (
     <aside className="panel card">
       {/* The city or municipality if we know it, otherwise the province. */}
-      <CardHead title={place?.name ?? province.name} onClose={onClose} />
+      <CardHead title={place?.name ?? province.name} onClose={onClose} titleRef={titleRef} />
       <div className="panel-body">
       <p className="muted card-where">
         {place ? `${province.name} · ` : ''}
@@ -287,11 +304,17 @@ export function StatusCard({ spot, onClose }: Props) {
 }
 
 /** The top line of the card: a title and a close button. */
-function CardHead({ title, onClose }: { title: string; onClose: () => void }) {
+// `RefObject<...>` is the type of a ref: a box holding the element once it is drawn.
+type CardHeadProps = { title: string; onClose: () => void; titleRef: RefObject<HTMLHeadingElement | null> };
+
+function CardHead({ title, onClose, titleRef }: CardHeadProps) {
   const { t } = useStrings();
   return (
     <div className="panel-head">
-      <h2>{title}</h2>
+      {/* tabIndex -1: the title can be given the focus by code, but Tab skips it. */}
+      <h2 ref={titleRef} tabIndex={-1}>
+        {title}
+      </h2>
       <button className="filter" onClick={onClose} aria-label={t.card.close}>
         {t.card.close}
       </button>

@@ -59,6 +59,15 @@ export function App() {
   // What went wrong with "use my location", if anything.
   const [locateProblem, setLocateProblem] = useState<'outside' | 'failed' | null>(null);
 
+  /** A place picked by name (the search box or the ranking list): open it and fly the map there. */
+  function pickPlace(picked: Spot) {
+    setSpot(picked);
+    setFocus(null);
+    // `{ ...picked }` makes a copy: a new object, so the map moves even for the same place.
+    setGoTo({ ...picked });
+    setLocateProblem(null);
+  }
+
   function showOnMap(psgcs: number[]) {
     setFocus({ psgcs });
     // Make sure the dots are on, so the reader sees them.
@@ -149,12 +158,7 @@ export function App() {
       <div className="workspace">
         <main className="map-area">
           <PlaceSearch
-            onPick={(picked) => {
-              setSpot(picked);
-              setFocus(null);
-              setGoTo({ ...picked });
-              setLocateProblem(null);
-            }}
+            onPick={pickPlace}
             note={
               locateProblem === 'outside'
                 ? t.search.locateOutside
@@ -184,7 +188,7 @@ export function App() {
             {spot !== null ? (
               <StatusCard spot={spot} onClose={() => setSpot(null)} />
             ) : (
-              <SpotHint provinces={provinces} />
+              <SpotHint provinces={provinces} onPick={pickPlace} />
             )}
           </div>
           <div className="side-feeds">
