@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { fetchWithRetry } from '../src/fetchers/retry.ts';
 import { fetchOpenMeteo } from '../src/fetchers/openMeteo.ts';
+import { POINT_FETCH } from '../src/pointWeather.ts';
 
 // A pretend fetch that gives back the listed answers in order, counting calls.
 function fakeFetch(answers: (Response | Error)[]) {
@@ -78,4 +79,20 @@ test('Open-Meteo: one failed request leaves gaps (null) and keeps the rest', asy
 test('Open-Meteo: when every request fails, it throws', async () => {
   const fake = fakeFetch([busy()]);
   await assert.rejects(fetchOpenMeteo(points(60), { fetcher: fake.fetcher, pauseMs: 0 }), /Open-Meteo/);
+});
+
+test('Open-Meteo: a short time limit gives up quickly on a server that never answers', async () => {
+  // A pretend server that only stops when the request is cancelled by its time limit.
+  const silent = (_url: string, init?: RequestInit): Promise<Response> =>
+    new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new Error('timed out')));
+    });
+  const started = Date.now();
+  await assert.rejects(fetchOpenMeteo([{ lat: 14.25, lon: 120.95 }], { fetcher: silent, pauseMs: 0, timeoutMs: 50 }));
+  // Two tries of 50 ms each, no pause: far below a second.
+  assert.ok(Date.now() - started < 1000, `took ${Date.now() - started} ms`);
+});
+
+test('spot weather: one click waits at most about 10 seconds for Open-Meteo', () => {
+  assert.deepEqual(POINT_FETCH, { pauseMs: 0, timeoutMs: 5_000 });
 });
