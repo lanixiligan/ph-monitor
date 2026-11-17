@@ -6,7 +6,7 @@
 // How it all fits together is explained in METHODOLOGY.md.
 
 // `import type` brings in only the shapes of data; nothing is loaded when the code runs.
-import type { AlertLevel, DisasterKind, ScoreReason } from '@ph-monitor/shared';
+import type { AlertLevel, DisasterKind, ScoreReason, SignalName } from '@ph-monitor/shared';
 
 /** Every number you might want to tune. These are starting guesses. */
 export const WEIGHTS = {
@@ -236,9 +236,15 @@ export function heatScore(weather: WeatherInput): number {
   return Math.round(scoreFromSteps(WEIGHTS.heat.steps, weather.heatIndexC));
 }
 
-/** Weather score (0–100): the higher of rain and heat. null = no recent reading. */
-export function weatherScore(weather: WeatherInput | null): number {
-  if (weather === null) return 0;
+/**
+ * Weather score (0–100): the higher of rain and heat.
+ * Returns null ("unknown") when there is no recent reading, or the reading
+ * has no values at all. Unknown is never the same as 0.
+ */
+export function weatherScore(weather: WeatherInput | null): number | null {
+  if (weather === null) return null;
+  const { rain1hMm, rain24hMm, heatIndexC } = weather;
+  if (rain1hMm === null && rain24hMm === null && heatIndexC === null) return null;
   return Math.max(rainScore(weather), heatScore(weather));
 }
 
@@ -286,6 +292,43 @@ export function totalScore(quake: number, weather: number, event = 0): number {
   return Math.min(100, Math.round(strongest + extra));
 }
 
+/** One score per hazard, for the card. null = that part of the reading is missing. */
+export type HazardScores = { quake: number; rain: number | null; heat: number | null; event: number };
+
+/**
+ * The same formulas as the overall score, shown hazard by hazard, so a hot
+ * afternoon and a strong earthquake are never read as the same thing.
+ */
+export function hazardScores(
+  quakes: QuakeInput[],
+  weather: WeatherInput | null,
+  events: EventInput[],
+): HazardScores {
+  const hasRain = weather !== null && (weather.rain1hMm !== null || weather.rain24hMm !== null);
+  const hasHeat = weather !== null && weather.heatIndexC !== null;
+  return {
+    quake: quakeScore(quakes),
+    rain: hasRain ? rainScore(weather) : null,
+    heat: hasHeat ? heatScore(weather) : null,
+    event: eventScore(events),
+  };
+}
+
+/** The three signal scores; null = "we could not check this one". */
+export type SignalScores = { quake: number | null; weather: number | null; event: number | null };
+
+/**
+ * Overall score when some signals may be unknown. The score is built from
+ * the known signals only, so with anything in `unknown` it is a lower limit
+ * ("at least N"), never a statement that all is calm.
+ */
+export function combineSignals(signals: SignalScores): { score: number; unknown: SignalName[] } {
+  const names: SignalName[] = ['quake', 'weather', 'event'];
+  const unknown = names.filter((name) => signals[name] === null);
+  const score = totalScore(signals.quake ?? 0, signals.weather ?? 0, signals.event ?? 0);
+  return { score, unknown };
+}
+
 // ---------- Reasons ----------
 
 /** Finds the first name whose `from` the value reaches, e.g. 'orange'. */
@@ -328,12 +371,14 @@ function describeEvent(event: EventInput, level: AlertLevel, target: ScoreTarget
  * Why the score is what it is, most important first. Each reason is a message
  * key plus numbers; the web app turns it into a sentence in the reader's language.
  */
-// `target = 'province'` and `events = []` are defaults for callers that leave them out.
+// `target = 'province'`, `events = []` and `unknown = []` are defaults for callers that leave them out.
 export function buildReasons(
   quakes: QuakeInput[],
   weather: WeatherInput | null,
   target: ScoreTarget = 'province',
   events: EventInput[] = [],
+  /** Signals we could not check; each one is said out loud. */
+  unknown: SignalName[] = [],
 ): ScoreReason[] {
   const reasons: ScoreReason[] = [];
 
@@ -356,7 +401,10 @@ export function buildReasons(
     reasons.push({ key: 'moreQuakes', count: counted.length - 3 });
   }
 
-  if (weather === null) {
+  if (unknown.includes('quake')) reasons.push({ key: 'noQuakeData' });
+  if (unknown.includes('event')) reasons.push({ key: 'noEventData' });
+
+  if (weather === null || weatherScore(weather) === null) {
     reasons.push({ key: 'noWeather', target });
   } else {
     if (rainScore(weather) >= WEIGHTS.minScoreToMention) {

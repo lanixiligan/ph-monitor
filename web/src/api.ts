@@ -6,8 +6,11 @@ import type {
   BulletinLink,
   DisasterEvent,
   NewsItem,
+  OfficialAlert,
+  PlaceMatch,
   PointDetail,
   ProvinceMapProperties,
+  StatusReport,
   Storm,
   StreamSlot,
 } from '@ph-monitor/shared';
@@ -38,6 +41,12 @@ export async function fetchPointDetail(spot: Spot): Promise<PointDetail> {
   return (await getJson(`/api/point?lat=${spot.lat}&lon=${spot.lon}`)) as PointDetail;
 }
 
+/** Cities, municipalities and provinces whose name matches the text. May come back empty. */
+export async function searchPlaces(query: string): Promise<PlaceMatch[]> {
+  // encodeURIComponent makes any typed text safe to put in an address.
+  return (await getJson(`/api/places?q=${encodeURIComponent(query)}`)) as PlaceMatch[];
+}
+
 // The Phase 2 lists. Each one may come back empty.
 
 export async function fetchEvents(): Promise<DisasterEvent[]> {
@@ -48,9 +57,9 @@ export async function fetchStorms(): Promise<Storm[]> {
   return (await getJson('/api/storms')) as Storm[];
 }
 
-/** Latest headlines. `category` is an outlet category id, or 'all' for no filter. */
-export async function fetchNews(category: string, limit: number): Promise<NewsItem[]> {
-  const filter = category === 'all' ? '' : `&category=${encodeURIComponent(category)}`;
+/** Latest headlines. `type` is a kind of disaster ('flood'), 'general', or 'all' for no filter. */
+export async function fetchNews(type: string, limit: number): Promise<NewsItem[]> {
+  const filter = type === 'all' ? '' : `&type=${encodeURIComponent(type)}`;
   return (await getJson(`/api/news?limit=${limit}${filter}`)) as NewsItem[];
 }
 
@@ -60,4 +69,14 @@ export async function fetchStreams(): Promise<StreamSlot[]> {
 
 export async function fetchBulletins(): Promise<BulletinLink[]> {
   return (await getJson('/api/bulletins')) as BulletinLink[];
+}
+
+/** When each feed last succeeded, and which ones are out of date. */
+export async function fetchStatus(): Promise<StatusReport> {
+  return (await getJson('/api/status')) as StatusReport;
+}
+
+/** Official alerts in effect anywhere in the country. May come back empty. */
+export async function fetchAlerts(): Promise<OfficialAlert[]> {
+  return (await getJson('/api/alerts')) as OfficialAlert[];
 }

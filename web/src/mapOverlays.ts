@@ -9,12 +9,15 @@ import type { RefObject } from 'react';
 import type { DisasterEvent, Storm, StormTrackPoint } from '@ph-monitor/shared';
 import { fetchEvents, fetchStorms } from './api.ts';
 import { formatTime, safeUrl } from './format.ts';
+import { readPalette } from './palette.ts';
 import { fill, getI18n, lookup, useStrings } from './i18n/index.ts';
 import { emptyCollection, eventsToGeoJson, stormsToGeoJson } from './stormGeo.ts';
 
 const REFRESH_MS = 5 * 60 * 1000;
-const INK = '#1f1f1f';
-const GREY = '#6b6b6b';
+
+/** Every event layer and every storm layer, for the legend's tick boxes. */
+export const EVENT_LAYERS = ['events-dot'];
+export const STORM_LAYERS = ['storm-radii', 'storm-past', 'storm-forecast', 'storm-dots'];
 
 /** Layers that react to clicks. ProvinceMap uses this to ignore clicks on them. */
 export const OVERLAY_CLICK_LAYERS = ['events-dot', 'storm-dots'];
@@ -23,6 +26,8 @@ const SOURCE_NAMES = ['events', 'storm-lines', 'storm-dots', 'storm-radii'];
 
 /** Adds the sources and layers. Called once, when the map is ready. */
 function addLayers(map: maplibregl.Map) {
+  // The page's ink, muted and panel colours, in the current theme.
+  const { ink: INK, inkSoft: GREY, paper: PAPER } = readPalette();
   for (const name of SOURCE_NAMES) {
     map.addSource(name, { type: 'geojson', data: emptyCollection() });
   }
@@ -54,7 +59,7 @@ function addLayers(map: maplibregl.Map) {
     source: 'storm-dots',
     paint: {
       'circle-radius': 5,
-      'circle-color': ['case', ['get', 'forecast'], '#ffffff', INK],
+      'circle-color': ['case', ['get', 'forecast'], PAPER, INK],
       'circle-stroke-color': INK,
       'circle-stroke-width': 2,
     },
@@ -66,7 +71,7 @@ function addLayers(map: maplibregl.Map) {
     source: 'events',
     paint: {
       'circle-radius': ['match', ['get', 'alert'], 'red', 10, 'orange', 8, 6],
-      'circle-color': '#ffffff',
+      'circle-color': PAPER,
       'circle-stroke-color': INK,
       'circle-stroke-width': ['match', ['get', 'alert'], 'red', 4, 'orange', 3, 'green', 2, 1],
     },

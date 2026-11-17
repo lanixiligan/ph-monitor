@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   buildReasons,
+  combineSignals,
   eventScore,
   heatScore,
   quakeScore,
@@ -119,9 +120,43 @@ test('weather score is the higher of rain and heat', () => {
   assert.equal(weatherScore({ rain1hMm: 0, rain24hMm: 0, heatIndexC: 42 }), 50);
 });
 
-test('missing weather values count as 0, not as an error', () => {
-  assert.equal(weatherScore(null), 0);
-  assert.equal(weatherScore({ rain1hMm: null, rain24hMm: null, heatIndexC: null }), 0);
+test('missing weather is unknown (null), never 0', () => {
+  assert.equal(weatherScore(null), null);
+  assert.equal(weatherScore({ rain1hMm: null, rain24hMm: null, heatIndexC: null }), null);
+});
+
+test('a reading with only some values is scored from what it has', () => {
+  assert.equal(weatherScore({ rain1hMm: 30, rain24hMm: null, heatIndexC: null }), 85);
+});
+
+// ---------- Unknown signals ----------
+
+test('all signals known: the score is the usual total and nothing is unknown', () => {
+  assert.deepEqual(combineSignals({ quake: 80, weather: 40, event: 0 }), { score: 90, unknown: [] });
+});
+
+test('an unknown signal is named, and the score is built from the known ones', () => {
+  assert.deepEqual(combineSignals({ quake: 40, weather: null, event: 20 }), {
+    score: 45,
+    unknown: ['weather'],
+  });
+});
+
+test('nothing known: score 0 with every signal named', () => {
+  assert.deepEqual(combineSignals({ quake: null, weather: null, event: null }), {
+    score: 0,
+    unknown: ['quake', 'weather', 'event'],
+  });
+});
+
+test('an unknown signal is given as a reason, and the place is never called calm', () => {
+  assert.deepEqual(buildReasons([], calmWeather, 'province', [], ['quake', 'event']), [
+    { key: 'noQuakeData' },
+    { key: 'noEventData' },
+  ]);
+  assert.deepEqual(buildReasons([], null, 'province', [], ['weather']), [
+    { key: 'noWeather', target: 'province' },
+  ]);
 });
 
 // ---------- Combining ----------
@@ -234,7 +269,7 @@ test('the event score is the strongest event, and 0 with no events', () => {
 
 test('a province beside an Orange event scores higher than the same province without it', () => {
   const quake = quakeScore([{ ...baseQuake, magnitude: 4.5, distanceKm: 30 }]);
-  const weather = weatherScore(calmWeather);
+  const weather = weatherScore(calmWeather) ?? 0;
   const withEvent = eventScore([{ ...baseEvent, distanceKm: 20 }]);
 
   assert.ok(totalScore(quake, weather, withEvent) > totalScore(quake, weather));

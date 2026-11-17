@@ -11,15 +11,21 @@ import type {
   ForecastDay,
   NewsItem,
   NewsOutletLink,
+  NewsType,
+  OfficialAlert,
   OutletCategory,
   StormComing,
 } from '@ph-monitor/shared';
+import { NEWS_TYPES } from '@ph-monitor/shared';
 import { pool } from './db.ts';
+import { isAlertInEffect } from './fetchers/pagasa.ts';
 
 /** An event is listed on the card when it is within this distance. */
 export const NEAR_EVENT_KM = 300;
 /** A storm is "coming" when its forecast centre passes within this distance. */
 export const STORM_NEAR_KM = 300;
+/** A storm's latest known position still counts as "now" for this long. */
+const STORM_NOW_HOURS = 12;
 /** Events that ended longer ago than this are no longer shown. */
 export const EVENT_SHOWN_DAYS = 7;
 /** Headlines older than this are not shown on the card. */
@@ -30,9 +36,20 @@ const NEWS_NEAR_LIMIT = 5;
 // west, south, east, north. Events outside it are not shown.
 const SHOWN_BOX = [111, -0.5, 132, 26.5];
 
+/**
+ * An event with no end date is only believed while its feed keeps listing
+ * it. If it was not refreshed for this long, it is ignored everywhere.
+ */
+export const OPEN_EVENT_MAX_HOURS = 24;
+
+/** The WHERE rule for "if still open, it was refreshed lately". `e` is the events table. */
+export const OPEN_EVENT_FRESH_SQL = `
+  (e.ended_at IS NOT NULL OR e.fetched_at >= now() - interval '${OPEN_EVENT_MAX_HOURS} hours')`;
+
 /** The WHERE rule for "an event worth showing now". `e` is the events table. */
 export const CURRENT_EVENT_SQL = `
   (e.ended_at IS NULL OR e.ended_at >= now() - interval '${EVENT_SHOWN_DAYS} days')
+  AND ${OPEN_EVENT_FRESH_SQL}
   AND ST_Intersects(e.geom, ST_MakeEnvelope(${SHOWN_BOX.join(', ')}, 4326))`;
 
 /** The columns every event query reads. ST_PointOnSurface picks one point inside an area. */
@@ -80,11 +97,17 @@ export type NewsRow = {
   category: OutletCategory;
   published_at: Date;
   province_psgcs: string[]; // BIGINT[] comes back as a list of text
+  types: string[];
   other_outlets: NewsOutletLink[];
 };
 
 export const NEWS_COLUMNS =
-  'id, title, url, outlet, category, published_at, province_psgcs, other_outlets';
+  'id, title, url, outlet, category, published_at, province_psgcs, types, other_outlets';
+
+// `type is NewsType` tells TypeScript the text is one of the nine kinds when this returns true.
+function isNewsType(text: string): text is NewsType {
+  return (NEWS_TYPES as readonly string[]).includes(text);
+}
 
 export function toNewsItem(row: NewsRow): NewsItem {
   return {
@@ -95,6 +118,7 @@ export function toNewsItem(row: NewsRow): NewsItem {
     category: row.category,
     publishedAt: row.published_at.toISOString(),
     provincePsgcs: row.province_psgcs.map(Number),
+    types: row.types.filter(isNewsType),
     otherOutlets: row.other_outlets,
   };
 }
@@ -139,20 +163,44 @@ export async function getConditions(
     [...targetValues, NEAR_EVENT_KM * 1000],
   );
 
-  // For each active storm, the forecast position that comes closest.
-  // DISTINCT ON (s.id) keeps one row per storm: the first in the ORDER BY.
+  // For each active storm, how close its path comes. The path is a line from
+  // where the storm is now through its forecast positions, cut into pieces
+  // (one per pair of neighbouring positions). Measuring to the line, not to
+  // the positions, catches a storm that passes between two of them, or one
+  // that is overhead right now.
+  // LEAD(...) reads the next row's value; DISTINCT ON keeps the closest piece per storm.
+  // ST_LineLocatePoint says how far along the piece (0 to 1) the closest spot is,
+  // which gives the time by reading between the two positions' times.
   const storms = await pool.query<{
     id: string;
     name: string;
-    valid_at: Date;
+    closest_at: Date;
     distance_km: number;
   }>(
-    `SELECT DISTINCT ON (s.id) s.id, s.name, t.valid_at,
-            ST_Distance(t.geom::geography, ${target}) / 1000 AS distance_km
-     FROM storms s
-     JOIN storm_track_points t ON t.storm_id = s.id
-     WHERE s.is_active AND t.is_forecast AND t.valid_at >= now()
-       AND ST_DWithin(t.geom::geography, ${target}, $${next})
+    `WITH positions AS (
+       SELECT t.storm_id, t.valid_at, t.geom
+       FROM storm_track_points t
+       JOIN storms s ON s.id = t.storm_id
+       WHERE s.is_active
+         AND (t.is_forecast OR t.valid_at = (
+           SELECT max(o.valid_at) FROM storm_track_points o
+           WHERE o.storm_id = t.storm_id AND NOT o.is_forecast))
+     ),
+     pieces AS (
+       SELECT storm_id, valid_at AS from_at,
+              COALESCE(LEAD(valid_at) OVER w, valid_at) AS to_at,
+              ST_MakeLine(geom, COALESCE(LEAD(geom) OVER w, geom)) AS line
+       FROM positions
+       WINDOW w AS (PARTITION BY storm_id ORDER BY valid_at)
+     )
+     SELECT DISTINCT ON (s.id) s.id, s.name,
+            ST_Distance(p.line::geography, ${target}) / 1000 AS distance_km,
+            p.from_at + (p.to_at - p.from_at) *
+              ST_LineLocatePoint(p.line, ST_ClosestPoint(p.line, (${target})::geometry)) AS closest_at
+     FROM pieces p
+     JOIN storms s ON s.id = p.storm_id
+     WHERE p.to_at >= now() - interval '${STORM_NOW_HOURS} hours'
+       AND ST_DWithin(p.line::geography, ${target}, $${next})
      ORDER BY s.id, distance_km`,
     [...targetValues, STORM_NEAR_KM * 1000],
   );
@@ -174,7 +222,7 @@ export async function getConditions(
   const stormsComing: StormComing[] = storms.rows.map((row) => ({
     stormId: row.id,
     name: row.name,
-    closestAt: row.valid_at.toISOString(),
+    closestAt: row.closest_at.toISOString(),
     distanceKm: Math.round(row.distance_km),
   }));
 
@@ -183,5 +231,62 @@ export async function getConditions(
     nearbyEvents: events.rows.map(toDisasterEvent),
     stormsComing,
     news: news.rows.map(toNewsItem),
+    officialAlerts: await getOfficialAlerts(psgc),
   };
+}
+
+type AlertRow = {
+  id: string;
+  agency: string;
+  event: string;
+  headline: string;
+  severity: string;
+  description: string;
+  instruction: string | null;
+  web: string | null;
+  url: string;
+  sent_at: Date;
+  expires_at: Date;
+  is_all_clear: boolean;
+  is_replaced: boolean;
+  area_names: string[];
+  province_psgcs: string[]; // BIGINT[] comes back as a list of text
+  is_nationwide: boolean;
+};
+
+/**
+ * Official alerts in effect, newest first. With a province code: the ones
+ * that name it, plus the country-wide ones. null = all of them.
+ */
+export async function getOfficialAlerts(psgc: number | null): Promise<OfficialAlert[]> {
+  const result = await pool.query<AlertRow>(
+    `SELECT id, agency, event, headline, severity, description, instruction, web, url, sent_at,
+            expires_at, is_all_clear, is_replaced, area_names, province_psgcs, is_nationwide
+     FROM official_alerts
+     WHERE expires_at > now()
+       AND ($1::bigint IS NULL OR is_nationwide OR $1 = ANY(province_psgcs))
+     ORDER BY sent_at DESC`,
+    [psgc],
+  );
+  const now = new Date();
+  return result.rows
+    .filter((row) =>
+      isAlertInEffect({ expiresAt: row.expires_at, isAllClear: row.is_all_clear, isReplaced: row.is_replaced }, now),
+    )
+    .map((row) => ({
+      id: row.id,
+      agency: row.agency,
+      event: row.event,
+      headline: row.headline,
+      severity: row.severity,
+      description: row.description,
+      instruction: row.instruction,
+      web: row.web,
+      url: row.url,
+      sentAt: row.sent_at.toISOString(),
+      expiresAt: row.expires_at.toISOString(),
+      areaNames: row.area_names,
+      provincePsgcs: row.province_psgcs.map(Number),
+      isNationwide: row.is_nationwide,
+    }));
 }

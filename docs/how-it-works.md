@@ -27,7 +27,8 @@ The scheduler (`server/src/jobs/scheduler.ts`) ticks every 15 minutes while the 
 | Job | How often | By hand |
 |---|---|---|
 | Earthquakes | 15 min | `npm run ingest:earthquakes` |
-| Weather | 30 min | `npm run ingest:weather` |
+| Weather | 1 hour | `npm run ingest:weather` |
+| Official alerts | 15 min | `npm run ingest:alerts` |
 | Scores (after the two above) | 15 min | `npm run compute:scores` |
 | News | 15 min | `npm run ingest:news` |
 | Disaster events | 30 min | `npm run ingest:events` |
@@ -36,8 +37,10 @@ The scheduler (`server/src/jobs/scheduler.ts`) ticks every 15 minutes while the 
 | Feed check | 1 hour | `npm run check:sources` |
 | 7-day outlook | 6 hours | `npm run ingest:forecast` |
 
-Everything also runs once when the server starts. The outlook is skipped at startup if it was
-fetched less than 6 hours ago. A job that fails is logged and the next jobs still run.
+When the server starts, it runs only the jobs that are due: a job is skipped if it last
+succeeded less than its own interval ago (`server/src/jobs/due.ts` asks the database). So
+restarting the server again and again does not fetch the feeds again. The scores are always
+worked out at start. A job that fails is logged and the next jobs still run.
 
 ## Database tables
 
@@ -49,9 +52,11 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `places` | City and municipality shapes, to name a clicked spot |
 | `earthquakes` | One row per USGS quake |
 | `earthquake_provinces` | Which provinces each quake reaches, with the distance |
-| `weather_readings` | Weather at each province's sample point, per model hour |
+| `weather_readings` | The worst weather across each province's sample points, per model hour |
+| `province_weather_points` | Extra sample points for big provinces (`npm run weather-points`) |
+| `official_alerts` | PAGASA alerts, in PAGASA's own words |
 | `province_scores` | The latest score and reasons for each province |
-| `province_score_history` | Every past score |
+| `province_score_history` | Past scores with their part-scores; a row is added only when something changed |
 | `events` | Disaster events from GDACS and EONET |
 | `storms`, `storm_track_points` | Tropical storms and their past and forecast positions |
 | `forecast_days` | The 7-day outlook per province |
@@ -60,8 +65,8 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `fetch_runs` | When each feed last succeeded |
 
 `fetch_runs` is how the app tells "no earthquakes lately" apart from "the earthquake fetch has
-been failing". If the earthquake or weather fetch last worked more than 1 hour ago, the card
-marks the data as stale.
+been failing". A banner on the page names every feed that is past its own limit, and a score
+that is missing a signal is shown as "at least N" with stripes on the map (see METHODOLOGY.md).
 
 ## API
 
@@ -73,16 +78,23 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/provinces` | Every province's shape and score, for the map |
 | `GET /api/provinces/:psgc` | One province in detail |
 | `GET /api/point?lat=..&lon=..` | The score for one exact spot, worked out on demand |
+| `GET /api/places?q=..` | Place search: cities, municipalities and provinces by name, from our own database |
 | `GET /api/events` | Current disaster events, for map markers |
 | `GET /api/storms` | Active storms with their tracks |
-| `GET /api/news` | Latest headlines; optional `category`, `psgc`, `limit` (1–100, default 30) |
+| `GET /api/news` | Latest headlines; optional `type` (a kind of disaster or `general`), `category`, `psgc`, `limit` (1–100, default 30) |
 | `GET /api/streams` | Stream slots the page may show |
 | `GET /api/bulletins` | Links to official PAGASA and PHIVOLCS pages |
+| `GET /api/alerts` | Official alerts in effect (PAGASA) |
+| `GET /api/status` | When each feed last succeeded, and which are out of date |
 
 ## What the reader sees
 
-- **Map:** provinces coloured by score (0–19 calm, 20–39 low, 40–59 moderate, 60–79 high,
-  80–100 severe), with event markers and storm tracks on top.
+- **Map:** provinces coloured by score (0–19 nothing detected, 20–39 low, 40–59 moderate, 60–79 high,
+  80–100 severe), with event markers and storm tracks on top. A province with no score yet
+  is striped grey.
+- **Light or dark:** follows the device setting until the reader picks one in the top bar
+  (remembered in the browser). The dark theme uses a dark basemap and a score scale where
+  brighter means more stress.
 - **Status card:** opens on a click. Score for that spot, the reasons, the province's score,
   the 7-day outlook, nearby events (within 300 km), storms forecast to pass within 300 km,
   headlines naming the province, and official bulletin links.

@@ -66,8 +66,8 @@ National Weather Service method (the Rothfusz regression with its two adjustment
 PAGASA also uses. We do not use Open-Meteo's own "apparent temperature", which follows a
 different formula. Code: `server/src/heatIndex.ts`.
 
-A weather reading older than 3 hours is not used; the weather score is then 0 and the card says
-there is no recent weather data.
+A weather reading older than 3 hours is not used; the weather signal is then unknown (see
+"Unknown is not calm" below).
 
 ## Disaster event score
 
@@ -103,7 +103,22 @@ suggests.
 An average would hide a severe earthquake behind calm weather, so the strongest signal always
 counts in full.
 
-On the map: 0–19 calm, 20–39 low, 40–59 moderate, 60–79 high, 80–100 severe.
+On the map: 0–19 nothing detected, 20–39 low, 40–59 moderate, 60–79 high, 80–100 severe.
+The lowest band is named for what we know ("nothing detected"); it is not an all-clear.
+
+## Unknown is not calm
+
+A signal that could not be checked is **unknown**, never 0:
+
+| Signal | Unknown when |
+|---|---|
+| Weather | the province (or spot) has no reading from the last 3 hours |
+| Earthquakes | the USGS fetch has not succeeded for 1 hour |
+| Disaster events | the GDACS fetch has not succeeded for 2 hours |
+
+The score is then built from the signals we do know, so it is a lower limit. The page writes it
+as "at least N", draws stripes over the province, and names the missing signal in the reasons.
+Earthquakes and events already saved still count while their feed is down.
 
 ## Score for one spot
 
@@ -120,6 +135,19 @@ saved:
 
 The card also shows the whole province's score for comparison.
 
+## Hazard by hazard
+
+The card also shows the same formulas one hazard at a time: earthquakes, rain, heat, and storms
+and disaster events (GDACS). Each gets its own 0–100 number and band, or "unknown". The overall
+score is still the strongest signal plus a share of the others.
+
+## Official alerts are not in the score
+
+PAGASA's alerts (flood advisories, tropical cyclone alerts) are shown above the score in
+PAGASA's own words. They never raise or lower the number, and a low number never hides them.
+Storm tracks are shown the same way: a storm counts as "near" when its path (from where it is
+now through its forecast positions) passes within 300 km.
+
 ## Reasons on the card
 
 Along with each score the server sends the reasons behind it as message keys plus numbers
@@ -129,18 +157,27 @@ change any score.
 
 ## Freshness
 
-Earthquakes are fetched every 15 minutes, weather and disaster events every 30. The card shows
+Earthquakes are fetched every 15 minutes, weather every hour, disaster events every 30 minutes. The card shows
 when the earthquake and weather feeds were last fetched **successfully**. If either is more than
-1 hour old, the data is marked stale. (Disaster events are not yet part of the stale check.)
+1 hour old, the data is marked stale.
+
+Every feed also has its own limit (`FEED_RULES` in `server/src/freshness.ts`): earthquakes and
+headlines 1 hour, weather 90 minutes, disaster events and storm tracks 2 hours, the outlook 13
+hours. A banner at the top of the page names each feed past its limit. A weather run counts as
+a success only when at least 90% of provinces got a reading; each request is tried twice.
+
+A disaster event with no end date is dropped from the score and the map once its feed stops
+listing it, or after 24 hours without a refresh.
 A quiet day with no earthquakes is not stale: what counts is that the fetch worked.
 
 ## Known limitations
 
 - **Weather is modelled, not measured.** Open-Meteo values come from weather models, not from a
   station. Each value is stored with the hour it is valid for (`valid_at`).
-- **One weather point per province.** We sample a single point guaranteed to be inside the
-  province (PostGIS `ST_PointOnSurface`). A large or mountainous province can differ a lot from
-  its one point, and a storm over another part of the province can be missed.
+- **A few weather points per province.** Every province has one point guaranteed to be inside
+  it (PostGIS `ST_PointOnSurface`); big and island provinces have up to two more, at least
+  40 km apart. The province's weather is the worst of them (most rain, hottest point). Rain
+  between the points can still be missed.
 - **Rain is hourly.** "Last hour" means the latest full model hour, so a short burst can be
   smoothed out.
 - **USGS is a global catalogue.** Around the Philippines it reliably reports only quakes of

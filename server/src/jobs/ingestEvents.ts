@@ -1,8 +1,9 @@
 // Job: fetch disaster events from GDACS and NASA EONET and save them.
-// One source failing does not stop the other. No npm script yet.
+// One source failing does not stop the other. Run by hand with: npm run ingest:events
 
 import { pool } from '../db.ts';
 import { fetchEonetEvents } from '../fetchers/eonet.ts';
+import { droppedEventIds } from '../fetchers/eventRecord.ts';
 import type { EventRecord } from '../fetchers/eventRecord.ts';
 import { fetchGdacsEvents } from '../fetchers/gdacs.ts';
 
@@ -11,8 +12,16 @@ import { fetchGdacsEvents } from '../fetchers/gdacs.ts';
 // always kept, so a long drought stays until GDACS closes it.
 const KEEP_DAYS = 30;
 
-/** Saves one source's events and notes the success, all in one transaction. */
-async function saveEvents(source: 'gdacs' | 'eonet', events: EventRecord[]): Promise<number> {
+/**
+ * Saves one source's events and notes the success, all in one transaction.
+ * `closeDropped`: also close this source's open events that the feed no
+ * longer lists (only safe when the feed was the full list).
+ */
+async function saveEvents(
+  source: 'gdacs' | 'eonet',
+  events: EventRecord[],
+  closeDropped: boolean,
+): Promise<{ saved: number; closed: number }> {
   const cutoff = new Date(Date.now() - KEEP_DAYS * 24 * 60 * 60 * 1000);
   const fresh = events.filter((e) => e.endedAt === null || e.endedAt >= cutoff);
 
@@ -51,19 +60,41 @@ async function saveEvents(source: 'gdacs' | 'eonet', events: EventRecord[]): Pro
         ],
       );
     }
+    // An open event (no end date) that left the feed would otherwise stay
+    // "ongoing" for ever. Its end is set to the last time we saw it.
+    let closed = 0;
+    if (closeDropped) {
+      const open = await client.query<{ id: string }>(
+        'SELECT id FROM events WHERE source = $1 AND ended_at IS NULL',
+        [source],
+      );
+      const dropped = droppedEventIds(
+        open.rows.map((row) => row.id),
+        events.map((e) => e.id),
+      );
+      if (dropped.length > 0) {
+        // `= ANY($1)` means "is one of the ids in this list".
+        const result = await client.query(
+          'UPDATE events SET ended_at = fetched_at WHERE id = ANY($1::text[])',
+          [dropped],
+        );
+        closed = result.rowCount ?? 0;
+      }
+    }
+
     await client.query(
       `INSERT INTO fetch_runs (source, last_ok_at) VALUES ($1, now())
        ON CONFLICT (source) DO UPDATE SET last_ok_at = EXCLUDED.last_ok_at`,
       [source],
     );
     await client.query('COMMIT');
+    return { saved: fresh.length, closed };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
   }
-  return fresh.length;
 }
 
 export async function ingestEvents(): Promise<void> {
@@ -72,16 +103,18 @@ export async function ingestEvents(): Promise<void> {
 
   try {
     const gdacs = await fetchGdacsEvents();
-    const saved = await saveEvents('gdacs', gdacs.events);
-    parts.push(`GDACS (${gdacs.via}) saved ${saved}, skipped ${gdacs.skipped}`);
+    // The RSS backup only carries the newest items worldwide, so a missing
+    // event proves nothing there; only the API's full list closes events.
+    const { saved, closed } = await saveEvents('gdacs', gdacs.events, gdacs.via === 'api');
+    parts.push(`GDACS (${gdacs.via}) saved ${saved}, skipped ${gdacs.skipped}, closed ${closed}`);
   } catch (error) {
     problems.push(`GDACS: ${String(error)}`);
   }
 
   try {
     const eonet = await fetchEonetEvents();
-    const saved = await saveEvents('eonet', eonet.events);
-    parts.push(`EONET saved ${saved}, skipped ${eonet.skipped}, left to GDACS ${eonet.fromGdacs}`);
+    const { saved, closed } = await saveEvents('eonet', eonet.events, true);
+    parts.push(`EONET saved ${saved}, skipped ${eonet.skipped}, left to GDACS ${eonet.fromGdacs}, closed ${closed}`);
   } catch (error) {
     problems.push(`EONET: ${String(error)}`);
   }

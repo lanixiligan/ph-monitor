@@ -70,20 +70,36 @@ CREATE TABLE IF NOT EXISTS province_scores (
 -- Phase 2: the share of the score that comes from disaster event alert levels.
 ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS event_score SMALLINT NOT NULL DEFAULT 0;
 
--- Every past score (one row per province per recompute).
+-- Signals that could not be checked when the score was computed ('quake',
+-- 'weather', 'event'). Not empty = the score is a lower limit ("at least N").
+ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS unknown_signals TEXT[] NOT NULL DEFAULT '{}';
+
+-- Past scores. A row is added only when a province's score, a part-score or
+-- its unknown signals changed (and once a day anyway; see scoreHistory.ts).
+-- A province's score at some time is its newest row at or before that time.
 CREATE TABLE IF NOT EXISTS province_score_history (
   province_psgc BIGINT REFERENCES provinces,
   score         SMALLINT NOT NULL,
   computed_at   TIMESTAMPTZ NOT NULL,
   PRIMARY KEY (province_psgc, computed_at)
 );
+-- The part-scores behind the total. NULL only in rows saved before these
+-- columns existed.
+ALTER TABLE province_score_history ADD COLUMN IF NOT EXISTS quake_score SMALLINT;
+ALTER TABLE province_score_history ADD COLUMN IF NOT EXISTS weather_score SMALLINT;
+ALTER TABLE province_score_history ADD COLUMN IF NOT EXISTS event_score SMALLINT;
+ALTER TABLE province_score_history ADD COLUMN IF NOT EXISTS unknown_signals TEXT[];
 
 -- When each feed last succeeded. Used to tell "no quakes lately" apart from
 -- "the earthquake fetch has been failing".
 CREATE TABLE IF NOT EXISTS fetch_runs (
-  source      TEXT PRIMARY KEY,                -- 'usgs' or 'open-meteo'
+  source      TEXT PRIMARY KEY,                -- 'usgs', 'open-meteo', 'gdacs', ... (see freshness.ts)
   last_ok_at  TIMESTAMPTZ NOT NULL
 );
+-- How much the latest run saved, even when it was too little to count as a
+-- success (weather only: provinces saved, out of how many).
+ALTER TABLE fetch_runs ADD COLUMN IF NOT EXISTS last_saved INTEGER;
+ALTER TABLE fetch_runs ADD COLUMN IF NOT EXISTS last_total INTEGER;
 
 -- Cities and municipalities. Used to name the spot a reader clicks on.
 -- Loaded by `npm run load-places`.
@@ -167,6 +183,9 @@ CREATE TABLE IF NOT EXISTS news (
   fetched_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS news_time_idx ON news (published_at);
+-- Step 5.4: kinds of disaster a headline is about ('typhoon', 'flood'...; see
+-- shared/src/newsTypes.ts). Empty = general (only a response, such as an evacuation).
+ALTER TABLE news ADD COLUMN IF NOT EXISTS types TEXT[] NOT NULL DEFAULT '{}';
 
 -- The health of every news feed and live stream link, filled by the link
 -- checker (`npm run check:sources`). The links themselves live in
@@ -192,3 +211,61 @@ ALTER TABLE sources ADD COLUMN IF NOT EXISTS video_published_at TIMESTAMPTZ;
 -- Stream only: since when every check has failed to get an answer (NULL = the
 -- last check got one). After a day of this the link is marked 'dead'.
 ALTER TABLE sources ADD COLUMN IF NOT EXISTS failing_since TIMESTAMPTZ;
+
+-- ---------- Phase 2 of the audit: official alerts ----------
+
+-- Official alerts from PAGASA's public alert feed (CAP files). The text is
+-- PAGASA's own. An alert is shown while it has not expired, has not been
+-- replaced by a newer one, and is not an all-clear.
+CREATE TABLE IF NOT EXISTS official_alerts (
+  id             TEXT PRIMARY KEY,             -- PAGASA's own identifier
+  agency         TEXT NOT NULL,                -- 'PAGASA'
+  event          TEXT NOT NULL,                -- e.g. 'General Flood Advisory (Moderate)'
+  headline       TEXT NOT NULL,
+  severity       TEXT NOT NULL,                -- CAP scale: Extreme, Severe, Moderate, Minor, Unknown
+  description    TEXT NOT NULL,                -- PAGASA's full text
+  instruction    TEXT,
+  web            TEXT,                         -- PAGASA's page about this kind of alert
+  url            TEXT NOT NULL,                -- the alert file itself
+  sent_at        TIMESTAMPTZ NOT NULL,
+  expires_at     TIMESTAMPTZ NOT NULL,         -- the file's end time, or sent + 24 hours if it gave none
+  is_all_clear   BOOLEAN NOT NULL,             -- a "final" message: the alert is over
+  is_replaced    BOOLEAN NOT NULL DEFAULT false,  -- a newer alert names this one in `replaces`
+  replaces       TEXT[] NOT NULL DEFAULT '{}', -- ids of the earlier alerts this one replaces
+  area_names     TEXT[] NOT NULL DEFAULT '{}', -- the areas as PAGASA names them
+  province_psgcs BIGINT[] NOT NULL DEFAULT '{}',  -- those areas matched to our provinces
+  is_nationwide  BOOLEAN NOT NULL,             -- no area matched a province: shown everywhere
+  fetched_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS official_alerts_expires_idx ON official_alerts (expires_at);
+
+-- ---------- Phase 3 of the audit: more weather points ----------
+
+-- Extra weather sample points for big or island provinces (at most two each),
+-- on top of provinces.weather_point. Filled by `npm run weather-points`.
+CREATE TABLE IF NOT EXISTS province_weather_points (
+  province_psgc BIGINT REFERENCES provinces,
+  n             SMALLINT NOT NULL,             -- 1 or 2
+  geom          geometry(Point, 4326) NOT NULL,
+  PRIMARY KEY (province_psgc, n)
+);
+
+-- ---------- Per-town map colours: the weather grid ----------
+
+-- Every point the weather job asks Open-Meteo about. Rebuilt by
+-- `npm run weather-points`: a ~28 km grid over the land, each province's own
+-- point, and a point for any town too far from all the others.
+CREATE TABLE IF NOT EXISTS weather_points (
+  id   SERIAL PRIMARY KEY,                     -- SERIAL: the database numbers the rows 1, 2, 3...
+  kind TEXT NOT NULL,                          -- 'grid', 'province' or 'town'
+  geom geometry(Point, 4326) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS weather_points_geom_idx ON weather_points USING GIST (geom);
+
+-- Which points each city or municipality reads its weather from: the points
+-- inside it, or else its nearest one (the rule is townPoints() in weatherPoints.ts).
+CREATE TABLE IF NOT EXISTS place_weather_points (
+  place_psgc BIGINT REFERENCES places ON DELETE CASCADE,
+  point_id   INTEGER REFERENCES weather_points ON DELETE CASCADE,
+  PRIMARY KEY (place_psgc, point_id)
+);

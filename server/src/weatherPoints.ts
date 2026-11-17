@@ -1,0 +1,69 @@
+// Helpers for the weather grid. Weather is fetched at a few hundred points
+// (a grid over the land, plus each province's own point); every city and
+// municipality takes its reading from the points it is linked to.
+// Pure functions: no network, no database.
+
+import type { WeatherReading } from './fetchers/openMeteo.ts';
+import { heatIndexC } from './heatIndex.ts';
+
+/** Grid spacing in degrees. 0.25° is about 28 km. */
+export const GRID_DEGREES = 0.25;
+/** A grid cell gets a point only if at least this share of it is land. */
+export const MIN_LAND_SHARE = 0.25;
+/** A town further than this from every point gets a point of its own. */
+export const OWN_POINT_KM = 30;
+
+/** Which points a town reads its weather from. */
+export type TownPoints = { use: 'inside' | 'nearest' | 'own'; ids: number[] };
+
+/**
+ * The rule for one town. `inside` are the ids of the points inside it;
+ * `nearest` is the closest point and how far it is (null if there are none).
+ * Points inside win; otherwise the nearest one, if it is close enough;
+ * otherwise the town needs a point of its own (added by the caller).
+ */
+export function townPoints(inside: number[], nearest: { id: number; km: number } | null): TownPoints {
+  if (inside.length > 0) return { use: 'inside', ids: inside };
+  if (nearest !== null && nearest.km <= OWN_POINT_KM) return { use: 'nearest', ids: [nearest.id] };
+  return { use: 'own', ids: [] };
+}
+
+/**
+ * One reading that stands for a whole province: the most rain seen at any of
+ * its points (last hour, and last 24 hours) and the temperature and humidity
+ * of its hottest-feeling point. Missing values never beat real ones.
+ * Returns null when no point gave a reading.
+ */
+export function worstReading(readings: (WeatherReading | null)[]): WeatherReading | null {
+  // `(r): r is WeatherReading` tells TypeScript the filter removes the nulls.
+  const real = readings.filter((r): r is WeatherReading => r !== null);
+  const first = real[0];
+  if (!first) return null;
+
+  // The largest of the values that are not null; null if every one is null.
+  const most = (values: (number | null)[]): number | null => {
+    const known = values.filter((value): value is number => value !== null);
+    return known.length > 0 ? Math.max(...known) : null;
+  };
+
+  // The hottest-feeling point: highest heat index (needs both temperature and humidity).
+  let hottest: WeatherReading | null = null;
+  let hottestIndex = -Infinity;
+  for (const reading of real) {
+    if (reading.tempC === null || reading.humidityPct === null) continue;
+    const index = heatIndexC(reading.tempC, reading.humidityPct);
+    if (index > hottestIndex) {
+      hottest = reading;
+      hottestIndex = index;
+    }
+  }
+
+  return {
+    // The newest hour any point reported.
+    validAt: new Date(Math.max(...real.map((reading) => reading.validAt.getTime()))),
+    tempC: hottest?.tempC ?? most(real.map((reading) => reading.tempC)),
+    humidityPct: hottest?.humidityPct ?? most(real.map((reading) => reading.humidityPct)),
+    rain1hMm: most(real.map((reading) => reading.rain1hMm)),
+    rain24hMm: most(real.map((reading) => reading.rain24hMm)),
+  };
+}

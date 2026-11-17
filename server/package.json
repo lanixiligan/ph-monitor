@@ -18,8 +18,13 @@
     "sample-storm": "tsx scripts/load-sample-storm.ts",
     "ingest:forecast": "tsx scripts/run-job.ts forecast",
     "ingest:news": "tsx scripts/run-job.ts news",
+    "ingest:alerts": "tsx scripts/run-job.ts alerts",
+    "weather-points": "tsx scripts/pick-weather-points.ts",
     "check:sources": "tsx scripts/check-sources.ts",
+    "measure:news": "tsx scripts/measure-news.ts",
+    "replay": "tsx scripts/replay.ts",
     "test": "tsx --test test/*.test.ts",
+    "test:db": "tsx --test --test-concurrency=1 test/db/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

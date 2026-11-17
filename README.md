@@ -33,9 +33,9 @@ npm run dev:server        # terminal 1: API + data fetching, http://localhost:30
 npm run dev:web           # terminal 2: the map, http://localhost:5173
 ```
 
-The server fetches earthquakes and news every 15 minutes; weather, disaster events, storm tracks
-and the stream check every 30 minutes; the feed check every hour; and the 7-day outlook every
-6 hours. Everything also runs once at startup (the outlook only if it is over 6 hours old).
+The server fetches earthquakes, official alerts and news every 15 minutes; weather every hour;
+disaster events, storm tracks and the stream check every 30 minutes; the feed check every hour; and the 7-day outlook every
+6 hours. At startup only the jobs that are due run, so a restart does not fetch fresh feeds again.
 Weather for a clicked spot is fetched when you click, and reused for 30 minutes.
 
 Optional: put a free YouTube Data API key in `.env` as `YOUTUBE_API_KEY` so the stream check can
@@ -48,6 +48,8 @@ A link can open a spot directly: `http://localhost:5173/?lat=10.3157&lon=123.885
 | Command | What it does |
 |---|---|
 | `npm test` | Run the tests (scoring and feed checks) |
+| `npm run test:db` | Run the database tests against a separate `phmonitor_test` database (needs `npm run db:up`) |
+| `npm run replay` | Replay past disasters through the score formula and print a results table (see `docs/replay-results.md`) |
 | `npm run typecheck` | Check all TypeScript |
 | `npm run ingest:earthquakes` / `ingest:weather` / `compute:scores` | Run one job by hand |
 | `npm run ingest:events` / `ingest:storms` / `ingest:forecast` / `ingest:news` | Run one of the newer jobs by hand |
@@ -73,6 +75,7 @@ data flows through the app, and its limits.
 |---|---|---|
 | Earthquakes | [USGS Earthquake Catalog](https://earthquake.usgs.gov/fdsnws/event/1/) | Public domain |
 | Weather (modelled) | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0; free tier is non-commercial only |
+| Official alerts (flood advisories, tropical cyclone alerts) | [PAGASA public alert feed](https://publicalert.pagasa.dost.gov.ph/feeds/) | © PAGASA, CC BY 4.0 |
 | Province, city and municipality boundaries (simplified) | NAMRIA and PSA via OCHA, from [faeldon/philippines-json-maps](https://github.com/faeldon/philippines-json-maps) | Boundaries CC BY 3.0 IGO; repository MIT |
 | Disaster events (typhoons, floods, volcanoes, quakes) with alert levels | [GDACS](https://www.gdacs.org/), European Commission JRC and UN OCHA | CC BY 4.0, © European Union |
 | Natural events | [NASA EONET](https://eonet.gsfc.nasa.gov/) | Free to use; credit NASA |

@@ -11,7 +11,8 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 | Data | Source | Fetched | Changes the score? |
 |---|---|---|---|
 | Earthquakes | USGS | every 15 min | Yes |
-| Current weather | Open-Meteo | every 30 min | Yes |
+| Current weather | Open-Meteo | every hour | Yes |
+| Official alerts | PAGASA public alert feed | every 15 min | No, shown above the score |
 | Disaster events with alert levels | GDACS | every 30 min | Yes (typhoon, flood, volcano, wildfire) |
 | Natural events | NASA EONET | every 30 min | No, shown only |
 | Storm tracks | JMA, with JTWC as backup | every 30 min | No, shown only |
@@ -36,15 +37,18 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 ## Current weather: Open-Meteo
 
 - **Address:** `https://api.open-meteo.com/v1/forecast` ([docs](https://open-meteo.com/en/docs))
-- **What we ask for:** temperature, humidity and hourly rain at one sample point inside each
-  province (88 points, up to 50 per request).
+- **What we ask for:** temperature, humidity and hourly rain at each province's sample point,
+  plus up to two extra points in big or island provinces (about 200 points, up to 50 per
+  request). The extra points are chosen by `npm run weather-points`: the cities or
+  municipalities furthest from the points already picked, at least 40 km apart. A province's
+  reading is the worst of its points: the most rain and the hottest point.
 - **What we keep:** temperature, humidity, rain in the last hour and last 24 hours, and a heat
   index we compute ourselves (`server/src/heatIndex.ts`).
 - **Also on demand:** when a reader clicks the map, weather for that spot is fetched, snapped
   to a 0.05° grid (about 5 km) and reused for 30 minutes (`server/src/pointWeather.ts`).
 - **Licence:** CC BY 4.0. The free tier is for non-commercial use only.
 - **Limits:** the values are **modelled**, not measured by a station.
-- **Code:** `fetchers/openMeteo.ts`, `jobs/ingestWeather.ts`.
+- **Code:** `fetchers/openMeteo.ts`, `jobs/ingestWeather.ts`, `weatherPoints.ts`.
 
 ## Disaster events: GDACS
 
@@ -79,7 +83,8 @@ Events from both sources are removed 30 days after they end. The page shows an e
   category, pressure, wind and the uncertainty circle.
 - **Backup: US Joint Typhoon Warning Center.** RSS list at
   `https://www.metoc.navy.mil/jtwc/rss/jtwc.rss`, then one plain-text warning per storm. Used
-  only when JMA fails. It has the current and forecast positions, but no past track, pressure
+  when JMA fails, and for any storm JMA does not give us (not listed, or a file we could not
+  read). It has the current and forecast positions, but no past track, pressure
   or uncertainty circle.
 - **What we keep:** name, category, whether it is still active, and each track point (time,
   position, pressure, wind in knots, uncertainty radius in km).
@@ -118,9 +123,26 @@ Roads and place names under the provinces. The reader's browser loads these tile
 from [OpenFreeMap](https://openfreemap.org/) (© OpenMapTiles, data © OpenStreetMap
 contributors, ODbL). Turn it off with `SHOW_BASEMAP` in `web/src/mapSettings.ts`.
 
+## Official alerts: PAGASA
+
+- **Address:** `https://publicalert.pagasa.dost.gov.ph/feeds/`, a list of the latest alerts;
+  each one links to its own CAP file (Common Alerting Protocol, an XML standard).
+- **What it carries (seen so far):** General Flood Advisories, whose areas are provinces with
+  their place codes, and Tropical Cyclone Alerts, whose one area is the whole Philippine Area
+  of Responsibility. Not in the feed: rainfall warnings, wind signals by province, anything
+  from PHIVOLCS.
+- **What we keep:** PAGASA's own headline, text, level, issue and end times, and the areas,
+  matched to our provinces by place code (then by name). An alert that matches no province
+  is shown for the whole country.
+- **Shown:** while it has not expired, has not been replaced by a newer alert, and is not a
+  "final" (all-clear) message. Always above the score, never part of it.
+- **Licence:** "Copyright PAGASA. Licensed under CC BY 4.0" (the feed's own rights line).
+- **Limits:** a cyclone alert with wind signals over named provinces has not been seen yet.
+- **Code:** `fetchers/pagasa.ts`, `jobs/ingestAlerts.ts`. By hand: `npm run ingest:alerts`.
+
 ## Official bulletin links
 
-The status card links to four official pages. We only link to them; nothing is fetched.
+The status card also links to four official pages. We only link to them; nothing is fetched.
 
 | Agency | Page |
 |---|---|

@@ -26,3 +26,8 @@ export const MAX_BOUNDS: Box = [
   [96, 1],
   [148, 25],
 ];
+
+/** Which parts of the map are switched on (the tick boxes in the legend). */
+export type MapLayers = { scores: boolean; events: boolean; storms: boolean; news: boolean };
+
+export const ALL_LAYERS_ON: MapLayers = { scores: true, events: true, storms: true, news: true };

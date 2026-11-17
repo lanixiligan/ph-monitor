@@ -9,10 +9,17 @@ export const en = {
   // The page itself (header, jump links, load error, footer credits).
   app: {
     intro:
-      'Stress right now from earthquakes, weather and disaster events. Click anywhere on land for that spot.',
+      'Stress right now from earthquakes, weather and disaster events. Search for a place or click anywhere on land.',
     jumpHeadlines: 'Headlines',
     jumpStreams: 'Live streams',
     loadError: 'Could not load the scores. Is the server running?',
+    // {feeds} is a list of names from `feeds` below.
+    staleBanner: 'Out of date: {feeds}. What you see for these may be old or missing.',
+    statusError: 'Could not check how fresh the data is.',
+    // The footer link and the credits page (CreditsPage.tsx).
+    creditsLink: 'Data sources and credits',
+    creditsTitle: 'Data sources and credits',
+    backToMap: 'Back to the map',
     creditQuakes: 'Earthquakes:',
     creditWeather: 'Weather (modelled):',
     creditWeatherEnd: ', CC BY 4.0.',
@@ -24,6 +31,7 @@ export const en = {
     creditOutlook: '7-day outlook:',
     creditOutlookMid: '; river flow from',
     creditOutlookEnd: ', CC BY 4.0.',
+    creditAlerts: 'Official alerts: © PAGASA, CC BY 4.0, from its public alert feed.',
     creditNews: 'News headlines: the outlets named beside each headline, some found through Google News.',
     creditVideo: 'Video:',
     creditVideoEnd: ", from each outlet's own channel.",
@@ -33,12 +41,32 @@ export const en = {
     creditBasemapEnd: 'contributors.',
   },
 
+  // Feed names for the "out of date" banner, by the id the server sends.
+  feeds: {
+    earthquakes: 'earthquakes',
+    weather: 'weather',
+    officialAlerts: 'official alerts (PAGASA)',
+    events: 'disaster events (GDACS)',
+    naturalEvents: 'natural events (NASA EONET)',
+    storms: 'storm tracks',
+    outlook: '7-day outlook',
+    riverFlow: 'river flow',
+    news: 'headlines',
+  },
+
   // The language switch. The draft note is shown only when Filipino is chosen.
   language: {
     groupLabel: 'Language',
     english: 'English',
     filipino: 'Filipino',
     draftNote: 'The Filipino translation is a draft still under review.',
+  },
+
+  // The light/dark colour switch in the top bar.
+  theme: {
+    groupLabel: 'Colours',
+    light: 'Light',
+    dark: 'Dark',
   },
 
   // The "not an official warning" notice (page footer and status card).
@@ -51,14 +79,40 @@ export const en = {
   legend: {
     title: 'Stress score (0–100)',
     noScore: 'No score yet',
+    incomplete: 'Stripes over a colour: some data is missing, the score may be higher',
     event: 'Disaster event (thicker ring = higher alert)',
     stormPast: 'Storm track so far',
     stormForecast: 'Storm forecast',
+    news: 'Place named in the news (bigger = more headlines)',
+    showLabel: 'Show on the map',
+  },
+
+  // The side panel before a spot is picked.
+  spot: {
+    title: 'Pick a spot',
+    hint: 'Search for a place, use your location, or click anywhere on land. The score for that exact spot, the reasons for it and the next 7 days open here.',
+    highest: 'Highest province scores now',
+    noScores: 'No province has a score yet.',
+    alertsTitle: 'Official alerts in effect',
+    alertsNone: 'PAGASA lists no flood advisory or tropical cyclone alert in effect. Other warnings (rainfall, wind signals, volcanoes) are not checked here.',
+  },
+
+  // The search box over the map and the "use my location" button.
+  search: {
+    label: 'Find a place',
+    placeholder: 'Search a city, municipality or province',
+    // Shown beside a match that is a province (a town shows its province's name there).
+    province: 'province',
+    none: 'No place with that name. Try the name of the town or province.',
+    failed: 'Search is not working right now. You can still click the map.',
+    locate: 'Use my location',
+    locateOutside: 'Your location is outside the Philippines, so there is no score for it.',
+    locateFailed: 'Could not get your location. Check that this page is allowed to use it.',
   },
 
   // Score bands.
   bands: {
-    calm: 'Calm',
+    calm: 'Nothing detected',
     low: 'Low',
     moderate: 'Moderate',
     high: 'High',
@@ -67,13 +121,27 @@ export const en = {
 
   // Outlet groups for news and streams.
   categories: {
-    all: 'All',
     official: 'Official',
     tv: 'TV',
     radio: 'Radio',
     online: 'Online and newspapers',
     regional: 'Regional',
     international: 'International',
+  },
+
+  // Kinds of disaster in the headlines panel (see shared/src/newsTypes.ts).
+  newsTypes: {
+    all: 'All',
+    typhoon: 'Typhoons',
+    flood: 'Floods',
+    earthquake: 'Earthquakes',
+    volcano: 'Volcanoes',
+    landslide: 'Landslides',
+    tsunami: 'Tsunamis and storm surges',
+    drought: 'Droughts and dry spells',
+    wildfire: 'Wildfires',
+    heat: 'Extreme heat',
+    general: 'General',
   },
 
   // Kinds of disaster event.
@@ -126,17 +194,22 @@ export const en = {
     eventEnded: ' (now ended)',
     noWeatherProvince: 'No recent weather data for this province.',
     noWeatherSpot: 'No recent weather data for this spot.',
+    noQuakeData: 'The earthquake feed has not answered lately, so recent earthquakes may be missing.',
+    noEventData: 'The disaster event feed (GDACS) has not answered lately, so events may be missing.',
     rain: 'Rain: {rain1h} mm in the last hour, {rain24h} mm in the last 24 hours{level}.',
-    rainLevel: ' (PAGASA {level} rainfall level)',
+    rainLevel: " (a model estimate at PAGASA's {level} rainfall threshold; not a PAGASA warning)",
     heat: 'Heat index {heat} °C{band}.',
     heatBand: ' (PAGASA "{band}" band)',
-    calm: 'No significant earthquake, weather or disaster event stress right now.',
+    calm: 'Nothing detected here right now: no strong earthquake nearby, no heavy rain or extreme heat in the model, no disaster alert. This is not an all-clear.',
   },
 
   // Map popups and hover labels.
   map: {
+    // Read out by a screen reader when it reaches the map.
+    label: 'Map of the Philippines, provinces coloured by score. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
     sampleNotice: 'Sample data, not a real storm',
     noScoreYet: 'no score yet',
+    atLeast: 'at least {score}',
     popupKind: 'Kind: {kind}',
     popupAlert: 'Alert level: {level}',
     popupSource: 'Source: {source}',
@@ -147,6 +220,8 @@ export const en = {
     popupTime: 'Time: {time}',
     popupWind: 'Wind: {value}',
     popupPressure: 'Pressure: {value}',
+    popupNewsTitle: '{province}: {count} in the news',
+    popupNewsMore: 'and {count} more in the headlines panel',
   },
 
   // The status card.
@@ -158,7 +233,11 @@ export const en = {
     stale: 'STALE',
     staleText: 'Some data is more than 1 hour old.',
     bandAtSpot: '{band} at this spot',
-    parts: 'Earthquakes {quake} · Weather {weather} · Events {event}',
+    hazardsTitle: 'By hazard',
+    notCovered:
+      'Not covered here: landslides, storm surge, tsunami, PAGASA wind signals and rainfall warnings, PHIVOLCS volcano alert levels. Use the official links below.',
+    incomplete: 'Some data is missing, so the real score may be higher.',
+    nearTitle: 'Storms and disaster events near here',
     wholeProvince: 'Whole province ({province}): {score}, {band}',
     why: 'Why',
     quakesTitle: 'Earthquakes, last 3 days',
@@ -192,6 +271,8 @@ export const en = {
     eventsTitle: 'Disaster events nearby',
     eventAway: '{distance} away, ',
     eventAlert: ', alert level {level}',
+    eventEnded: ', ended {time}',
+    otherEventsTitle: 'Other disaster events nearby',
     stormsTitle: 'Storms forecast to pass near',
     stormLine: 'about {distance} away around {time}',
     stormNote: 'The forecast centre is uncertain; the real path can be different.',
@@ -211,11 +292,12 @@ export const en = {
   // The headlines panel.
   news: {
     title: 'Disaster headlines',
-    note: 'The group is only a label for the kind of outlet. It is not a ranking of how far to trust it.',
-    filterLabel: 'Filter by outlet group',
+    note: 'Sorted by the words in each headline, so a few may be in the wrong group. "General" means the headline names no kind of disaster, only a response such as an evacuation. The map shows the same group.',
+    filterLabel: 'Filter by kind of disaster',
     failed: 'Could not load headlines right now.',
     none: 'No headlines to show.',
     alsoAt: 'Also at:',
+    showOnMap: 'Show {places} on the map',
   },
 
   // The live streams panel.
@@ -231,6 +313,32 @@ export const en = {
     videoTitle: '{outlet} video',
     play: 'Play',
     stop: 'Stop',
+  },
+
+  // Where a piece of information comes from, shown as a small tag.
+  tiers: {
+    official: 'Official · {agency}',
+    global: 'Global assessment',
+    model: 'Model estimate',
+  },
+
+  // Official alerts (the text of an alert itself is the agency's, never ours).
+  alerts: {
+    title: 'Official alerts for this area',
+    nationwide: 'Whole Philippine area',
+    times: 'Issued {sent} · in effect until {expires}',
+    fullText: "Read {agency}'s full text",
+    file: '{agency} alert file',
+    about: 'About this kind of alert',
+  },
+
+  // One line per hazard on the status card.
+  hazards: {
+    quake: 'Earthquakes',
+    rain: 'Rain',
+    heat: 'Heat',
+    event: 'Storms and disaster events (GDACS)',
+    unknown: 'unknown',
   },
 
   // Small words used by the formatting helpers.

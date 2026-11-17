@@ -9,6 +9,7 @@ import type {
   ProvinceDetail,
   ProvinceMapProperties,
   ScoreReason,
+  SignalName,
 } from '@ph-monitor/shared';
 import { getConditions } from '../conditions.ts';
 import { pool } from '../db.ts';
@@ -21,7 +22,7 @@ const HOUR_MS = 60 * 60 * 1000;
 
 // ---------- GET /api/provinces ----------
 
-type Shape = { psgc: number; name: string; geometry: unknown };
+type Shape = { psgc: number; name: string; geometry: unknown; point_lat: number; point_lon: number };
 
 // Province shapes never change while the server runs, and simplifying them
 // takes a moment, so we do it once and keep the result in memory.
@@ -31,10 +32,13 @@ async function getShapes(): Promise<Shape[]> {
   if (cachedShapes === null) {
     // ST_SimplifyPreserveTopology drops tiny details (smaller than ~0.005°,
     // about 500 m) so the map downloads faster. ST_AsGeoJSON turns the shape
-    // into GeoJSON, keeping 4 decimals (about 10 m).
+    // into GeoJSON, keeping 4 decimals (about 10 m). The weather point is a
+    // spot inside the province; the map pins headlines there.
     const result = await pool.query<Shape>(
       `SELECT psgc, name,
-              ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.005), 4)::json AS geometry
+              ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.005), 4)::json AS geometry,
+              round(ST_Y(weather_point)::numeric, 4)::float8 AS point_lat,
+              round(ST_X(weather_point)::numeric, 4)::float8 AS point_lon
        FROM provinces ORDER BY psgc`,
     );
     cachedShapes = result.rows;
@@ -51,7 +55,11 @@ provincesRouter.get('/', async (_req, res) => {
     quake_score: number;
     weather_score: number;
     event_score: number;
-  }>('SELECT province_psgc, score, quake_score, weather_score, event_score FROM province_scores');
+    unknown_signals: SignalName[];
+  }>(
+    `SELECT province_psgc, score, quake_score, weather_score, event_score, unknown_signals
+     FROM province_scores`,
+  );
 
   const scoreByPsgc = new Map(scores.rows.map((row) => [row.province_psgc, row]));
 
@@ -65,6 +73,9 @@ provincesRouter.get('/', async (_req, res) => {
       quake_score: score?.quake_score ?? null,
       weather_score: score?.weather_score ?? null,
       event_score: score?.event_score ?? null,
+      incomplete: (score?.unknown_signals.length ?? 0) > 0,
+      point_lat: shape.point_lat,
+      point_lon: shape.point_lon,
     };
     return { type: 'Feature', id: shape.psgc, properties, geometry: shape.geometry };
   });
@@ -111,10 +122,11 @@ provincesRouter.get('/:psgc', async (req, res) => {
     quake_score: number;
     weather_score: number;
     event_score: number;
+    unknown_signals: SignalName[];
     reasons: unknown[];
     computed_at: Date;
   }>(
-    `SELECT score, quake_score, weather_score, event_score, reasons, computed_at
+    `SELECT score, quake_score, weather_score, event_score, unknown_signals, reasons, computed_at
      FROM province_scores WHERE province_psgc = $1`,
     [psgc],
   );
@@ -192,6 +204,7 @@ provincesRouter.get('/:psgc', async (req, res) => {
           quakeScore: score.quake_score,
           weatherScore: score.weather_score,
           eventScore: score.event_score,
+          unknownSignals: score.unknown_signals,
           reasons: keyedReasons(score.reasons),
           computedAt: score.computed_at.toISOString(),
         }

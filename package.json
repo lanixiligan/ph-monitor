@@ -28,8 +28,13 @@
     "sample-storm": "npm run sample-storm --workspace server",
     "ingest:forecast": "npm run ingest:forecast --workspace server",
     "ingest:news": "npm run ingest:news --workspace server",
+    "ingest:alerts": "npm run ingest:alerts --workspace server",
+    "weather-points": "npm run weather-points --workspace server",
     "check:sources": "npm run check:sources --workspace server",
+    "measure:news": "npm run measure:news --workspace server",
+    "replay": "npm run replay --workspace server",
     "test": "npm test --workspaces --if-present",
+    "test:db": "npm run test:db --workspace server",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
