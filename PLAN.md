@@ -365,8 +365,9 @@ place_scores          place_psgc, score, quake/weather/event parts, unknown_sign
 **Owner's decisions (2026-11-17):** (a) a province shows its highest town score; (b) the 0.25°
 grid, fetched every 2 hours.
 
-**Progress:** step 1 done (599 points: 482 grid, 88 province, 29 town; 1,642 towns linked).
-The weather job still reads the old `province_weather_points` until step 2.
+**Progress:** steps 1–6 done (2026-11-17). Also added: the picked spot's town gets a thick
+outline, the card shows the whole town's score next to the province's, and the province hover
+names its highest town. `province_weather_points` is no longer read; it can be dropped later.
 
 ## Amendments (2026-11-15, after step 1)
 

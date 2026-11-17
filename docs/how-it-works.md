@@ -27,7 +27,7 @@ The scheduler (`server/src/jobs/scheduler.ts`) ticks every 15 minutes while the 
 | Job | How often | By hand |
 |---|---|---|
 | Earthquakes | 15 min | `npm run ingest:earthquakes` |
-| Weather | 1 hour | `npm run ingest:weather` |
+| Weather | 2 hours | `npm run ingest:weather` |
 | Official alerts | 15 min | `npm run ingest:alerts` |
 | Scores (after the two above) | 15 min | `npm run compute:scores` |
 | News | 15 min | `npm run ingest:news` |
@@ -49,13 +49,16 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | Table | Holds |
 |---|---|
 | `provinces` | Province shapes and the weather sample point of each |
-| `places` | City and municipality shapes, to name a clicked spot |
+| `places` | City and municipality shapes, to name a clicked spot and colour the zoomed-in map |
 | `earthquakes` | One row per USGS quake |
 | `earthquake_provinces` | Which provinces each quake reaches, with the distance |
-| `weather_readings` | The worst weather across each province's sample points, per model hour |
-| `province_weather_points` | Extra sample points for big provinces (`npm run weather-points`) |
+| `weather_points` | The ~600 weather points: a 0.25° grid, province points, far-off towns (`npm run weather-points`) |
+| `place_weather_points` | Which points each town reads its weather from |
+| `point_readings` | Each weather point's reading per model hour (last 2 days) |
+| `weather_readings` | The worst weather across each province's points, per model hour |
+| `place_scores` | The latest score and reasons for each town (no history) |
 | `official_alerts` | PAGASA alerts, in PAGASA's own words |
-| `province_scores` | The latest score and reasons for each province |
+| `province_scores` | The latest score and reasons for each province: those of its highest town |
 | `province_score_history` | Past scores with their part-scores; a row is added only when something changed |
 | `events` | Disaster events from GDACS and EONET |
 | `storms`, `storm_track_points` | Tropical storms and their past and forecast positions |
@@ -79,6 +82,8 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/provinces/:psgc` | One province in detail |
 | `GET /api/point?lat=..&lon=..` | The score for one exact spot, worked out on demand |
 | `GET /api/places?q=..` | Place search: cities, municipalities and provinces by name, from our own database |
+| `GET /api/places/shapes` | Every town's shape (downloaded once, when the reader zooms in or picks a spot) |
+| `GET /api/places/scores` | Every town's latest score, for the zoomed-in map |
 | `GET /api/events` | Current disaster events, for map markers |
 | `GET /api/storms` | Active storms with their tracks |
 | `GET /api/news` | Latest headlines; optional `type` (a kind of disaster or `general`), `category`, `psgc`, `limit` (1–100, default 30) |
@@ -90,8 +95,9 @@ The web page talks only to these addresses on our own server (port 3001).
 ## What the reader sees
 
 - **Map:** provinces coloured by score (0–19 nothing detected, 20–39 low, 40–59 moderate, 60–79 high,
-  80–100 severe), with event markers and storm tracks on top. A province with no score yet
-  is striped grey.
+  80–100 severe), and from zoom 8 each city and municipality, with event markers and storm
+  tracks on top. A province or town with no score yet is striped grey. The picked spot's town
+  gets a thick outline.
 - **Light or dark:** follows the device setting until the reader picks one in the top bar
   (remembered in the browser). The dark theme uses a dark basemap and a score scale where
   brighter means more stress.

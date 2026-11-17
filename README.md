@@ -28,12 +28,13 @@ npm run db:up             # start the database (PostGIS in Docker, port 5433)
 npm run migrate           # create the tables
 npm run load-provinces    # download province boundaries (first time only)
 npm run load-places       # download city and municipality boundaries (first time only)
+npm run weather-points    # build the weather grid and link each town to it (first time only)
 
 npm run dev:server        # terminal 1: API + data fetching, http://localhost:3001
 npm run dev:web           # terminal 2: the map, http://localhost:5173
 ```
 
-The server fetches earthquakes, official alerts and news every 15 minutes; weather every hour;
+The server fetches earthquakes, official alerts and news every 15 minutes; weather every 2 hours;
 disaster events, storm tracks and the stream check every 30 minutes; the feed check every hour; and the 7-day outlook every
 6 hours. At startup only the jobs that are due run, so a restart does not fetch fresh feeds again.
 Weather for a clicked spot is fetched when you click, and reused for 30 minutes.
