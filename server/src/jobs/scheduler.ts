@@ -5,11 +5,17 @@
 // Extras cycle (shown on the page; only GDACS alert levels reach the score), every 15 minutes:
 //   official alerts and news every 15 minutes; events, storms and the live stream check every 30;
 //   feed link check every hour; the 7-day outlook every 6 hours.
+// How often each job runs is set in due.ts (JOB_RULES).
+//
+// At start, only the jobs that are due run (see due.ts), so restarting the
+// server again and again does not hammer the feeds.
 
 import cron from 'node-cron';
-import { pool } from '../db.ts';
 import { checkFeeds, checkStreams } from './checkSources.ts';
 import { computeScores } from './computeScores.ts';
+import { jobsOnTick, readDueJobs } from './due.ts';
+// `import type` brings in a type only; it disappears when the code runs.
+import type { JobName } from './due.ts';
 import { ingestAlerts } from './ingestAlerts.ts';
 import { ingestEarthquakes } from './ingestEarthquakes.ts';
 import { ingestEvents } from './ingestEvents.ts';
@@ -21,13 +27,6 @@ import { ingestWeather } from './ingestWeather.ts';
 // Cron pattern: "minute hour day month weekday". `*/15` in the minute slot
 // means "every 15 minutes": at :00, :15, :30 and :45.
 const EVERY_15_MINUTES = '*/15 * * * *';
-// Weather is fetched only on the tick at :00. The model's values are hourly,
-// and one run asks for about 200 points (many provinces have up to three), so hourly
-// keeps the day's total near 4,800 of Open-Meteo's 10,000 calls.
-const WEATHER_EVERY_MINUTES = 60;
-// The outlook costs about 176 Open-Meteo calls a run, so it runs rarely.
-const OUTLOOK_EVERY_HOURS = 6;
-const HOUR_MS = 60 * 60 * 1000;
 
 let coreRunning = false;
 let extrasRunning = false;
@@ -41,7 +40,8 @@ async function runJob(name: string, job: () => Promise<void>): Promise<void> {
   }
 }
 
-async function runCycle(withWeather: boolean): Promise<void> {
+/** `wanted` lists the jobs to run this time. The scores are always worked out. */
+async function runCycle(wanted: JobName[]): Promise<void> {
   // If the previous cycle is somehow still going, skip this one.
   if (coreRunning) {
     console.warn('Scheduler: previous run still in progress, skipping this one.');
@@ -50,8 +50,9 @@ async function runCycle(withWeather: boolean): Promise<void> {
   coreRunning = true;
   console.log(`Scheduler: run started at ${new Date().toISOString()}`);
   try {
-    await runJob('earthquakes', ingestEarthquakes);
-    if (withWeather) await runJob('weather', ingestWeather);
+    if (wanted.includes('earthquakes')) await runJob('earthquakes', ingestEarthquakes);
+    if (wanted.includes('weather')) await runJob('weather', ingestWeather);
+    // The scores read only our own database, so they cost no feed calls.
     await runJob('scores', computeScores);
   } finally {
     coreRunning = false;
@@ -59,58 +60,60 @@ async function runCycle(withWeather: boolean): Promise<void> {
   console.log('Scheduler: run finished.');
 }
 
-/** True when the outlook was never fetched, or last fetched 6 or more hours ago. */
-async function outlookIsDue(): Promise<boolean> {
-  const result = await pool.query<{ last_ok_at: Date }>(
-    `SELECT last_ok_at FROM fetch_runs WHERE source = 'open-meteo-daily'`,
-  );
-  const lastOk = result.rows[0]?.last_ok_at;
-  if (!lastOk) return true;
-  // One minute of slack, so a run that finished a few seconds late still counts.
-  return Date.now() - lastOk.getTime() >= OUTLOOK_EVERY_HOURS * HOUR_MS - 60_000;
-}
-
-/** `minute` is the clock minute of this tick; 'start' means "the server just started". */
-// `number | 'start'` is a union: a number, or exactly the text 'start'.
-async function runExtras(minute: number | 'start'): Promise<void> {
+async function runExtras(wanted: JobName[]): Promise<void> {
   if (extrasRunning) {
     console.warn('Scheduler: previous extras run still in progress, skipping this one.');
     return;
   }
   extrasRunning = true;
   try {
-    const halfHour = minute === 'start' || minute % 30 === 0;
-    const fullHour = minute === 'start' || minute === 0;
-
-    await runJob('official alerts', ingestAlerts);
-    await runJob('news', ingestNews);
-    if (halfHour) {
-      await runJob('events', ingestEvents);
-      await runJob('storms', ingestStorms);
-      await runJob('stream check', checkStreams);
-    }
-    if (fullHour) await runJob('feed check', checkFeeds);
-    // Asking the database (instead of the clock) means a restart does not
-    // spend Open-Meteo calls on an outlook that is still fresh.
-    if (fullHour && (await outlookIsDue())) await runJob('outlook', ingestForecast);
-  } catch (error) {
-    console.error('Scheduler: extras run failed:', error);
+    if (wanted.includes('alerts')) await runJob('official alerts', ingestAlerts);
+    if (wanted.includes('news')) await runJob('news', ingestNews);
+    if (wanted.includes('events')) await runJob('events', ingestEvents);
+    if (wanted.includes('storms')) await runJob('storms', ingestStorms);
+    if (wanted.includes('streamCheck')) await runJob('stream check', checkStreams);
+    if (wanted.includes('feedCheck')) await runJob('feed check', checkFeeds);
+    if (wanted.includes('outlook')) await runJob('outlook', ingestForecast);
   } finally {
     extrasRunning = false;
   }
 }
 
+/** A timer tick: the clock picks the jobs (see jobsOnTick). */
+async function runTick(minute: number): Promise<void> {
+  let wanted = jobsOnTick(minute);
+  // The outlook is the costly one, so it also has to be due in the database.
+  if (wanted.includes('outlook')) {
+    let outlookIsDue = false;
+    try {
+      outlookIsDue = (await readDueJobs()).includes('outlook');
+    } catch (error) {
+      console.error('Scheduler: could not check whether the outlook is due:', error);
+    }
+    if (!outlookIsDue) wanted = wanted.filter((job) => job !== 'outlook');
+  }
+  await Promise.all([runCycle(wanted), runExtras(wanted)]);
+}
+
+/** At start: run only what is due, so a restart does not fetch fresh feeds again. */
+async function runAtStart(): Promise<void> {
+  try {
+    const due = await readDueJobs();
+    console.log(`Scheduler: due at start: ${due.length > 0 ? due.join(', ') : 'nothing (all feeds are recent)'}.`);
+    await Promise.all([runCycle(due), runExtras(due)]);
+  } catch (error) {
+    // Most likely the database is not up yet. The next tick tries again.
+    console.error('Scheduler: could not check which jobs are due at start:', error);
+  }
+}
+
 export function startScheduler(): void {
   cron.schedule(EVERY_15_MINUTES, () => {
-    const minute = new Date().getMinutes();
     // `void` says "start this and don't wait for it" (errors are handled inside).
-    void runCycle(minute % WEATHER_EVERY_MINUTES === 0);
-    void runExtras(minute);
+    void runTick(new Date().getMinutes());
   });
 
-  // Also run everything once right now, so the data is fresh after a restart.
-  void runCycle(true);
-  void runExtras('start');
+  void runAtStart();
   console.log(
     'Scheduler: started (earthquakes, official alerts and news every 15 min; weather hourly; events, storms and streams every 30 min; ' +
       'feed check hourly; outlook every 6 hours).',
