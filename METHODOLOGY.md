@@ -135,10 +135,19 @@ saved:
 
 The card also shows the whole province's score for comparison.
 
+## Hazard by hazard
+
+The card also shows the same formulas one hazard at a time: earthquakes, rain, heat, and storms
+and disaster events (GDACS). Each gets its own 0–100 number and band, or "unknown". The overall
+score is still the strongest signal plus a share of the others.
+
 ## Official alerts are not in the score
 
 PAGASA's alerts (flood advisories, tropical cyclone alerts) are shown above the score in
 PAGASA's own words. They never raise or lower the number, and a low number never hides them.
+Storm tracks are shown the same way: a storm counts as "near" when its path (from where it is
+now through its forecast positions) passes within 300 km.
+
 ## Reasons on the card
 
 Along with each score the server sends the reasons behind it as message keys plus numbers
@@ -148,7 +157,7 @@ change any score.
 
 ## Freshness
 
-Earthquakes are fetched every 15 minutes, weather and disaster events every 30. The card shows
+Earthquakes are fetched every 15 minutes, weather every hour, disaster events every 30 minutes. The card shows
 when the earthquake and weather feeds were last fetched **successfully**. If either is more than
 1 hour old, the data is marked stale.
 
@@ -165,9 +174,10 @@ A quiet day with no earthquakes is not stale: what counts is that the fetch work
 
 - **Weather is modelled, not measured.** Open-Meteo values come from weather models, not from a
   station. Each value is stored with the hour it is valid for (`valid_at`).
-- **One weather point per province.** We sample a single point guaranteed to be inside the
-  province (PostGIS `ST_PointOnSurface`). A large or mountainous province can differ a lot from
-  its one point, and a storm over another part of the province can be missed.
+- **A few weather points per province.** Every province has one point guaranteed to be inside
+  it (PostGIS `ST_PointOnSurface`); big and island provinces have up to two more, at least
+  40 km apart. The province's weather is the worst of them (most rain, hottest point). Rain
+  between the points can still be missed.
 - **Rain is hourly.** "Last hour" means the latest full model hour, so a short burst can be
   smoothed out.
 - **USGS is a global catalogue.** Around the Philippines it reliably reports only quakes of

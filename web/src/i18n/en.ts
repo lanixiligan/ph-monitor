@@ -200,8 +200,9 @@ export const en = {
     stale: 'STALE',
     staleText: 'Some data is more than 1 hour old.',
     bandAtSpot: '{band} at this spot',
-    parts: 'Earthquakes {quake} · Weather {weather} · Events {event}',
-    partUnknown: 'unknown',
+    hazardsTitle: 'By hazard',
+    notCovered:
+      'Not covered here: landslides, storm surge, tsunami, PAGASA wind signals and rainfall warnings, PHIVOLCS volcano alert levels. Use the official links below.',
     incomplete: 'Some data is missing, so the real score may be higher.',
     nearTitle: 'Storms and disaster events near here',
     wholeProvince: 'Whole province ({province}): {score}, {band}',
@@ -294,6 +295,15 @@ export const en = {
     fullText: "Read {agency}'s full text",
     file: '{agency} alert file',
     about: 'About this kind of alert',
+  },
+
+  // One line per hazard on the status card.
+  hazards: {
+    quake: 'Earthquakes',
+    rain: 'Rain',
+    heat: 'Heat',
+    event: 'Storms and disaster events (GDACS)',
+    unknown: 'unknown',
   },
 
   // Small words used by the formatting helpers.

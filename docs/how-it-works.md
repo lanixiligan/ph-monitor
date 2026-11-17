@@ -50,7 +50,8 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `places` | City and municipality shapes, to name a clicked spot |
 | `earthquakes` | One row per USGS quake |
 | `earthquake_provinces` | Which provinces each quake reaches, with the distance |
-| `weather_readings` | Weather at each province's sample point, per model hour |
+| `weather_readings` | The worst weather across each province's sample points, per model hour |
+| `province_weather_points` | Extra sample points for big provinces (`npm run weather-points`) |
 | `official_alerts` | PAGASA alerts, in PAGASA's own words |
 | `province_scores` | The latest score and reasons for each province |
 | `province_score_history` | Every past score |

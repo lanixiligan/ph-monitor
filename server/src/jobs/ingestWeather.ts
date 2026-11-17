@@ -1,30 +1,46 @@
-// Job: fetch the latest weather at each province's sample point and save it.
+// Job: fetch the latest weather at each province's sample points and save it.
+// A big or island province has up to two extra points (see weatherPoints.ts);
+// what is saved is the worst of them: the most rain and the hottest point.
 // Run by hand with: npm run ingest:weather
 
 import { pool } from '../db.ts';
 import { fetchOpenMeteo } from '../fetchers/openMeteo.ts';
 import { isFreshEnough } from '../freshness.ts';
 import { heatIndexC } from '../heatIndex.ts';
+import { worstReading } from '../weatherPoints.ts';
 
 export async function ingestWeather(): Promise<void> {
-  // ST_X / ST_Y read the longitude / latitude out of a point.
-  const provinces = await pool.query<{ psgc: number; lon: number; lat: number }>(
-    `SELECT psgc, ST_X(weather_point) AS lon, ST_Y(weather_point) AS lat
-     FROM provinces ORDER BY psgc`,
-  );
+  const provinces = await pool.query<{ psgc: number }>('SELECT psgc FROM provinces ORDER BY psgc');
   if (provinces.rows.length === 0) {
     throw new Error('No provinces in the database. Run `npm run load-provinces` first.');
   }
 
-  const readings = await fetchOpenMeteo(provinces.rows);
+  // Every sample point: each province's own, plus its extra ones (if any).
+  // ST_X / ST_Y read the longitude / latitude out of a point.
+  const points = await pool.query<{ psgc: number; lon: number; lat: number }>(
+    `SELECT psgc, ST_X(weather_point) AS lon, ST_Y(weather_point) AS lat FROM provinces
+     UNION ALL
+     SELECT province_psgc, ST_X(geom), ST_Y(geom) FROM province_weather_points
+     ORDER BY psgc`,
+  );
+
+  const readings = await fetchOpenMeteo(points.rows);
+
+  // Group the answers by province. A Map is a lookup table: psgc → its readings.
+  const byProvince = new Map<number, (typeof readings)[number][]>();
+  // `entries()` gives each row together with its position in the list, so we
+  // can pick the reading at the same position.
+  for (const [i, point] of points.rows.entries()) {
+    const list = byProvince.get(point.psgc) ?? [];
+    list.push(readings[i] ?? null);
+    byProvince.set(point.psgc, list);
+  }
 
   let saved = 0;
   let skipped = 0;
 
-  // `entries()` gives each row together with its position in the list, so we
-  // can pick the reading at the same position.
-  for (const [i, province] of provinces.rows.entries()) {
-    const reading = readings[i];
+  for (const province of provinces.rows) {
+    const reading = worstReading(byProvince.get(province.psgc) ?? []);
     if (!reading) {
       skipped += 1;
       continue;
@@ -77,14 +93,16 @@ export async function ingestWeather(): Promise<void> {
          last_total = EXCLUDED.last_total`,
       [saved, total],
     );
-    console.log(`Weather: saved ${saved} of ${total} readings, skipped ${skipped}.`);
+    console.log(
+      `Weather: saved ${saved} of ${total} provinces from ${points.rows.length} points, skipped ${skipped}.`,
+    );
   } else {
     await pool.query(
       `UPDATE fetch_runs SET last_saved = $1, last_total = $2 WHERE source = 'open-meteo'`,
       [saved, total],
     );
     console.warn(
-      `Weather: saved only ${saved} of ${total} readings (skipped ${skipped}); not counted as a fresh run.`,
+      `Weather: saved only ${saved} of ${total} provinces (skipped ${skipped}); not counted as a fresh run.`,
     );
   }
 }

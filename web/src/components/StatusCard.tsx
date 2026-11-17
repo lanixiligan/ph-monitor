@@ -84,9 +84,14 @@ export function StatusCard({ spot, onClose }: Props) {
   const band = bandFor(score.score);
   // Some signal could not be checked: the score is a lower limit.
   const incomplete = score.unknownSignals.length > 0;
-  // A part of the score, or the word "unknown" when it could not be checked.
-  const part = (name: 'quake' | 'weather' | 'event', value: number) =>
-    score.unknownSignals.includes(name) ? t.card.partUnknown : value;
+  // One row per hazard. `value` is null when that hazard could not be checked.
+  const unknown = (name: 'quake' | 'weather' | 'event') => score.unknownSignals.includes(name);
+  const hazardRows: { label: string; value: number | null }[] = [
+    { label: t.hazards.quake, value: unknown('quake') ? null : score.hazards.quake },
+    { label: t.hazards.rain, value: score.hazards.rain },
+    { label: t.hazards.heat, value: score.hazards.heat },
+    { label: t.hazards.event, value: unknown('event') ? null : score.hazards.event },
+  ];
   const colors = bandColors(band, theme);
 
   // Split the events by kind. The `(e): e is ...` part tells TypeScript what
@@ -135,16 +140,24 @@ export function StatusCard({ spot, onClose }: Props) {
               : fill(t.card.bandAtSpot, { band: bandLabel(band) })}
           </strong>{' '}
           <Ladder score={score.score} />
-          <br />
-          <span className="muted">
-            {fill(t.card.parts, {
-              quake: part('quake', score.quakeScore),
-              weather: part('weather', score.weatherScore),
-              event: part('event', score.eventScore),
-            })}
-          </span>
         </span>
       </div>
+
+      {/* The same formulas hazard by hazard, so heat is never read as an earthquake. */}
+      <table className="hazards" aria-label={t.card.hazardsTitle}>
+        <tbody>
+          {hazardRows.map((row) => (
+            <tr key={row.label}>
+              <td>{row.label}</td>
+              <td>
+                {row.value === null ? t.hazards.unknown : bandLabel(bandFor(row.value))}
+              </td>
+              <td className="hazard-number">{row.value ?? '–'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="muted">{t.card.notCovered}</p>
       {incomplete && (
         <p className="notice">
           <WarnIcon /> {t.card.incomplete}

@@ -292,6 +292,28 @@ export function totalScore(quake: number, weather: number, event = 0): number {
   return Math.min(100, Math.round(strongest + extra));
 }
 
+/** One score per hazard, for the card. null = that part of the reading is missing. */
+export type HazardScores = { quake: number; rain: number | null; heat: number | null; event: number };
+
+/**
+ * The same formulas as the overall score, shown hazard by hazard, so a hot
+ * afternoon and a strong earthquake are never read as the same thing.
+ */
+export function hazardScores(
+  quakes: QuakeInput[],
+  weather: WeatherInput | null,
+  events: EventInput[],
+): HazardScores {
+  const hasRain = weather !== null && (weather.rain1hMm !== null || weather.rain24hMm !== null);
+  const hasHeat = weather !== null && weather.heatIndexC !== null;
+  return {
+    quake: quakeScore(quakes),
+    rain: hasRain ? rainScore(weather) : null,
+    heat: hasHeat ? heatScore(weather) : null,
+    event: eventScore(events),
+  };
+}
+
 /** The three signal scores; null = "we could not check this one". */
 export type SignalScores = { quake: number | null; weather: number | null; event: number | null };
 

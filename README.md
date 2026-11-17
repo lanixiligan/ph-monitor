@@ -33,8 +33,8 @@ npm run dev:server        # terminal 1: API + data fetching, http://localhost:30
 npm run dev:web           # terminal 2: the map, http://localhost:5173
 ```
 
-The server fetches earthquakes and news every 15 minutes; weather, disaster events, storm tracks
-and the stream check every 30 minutes; the feed check every hour; and the 7-day outlook every
+The server fetches earthquakes, official alerts and news every 15 minutes; weather every hour;
+disaster events, storm tracks and the stream check every 30 minutes; the feed check every hour; and the 7-day outlook every
 6 hours. Everything also runs once at startup (the outlook only if it is over 6 hours old).
 Weather for a clicked spot is fetched when you click, and reused for 30 minutes.
 

@@ -24,9 +24,10 @@ TypeScript is pinned to 5.9.3 on purpose (do not move to 7 without asking).
 shared/src/        types.ts (shared types), appInfo.ts (APP_NAME)
 server/db/         schema.sql (all tables; re-runnable)
 server/scripts/    migrate.ts, load-provinces.ts, load-places.ts, run-job.ts,
-                   check-sources.ts, load-sample-storm.ts
+                   check-sources.ts, load-sample-storm.ts, pick-weather-points.ts
 server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    pointWeather.ts (on-demand weather for one spot),
+                   weatherPoints.ts (extra sample points, worst reading per province),
                    sources.ts (every news feed and stream link, outlet categories),
                    conditions.ts (outlook, nearby events, storms, news, official alerts)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
@@ -63,6 +64,7 @@ npm test                 tests
 npm run typecheck        tsc over all workspaces
 npm run ingest:earthquakes | ingest:weather | compute:scores   one job by hand
 npm run ingest:events | ingest:storms | ingest:forecast | ingest:news | ingest:alerts
+npm run weather-points   pick extra weather points for big provinces (after load-places)
 npm run check:sources    check every feed and stream link, print a table
 npm run sample-storm     load a sample storm track (add `-- remove` to delete it)
 ```

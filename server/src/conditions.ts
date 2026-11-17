@@ -22,6 +22,8 @@ import { isAlertInEffect } from './fetchers/pagasa.ts';
 export const NEAR_EVENT_KM = 300;
 /** A storm is "coming" when its forecast centre passes within this distance. */
 export const STORM_NEAR_KM = 300;
+/** A storm's latest known position still counts as "now" for this long. */
+const STORM_NOW_HOURS = 12;
 /** Events that ended longer ago than this are no longer shown. */
 export const EVENT_SHOWN_DAYS = 7;
 /** Headlines older than this are not shown on the card. */
@@ -152,20 +154,44 @@ export async function getConditions(
     [...targetValues, NEAR_EVENT_KM * 1000],
   );
 
-  // For each active storm, the forecast position that comes closest.
-  // DISTINCT ON (s.id) keeps one row per storm: the first in the ORDER BY.
+  // For each active storm, how close its path comes. The path is a line from
+  // where the storm is now through its forecast positions, cut into pieces
+  // (one per pair of neighbouring positions). Measuring to the line, not to
+  // the positions, catches a storm that passes between two of them, or one
+  // that is overhead right now.
+  // LEAD(...) reads the next row's value; DISTINCT ON keeps the closest piece per storm.
+  // ST_LineLocatePoint says how far along the piece (0 to 1) the closest spot is,
+  // which gives the time by reading between the two positions' times.
   const storms = await pool.query<{
     id: string;
     name: string;
-    valid_at: Date;
+    closest_at: Date;
     distance_km: number;
   }>(
-    `SELECT DISTINCT ON (s.id) s.id, s.name, t.valid_at,
-            ST_Distance(t.geom::geography, ${target}) / 1000 AS distance_km
-     FROM storms s
-     JOIN storm_track_points t ON t.storm_id = s.id
-     WHERE s.is_active AND t.is_forecast AND t.valid_at >= now()
-       AND ST_DWithin(t.geom::geography, ${target}, $${next})
+    `WITH positions AS (
+       SELECT t.storm_id, t.valid_at, t.geom
+       FROM storm_track_points t
+       JOIN storms s ON s.id = t.storm_id
+       WHERE s.is_active
+         AND (t.is_forecast OR t.valid_at = (
+           SELECT max(o.valid_at) FROM storm_track_points o
+           WHERE o.storm_id = t.storm_id AND NOT o.is_forecast))
+     ),
+     pieces AS (
+       SELECT storm_id, valid_at AS from_at,
+              COALESCE(LEAD(valid_at) OVER w, valid_at) AS to_at,
+              ST_MakeLine(geom, COALESCE(LEAD(geom) OVER w, geom)) AS line
+       FROM positions
+       WINDOW w AS (PARTITION BY storm_id ORDER BY valid_at)
+     )
+     SELECT DISTINCT ON (s.id) s.id, s.name,
+            ST_Distance(p.line::geography, ${target}) / 1000 AS distance_km,
+            p.from_at + (p.to_at - p.from_at) *
+              ST_LineLocatePoint(p.line, ST_ClosestPoint(p.line, (${target})::geometry)) AS closest_at
+     FROM pieces p
+     JOIN storms s ON s.id = p.storm_id
+     WHERE p.to_at >= now() - interval '${STORM_NOW_HOURS} hours'
+       AND ST_DWithin(p.line::geography, ${target}, $${next})
      ORDER BY s.id, distance_km`,
     [...targetValues, STORM_NEAR_KM * 1000],
   );
@@ -187,7 +213,7 @@ export async function getConditions(
   const stormsComing: StormComing[] = storms.rows.map((row) => ({
     stormId: row.id,
     name: row.name,
-    closestAt: row.valid_at.toISOString(),
+    closestAt: row.closest_at.toISOString(),
     distanceKm: Math.round(row.distance_km),
   }));
 

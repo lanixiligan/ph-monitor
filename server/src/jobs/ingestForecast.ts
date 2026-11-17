@@ -4,7 +4,7 @@
 // Call budget (Open-Meteo free tier: about 10,000 calls a day; a request for
 // N points counts as about N calls). Meant to run every 6 hours, 4 times a day:
 //   88 provinces x 2 APIs (daily + flood) x 4 runs = 704 calls a day.
-// Together with the weather job (about 4,200 a day) this stays far below the limit.
+// Together with the weather job (about 4,800 a day) this stays below the limit.
 
 import { pool } from '../db.ts';
 import { fetchOpenMeteoDaily } from '../fetchers/openMeteoDaily.ts';

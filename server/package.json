@@ -19,6 +19,7 @@
     "ingest:forecast": "tsx scripts/run-job.ts forecast",
     "ingest:news": "tsx scripts/run-job.ts news",
     "ingest:alerts": "tsx scripts/run-job.ts alerts",
+    "weather-points": "tsx scripts/pick-weather-points.ts",
     "check:sources": "tsx scripts/check-sources.ts",
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"

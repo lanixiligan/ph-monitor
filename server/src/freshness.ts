@@ -25,7 +25,8 @@ type FeedRule = {
  */
 export const FEED_RULES: FeedRule[] = [
   { id: 'earthquakes', sources: ['usgs'], staleAfterMinutes: 60, signal: 'quake' },
-  { id: 'weather', sources: ['open-meteo'], staleAfterMinutes: 90 },
+  // Weather is fetched hourly, so two missed runs raise the banner.
+  { id: 'weather', sources: ['open-meteo'], staleAfterMinutes: 150 },
   { id: 'officialAlerts', sources: ['pagasa'], staleAfterMinutes: 60 },
   { id: 'events', sources: ['gdacs'], staleAfterMinutes: 120, signal: 'event' },
   { id: 'naturalEvents', sources: ['eonet'], staleAfterMinutes: 120 },

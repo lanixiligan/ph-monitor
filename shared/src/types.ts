@@ -205,6 +205,8 @@ export type PointScore = {
   quakeScore: number;
   weatherScore: number;
   eventScore: number;
+  /** The same formulas, one score per hazard. null = that reading is missing. */
+  hazards: { quake: number; rain: number | null; heat: number | null; event: number };
   /** Signals we could not check; when not empty the score is "at least N". */
   unknownSignals: SignalName[];
   reasons: ScoreReason[];

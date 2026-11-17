@@ -467,6 +467,15 @@ label.legend-row {
   font-size: 13px;
 }
 
+/* One row per hazard under the score. */
+.hazards {
+  width: 100%;
+  margin: 6px 0;
+}
+
+.hazard-number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Stripes over a score colour: the score is missing some data. */

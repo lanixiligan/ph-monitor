@@ -29,6 +29,7 @@
     "ingest:forecast": "npm run ingest:forecast --workspace server",
     "ingest:news": "npm run ingest:news --workspace server",
     "ingest:alerts": "npm run ingest:alerts --workspace server",
+    "weather-points": "npm run weather-points --workspace server",
     "check:sources": "npm run check:sources --workspace server",
     "test": "npm test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"

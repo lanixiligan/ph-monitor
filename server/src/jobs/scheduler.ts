@@ -1,7 +1,7 @@
 // Runs the jobs on a timer while the server is up.
 //
 // Core cycle (feeds the score), every 15 minutes:
-//   earthquakes every 15 minutes, weather every 30, then the scores.
+//   earthquakes every 15 minutes, weather every hour, then the scores.
 // Extras cycle (shown on the page; only GDACS alert levels reach the score), every 15 minutes:
 //   official alerts and news every 15 minutes; events, storms and the live stream check every 30;
 //   feed link check every hour; the 7-day outlook every 6 hours.
@@ -21,8 +21,10 @@ import { ingestWeather } from './ingestWeather.ts';
 // Cron pattern: "minute hour day month weekday". `*/15` in the minute slot
 // means "every 15 minutes": at :00, :15, :30 and :45.
 const EVERY_15_MINUTES = '*/15 * * * *';
-// Weather is fetched only on the ticks at :00 and :30.
-const WEATHER_EVERY_MINUTES = 30;
+// Weather is fetched only on the tick at :00. The model's values are hourly,
+// and one run asks for about 200 points (many provinces have up to three), so hourly
+// keeps the day's total near 4,800 of Open-Meteo's 10,000 calls.
+const WEATHER_EVERY_MINUTES = 60;
 // The outlook costs about 176 Open-Meteo calls a run, so it runs rarely.
 const OUTLOOK_EVERY_HOURS = 6;
 const HOUR_MS = 60 * 60 * 1000;
@@ -110,7 +112,7 @@ export function startScheduler(): void {
   void runCycle(true);
   void runExtras('start');
   console.log(
-    'Scheduler: started (earthquakes and news every 15 min; weather, events, storms and streams every 30 min; ' +
+    'Scheduler: started (earthquakes, official alerts and news every 15 min; weather hourly; events, storms and streams every 30 min; ' +
       'feed check hourly; outlook every 6 hours).',
   );
 }

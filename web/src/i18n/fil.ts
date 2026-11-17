@@ -198,8 +198,9 @@ export const fil: Strings = {
     stale: 'LUMA NA', // REVIEW: unsure about "LUMA NA"
     staleText: 'May datos na mahigit 1 oras na.', // REVIEW
     bandAtSpot: '{band} sa lugar na ito', // REVIEW
-    parts: 'Lindol {quake} · Panahon {weather} · Mga sakuna {event}', // REVIEW
-    partUnknown: 'hindi alam', // REVIEW
+    hazardsTitle: 'Ayon sa panganib', // REVIEW
+    notCovered:
+      'Hindi saklaw dito: pagguho ng lupa, daluyong, tsunami, wind signal at babala sa ulan ng PAGASA, alert level ng bulkan ng PHIVOLCS. Gamitin ang mga opisyal na link sa ibaba.', // REVIEW
     incomplete: 'May kulang na datos, kaya maaaring mas mataas ang totoong score.', // REVIEW
     nearTitle: 'Mga bagyo at sakuna malapit dito', // REVIEW
     wholeProvince: 'Buong probinsya ({province}): {score}, {band}', // REVIEW
@@ -294,6 +295,14 @@ export const fil: Strings = {
   },
 
   // Isang linya bawat panganib sa status card.
+  hazards: {
+    quake: 'Lindol', // REVIEW
+    rain: 'Ulan', // REVIEW
+    heat: 'Init', // REVIEW
+    event: 'Mga bagyo at sakuna (GDACS)', // REVIEW
+    unknown: 'hindi alam', // REVIEW
+  },
+
   // Small words used by the formatting helpers.
   format: {
     never: 'hindi pa', // REVIEW: unsure about "hindi pa"
