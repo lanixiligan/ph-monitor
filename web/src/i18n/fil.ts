@@ -88,8 +88,8 @@ export const fil: Strings = {
   spot: {
     title: 'Pumili ng lugar', // REVIEW
     hint: 'Maghanap ng lugar, gamitin ang iyong lokasyon, o i-click ang kahit saang lupa. Dito lalabas ang score para sa mismong lugar na iyon, ang mga dahilan nito at ang susunod na 7 araw.', // REVIEW
-    highest: 'Pinakamataas na score ng mga lalawigan ngayon', // REVIEW
-    noScores: 'Wala pang lalawigang may score.', // REVIEW
+    highest: 'Pinakamataas na score ng mga lalawigan/probinsya ngayon', // REVIEW
+    noScores: 'Wala pang lalawigan/probinsyang may score.', // REVIEW
     alertsTitle: 'Mga opisyal na babalang may bisa', // REVIEW
     alertsNone: 'Walang nakalistang general flood advisory o tropical cyclone alert ang PAGASA na may bisa. Hindi sinusuri dito ang ibang babala (ulan, wind signal, bulkan).', // REVIEW
   },
@@ -97,9 +97,9 @@ export const fil: Strings = {
   // Ang search box sa ibabaw ng mapa at ang button na "gamitin ang aking lokasyon".
   search: {
     label: 'Maghanap ng lugar', // REVIEW
-    placeholder: 'Maghanap ng lungsod, bayan o lalawigan', // REVIEW
-    province: 'lalawigan', // REVIEW
-    none: 'Walang lugar na may ganyang pangalan. Subukan ang pangalan ng bayan o lalawigan.', // REVIEW
+    placeholder: 'Maghanap ng lungsod, bayan o lalawigan/probinsya', // REVIEW
+    province: 'lalawigan/probinsya', // REVIEW
+    none: 'Walang lugar na may ganyang pangalan. Subukan ang pangalan ng bayan o lalawigan/probinsya.', // REVIEW
     failed: 'Hindi gumagana ang paghahanap sa ngayon. Maaari mo pa ring i-click ang mapa.', // REVIEW
     locate: 'Gamitin ang aking lokasyon', // REVIEW
     locateOutside: 'Nasa labas ng Pilipinas ang iyong lokasyon, kaya walang score para dito.', // REVIEW
@@ -176,7 +176,7 @@ export const fil: Strings = {
   // Sentences explaining a score.
   reasons: {
     quake: 'Lindol na M{magnitude} {where} ({depth}), {when}.', // REVIEW
-    quakeInsideProvince: 'sa loob ng probinsya', // REVIEW
+    quakeInsideProvince: 'sa loob ng lalawigan/probinsya', // REVIEW
     lessThanOneKmAway: 'wala pang 1 km ang layo', // REVIEW
     kmAway: '{km} km ang layo', // REVIEW
     depthUnknown: 'hindi alam ang lalim', // REVIEW
@@ -186,9 +186,9 @@ export const fil: Strings = {
     hoursAgo: '{hours} oras ang nakalipas', // REVIEW
     moreQuakes: '{count} pang mas maliit o mas lumang lindol sa malapit.', // REVIEW
     event: 'GDACS alerto na {level}: {kind} {where}{ended}.', // REVIEW: unsure about the word order of "alerto na {level}"
-    eventInOrBesideProvince: 'sa loob o katabi ng probinsya', // REVIEW
+    eventInOrBesideProvince: 'sa loob o katabi ng lalawigan/probinsya', // REVIEW
     eventEnded: ' (tapos na)', // REVIEW
-    noWeatherProvince: 'Walang bagong datos ng panahon para sa probinsyang ito.', // REVIEW
+    noWeatherProvince: 'Walang bagong datos ng panahon para sa lalawigan/probinsyang ito.', // REVIEW
     noWeatherSpot: 'Walang bagong datos ng panahon para sa lugar na ito.', // REVIEW
     noQuakeData: 'Hindi sumasagot kamakailan ang feed ng lindol, kaya maaaring may kulang na bagong lindol.', // REVIEW
     noEventData: 'Hindi sumasagot kamakailan ang feed ng sakuna (GDACS), kaya maaaring may kulang.', // REVIEW
@@ -201,7 +201,7 @@ export const fil: Strings = {
 
   // Map popups and hover labels.
   map: {
-    label: 'Mapa ng Pilipinas, may kulay ang mga lalawigan ayon sa score. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+    label: 'Mapa ng Pilipinas, may kulay ang mga lalawigan/probinsya ayon sa score. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
     sampleNotice: 'Sample na datos, hindi totoong bagyo', // REVIEW
     noScoreYet: 'wala pang score', // REVIEW
     atLeast: 'hindi bababa sa {score}', // REVIEW
@@ -228,12 +228,12 @@ export const fil: Strings = {
     stale: 'LUMA NA', // REVIEW: unsure about "LUMA NA"
     staleText: 'May datos na mahigit 1 oras na.', // REVIEW
     bandAtSpot: '{band} sa lugar na ito', // REVIEW
-    hazardsTitle: 'Ayon sa panganib', // REVIEW
+    hazardsTitle: 'Ayon sa uri ng banta', // REVIEW
     notCovered:
       'Hindi saklaw dito: pagguho ng lupa, daluyong, tsunami, wind signal at babala sa ulan ng PAGASA, alert level ng bulkan ng PHIVOLCS. Gamitin ang mga opisyal na link sa ibaba.', // REVIEW
     incomplete: 'May kulang na datos, kaya maaaring mas mataas ang totoong score.', // REVIEW
     nearTitle: 'Mga bagyo at sakuna malapit dito', // REVIEW
-    wholeProvince: 'Buong probinsya ({province}): {score}, {band}', // REVIEW
+    wholeProvince: 'Buong lalawigan/probinsya ({province}): {score}, {band}', // REVIEW
     why: 'Bakit', // REVIEW
     quakesTitle: 'Mga lindol, nakaraang 3 araw', // REVIEW
     quakesNone: 'Wala sa abot ng lugar na ito.', // REVIEW
