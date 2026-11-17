@@ -60,8 +60,8 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `fetch_runs` | When each feed last succeeded |
 
 `fetch_runs` is how the app tells "no earthquakes lately" apart from "the earthquake fetch has
-been failing". If the earthquake or weather fetch last worked more than 1 hour ago, the card
-marks the data as stale.
+been failing". A banner on the page names every feed that is past its own limit, and a score
+that is missing a signal is shown as "at least N" with stripes on the map (see METHODOLOGY.md).
 
 ## API
 
@@ -78,10 +78,11 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/news` | Latest headlines; optional `category`, `psgc`, `limit` (1–100, default 30) |
 | `GET /api/streams` | Stream slots the page may show |
 | `GET /api/bulletins` | Links to official PAGASA and PHIVOLCS pages |
+| `GET /api/status` | When each feed last succeeded, and which are out of date |
 
 ## What the reader sees
 
-- **Map:** provinces coloured by score (0–19 calm, 20–39 low, 40–59 moderate, 60–79 high,
+- **Map:** provinces coloured by score (0–19 nothing detected, 20–39 low, 40–59 moderate, 60–79 high,
   80–100 severe), with event markers and storm tracks on top. A province with no score yet
   is striped grey.
 - **Light or dark:** follows the device setting until the reader picks one in the top bar

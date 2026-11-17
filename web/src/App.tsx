@@ -4,7 +4,8 @@
 
 import { useEffect, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
-import { fetchProvinces } from './api.ts';
+import type { FeedHealth } from '@ph-monitor/shared';
+import { fetchProvinces, fetchStatus } from './api.ts';
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
 import { Legend } from './components/Legend.tsx';
@@ -15,7 +16,7 @@ import { SpotHint } from './components/SpotHint.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
 import { StreamsPanel } from './components/StreamsPanel.tsx';
 import { WarnIcon } from './components/WarnIcon.tsx';
-import { LanguageSwitch, useStrings } from './i18n/index.ts';
+import { fill, LanguageSwitch, lookup, useStrings } from './i18n/index.ts';
 import { ALL_LAYERS_ON, SHOW_BASEMAP } from './mapSettings.ts';
 import { ThemeSwitch } from './theme/index.ts';
 
@@ -43,6 +44,8 @@ export function App() {
   const [provinces, setProvinces] = useState<ProvinceCollection | null>(null);
   // true when the last load failed; the message is looked up when drawn.
   const [failed, setFailed] = useState(false);
+  // How each feed is doing. null = not loaded yet; 'failed' = the check itself failed.
+  const [feeds, setFeeds] = useState<FeedHealth[] | 'failed' | null>(null);
   const [spot, setSpot] = useState<Spot | null>(spotFromAddress);
   // Which map layers the legend's tick boxes have switched on.
   const [layers, setLayers] = useState(ALL_LAYERS_ON);
@@ -83,11 +86,22 @@ export function App() {
       } catch {
         setFailed(true);
       }
+      // Asked separately, so one failing does not hide the other.
+      try {
+        setFeeds((await fetchStatus()).feeds);
+      } catch {
+        setFeeds('failed');
+      }
     }
     void load();
     const timer = setInterval(() => void load(), REFRESH_MS);
     return () => clearInterval(timer);
   }, []);
+
+  // The names of the feeds that are out of date, in the reader's language.
+  const staleFeeds = Array.isArray(feeds)
+    ? feeds.filter((feed) => feed.isStale).map((feed) => lookup(t.feeds, feed.id))
+    : [];
 
   return (
     <div className="app">
@@ -111,6 +125,18 @@ export function App() {
       {failed && (
         <div className="error notice">
           <WarnIcon /> {t.app.loadError}
+        </div>
+      )}
+
+      {/* Names every feed that is out of date, so old data is never mistaken for calm. */}
+      {!failed && feeds === 'failed' && (
+        <div className="error notice" role="status">
+          <WarnIcon /> {t.app.statusError}
+        </div>
+      )}
+      {Array.isArray(feeds) && staleFeeds.length > 0 && (
+        <div className="error notice" role="status">
+          <WarnIcon /> {fill(t.app.staleBanner, { feeds: staleFeeds.join(', ') })}
         </div>
       )}
 

@@ -4,10 +4,11 @@
 //   GET /api/news       → latest disaster headlines; ?category=tv  ?psgc=...  ?limit=...
 //   GET /api/streams    → live stream slots the page may show
 //   GET /api/bulletins  → links to official PAGASA and PHIVOLCS pages
+//   GET /api/status     → when each feed last succeeded, and which are out of date
 
 import { Router } from 'express';
 import { z } from 'zod';
-import type { Storm, StormTrackPoint, StreamSlot, OutletCategory } from '@ph-monitor/shared';
+import type { StatusReport, Storm, StormTrackPoint, StreamSlot, OutletCategory } from '@ph-monitor/shared';
 import {
   CURRENT_EVENT_SQL,
   EVENT_COLUMNS,
@@ -17,6 +18,7 @@ import {
 } from '../conditions.ts';
 import type { EventRow, NewsRow } from '../conditions.ts';
 import { pool } from '../db.ts';
+import { getFeedHealth } from '../freshness.ts';
 import { BULLETIN_LINKS, OUTLET_CATEGORIES } from '../sources.ts';
 
 export const conditionsRouter = Router();
@@ -144,4 +146,10 @@ conditionsRouter.get('/streams', async (_req, res) => {
 
 conditionsRouter.get('/bulletins', (_req, res) => {
   res.json(BULLETIN_LINKS);
+});
+
+conditionsRouter.get('/status', async (_req, res) => {
+  const now = new Date();
+  const report: StatusReport = { checkedAt: now.toISOString(), feeds: await getFeedHealth(now) };
+  res.json(report);
 });

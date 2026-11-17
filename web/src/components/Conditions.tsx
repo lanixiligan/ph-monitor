@@ -19,35 +19,41 @@ import { fill, lookup, useStrings } from '../i18n/index.ts';
 // pulls that one value out of the props object.
 type Props = { conditions: Conditions };
 
-export function ConditionsSections({ conditions }: Props) {
+/**
+ * Storms forecast to pass near, and disaster events nearby. Shown at the very
+ * top of the card, above the score: a low score must never hide these.
+ * Draws nothing when there are none.
+ */
+export function NearHere({ conditions }: Props) {
   const { t } = useStrings();
   const c = t.conditions;
-  const { outlook, nearbyEvents, stormsComing, news } = conditions;
+  const { nearbyEvents, stormsComing } = conditions;
+  if (nearbyEvents.length === 0 && stormsComing.length === 0) return null;
 
   return (
-    <>
-      {outlook.length > 0 && (
+    <div className="near-here">
+      <h3>{t.card.nearTitle}</h3>
+      {stormsComing.length > 0 && (
         <>
-          <h3>{c.outlookTitle}</h3>
-          <div className="outlook">
-            {outlook.map((day) => (
-              <div className="outlook-day" key={day.day}>
-                <strong>{formatDay(day.day)}</strong>
-                <span>{fill(c.rain, { value: formatValue(day.rainMm, 'mm') })}</span>
-                <span>{fill(c.gust, { value: formatValue(day.gustKmh, 'km/h') })}</span>
-                {day.riverDischargeM3s !== null && (
-                  <span>{fill(c.river, { value: `${day.riverDischargeM3s} m³/s` })}</span>
-                )}
-              </div>
+          <h4>{c.stormsTitle}</h4>
+          <ul>
+            {stormsComing.map((storm) => (
+              <li key={storm.stormId}>
+                <strong>{storm.name}</strong>:{' '}
+                {fill(c.stormLine, {
+                  distance: formatKm(storm.distanceKm),
+                  time: formatTime(storm.closestAt),
+                })}
+              </li>
             ))}
-          </div>
-          <p className="muted">{c.outlookNote}</p>
+          </ul>
+          <p className="muted">{c.stormNote}</p>
         </>
       )}
 
       {nearbyEvents.length > 0 && (
         <>
-          <h3>{c.eventsTitle}</h3>
+          <h4>{c.eventsTitle}</h4>
           <ul>
             {nearbyEvents.map((event) => (
               <li key={event.id}>
@@ -69,21 +75,33 @@ export function ConditionsSections({ conditions }: Props) {
         </>
       )}
 
-      {stormsComing.length > 0 && (
+    </div>
+  );
+}
+
+export function ConditionsSections({ conditions }: Props) {
+  const { t } = useStrings();
+  const c = t.conditions;
+  const { outlook, news } = conditions;
+
+  return (
+    <>
+      {outlook.length > 0 && (
         <>
-          <h3>{c.stormsTitle}</h3>
-          <ul>
-            {stormsComing.map((storm) => (
-              <li key={storm.stormId}>
-                <strong>{storm.name}</strong>:{' '}
-                {fill(c.stormLine, {
-                  distance: formatKm(storm.distanceKm),
-                  time: formatTime(storm.closestAt),
-                })}
-              </li>
+          <h3>{c.outlookTitle}</h3>
+          <div className="outlook">
+            {outlook.map((day) => (
+              <div className="outlook-day" key={day.day}>
+                <strong>{formatDay(day.day)}</strong>
+                <span>{fill(c.rain, { value: formatValue(day.rainMm, 'mm') })}</span>
+                <span>{fill(c.gust, { value: formatValue(day.gustKmh, 'km/h') })}</span>
+                {day.riverDischargeM3s !== null && (
+                  <span>{fill(c.river, { value: `${day.riverDischargeM3s} m³/s` })}</span>
+                )}
+              </div>
             ))}
-          </ul>
-          <p className="muted">{c.stormNote}</p>
+          </div>
+          <p className="muted">{c.outlookNote}</p>
         </>
       )}
 

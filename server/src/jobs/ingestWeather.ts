@@ -3,6 +3,7 @@
 
 import { pool } from '../db.ts';
 import { fetchOpenMeteo } from '../fetchers/openMeteo.ts';
+import { isFreshEnough } from '../freshness.ts';
 import { heatIndexC } from '../heatIndex.ts';
 
 export async function ingestWeather(): Promise<void> {
@@ -63,10 +64,27 @@ export async function ingestWeather(): Promise<void> {
     throw new Error('Open-Meteo: every location failed the checks; nothing saved.');
   }
 
-  await pool.query(
-    `INSERT INTO fetch_runs (source, last_ok_at) VALUES ('open-meteo', now())
-     ON CONFLICT (source) DO UPDATE SET last_ok_at = EXCLUDED.last_ok_at`,
-  );
-
-  console.log(`Weather: saved ${saved} readings, skipped ${skipped}.`);
+  // The run only counts as a success when nearly every province got a
+  // reading. A thin run still records how much it saved, but keeps the old
+  // "last success" time, so the page shows the weather as out of date.
+  const total = provinces.rows.length;
+  if (isFreshEnough(saved, total)) {
+    await pool.query(
+      `INSERT INTO fetch_runs (source, last_ok_at, last_saved, last_total) VALUES ('open-meteo', now(), $1, $2)
+       ON CONFLICT (source) DO UPDATE SET
+         last_ok_at = EXCLUDED.last_ok_at,
+         last_saved = EXCLUDED.last_saved,
+         last_total = EXCLUDED.last_total`,
+      [saved, total],
+    );
+    console.log(`Weather: saved ${saved} of ${total} readings, skipped ${skipped}.`);
+  } else {
+    await pool.query(
+      `UPDATE fetch_runs SET last_saved = $1, last_total = $2 WHERE source = 'open-meteo'`,
+      [saved, total],
+    );
+    console.warn(
+      `Weather: saved only ${saved} of ${total} readings (skipped ${skipped}); not counted as a fresh run.`,
+    );
+  }
 }

@@ -45,3 +45,13 @@ export function gdacsKind(eventType: string): DisasterKind {
   };
   return kinds[eventType.toUpperCase()] ?? 'other';
 }
+
+/**
+ * The open events (no end date) that the feed no longer lists. They are
+ * over as far as we can tell, so the job closes them.
+ */
+export function droppedEventIds(openIds: string[], fetchedIds: string[]): string[] {
+  // A Set answers "is this id in the list?" quickly.
+  const fetched = new Set(fetchedIds);
+  return openIds.filter((id) => !fetched.has(id));
+}

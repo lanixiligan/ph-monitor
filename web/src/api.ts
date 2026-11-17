@@ -8,6 +8,7 @@ import type {
   NewsItem,
   PointDetail,
   ProvinceMapProperties,
+  StatusReport,
   Storm,
   StreamSlot,
 } from '@ph-monitor/shared';
@@ -60,4 +61,9 @@ export async function fetchStreams(): Promise<StreamSlot[]> {
 
 export async function fetchBulletins(): Promise<BulletinLink[]> {
   return (await getJson('/api/bulletins')) as BulletinLink[];
+}
+
+/** When each feed last succeeded, and which ones are out of date. */
+export async function fetchStatus(): Promise<StatusReport> {
+  return (await getJson('/api/status')) as StatusReport;
 }

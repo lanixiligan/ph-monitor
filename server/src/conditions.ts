@@ -30,9 +30,20 @@ const NEWS_NEAR_LIMIT = 5;
 // west, south, east, north. Events outside it are not shown.
 const SHOWN_BOX = [111, -0.5, 132, 26.5];
 
+/**
+ * An event with no end date is only believed while its feed keeps listing
+ * it. If it was not refreshed for this long, it is ignored everywhere.
+ */
+export const OPEN_EVENT_MAX_HOURS = 24;
+
+/** The WHERE rule for "if still open, it was refreshed lately". `e` is the events table. */
+export const OPEN_EVENT_FRESH_SQL = `
+  (e.ended_at IS NOT NULL OR e.fetched_at >= now() - interval '${OPEN_EVENT_MAX_HOURS} hours')`;
+
 /** The WHERE rule for "an event worth showing now". `e` is the events table. */
 export const CURRENT_EVENT_SQL = `
   (e.ended_at IS NULL OR e.ended_at >= now() - interval '${EVENT_SHOWN_DAYS} days')
+  AND ${OPEN_EVENT_FRESH_SQL}
   AND ST_Intersects(e.geom, ST_MakeEnvelope(${SHOWN_BOX.join(', ')}, 4326))`;
 
 /** The columns every event query reads. ST_PointOnSurface picks one point inside an area. */

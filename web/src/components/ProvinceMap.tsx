@@ -13,14 +13,13 @@ import type { StyleSpecification } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useEffect, useRef, useState } from 'react';
 import type { ProvinceCollection, Spot } from '../api.ts';
-import { getI18n } from '../i18n/index.ts';
 import { EVENT_LAYERS, OVERLAY_CLICK_LAYERS, STORM_LAYERS, useOverlays } from '../mapOverlays.ts';
 import { MAX_BOUNDS, PH_BOUNDS, SHOW_BASEMAP } from '../mapSettings.ts';
 import type { MapLayers } from '../mapSettings.ts';
 import { provincesBox } from '../newsGeo.ts';
 import { NEWS_LAYERS, useNewsDots } from '../newsOverlay.ts';
 import { hatchImage, readPalette } from '../palette.ts';
-import { bandColors, bandFor } from '../scoreScale.ts';
+import { bandColors, bandFor, scoreText } from '../scoreScale.ts';
 import { useTheme } from '../theme/index.ts';
 import type { Theme } from '../theme/index.ts';
 
@@ -35,6 +34,8 @@ const BASEMAP_URLS: Record<Theme, string> = {
 
 // The name the no-data stripes are stored under inside the map.
 const HATCH = 'no-data-hatch';
+// Lines only, laid over the colour of a province whose score is incomplete.
+const HATCH_LINES = 'incomplete-hatch';
 
 /**
  * A plain background with the province shapes only. Used when SHOW_BASEMAP
@@ -60,6 +61,7 @@ function withColors(data: ProvinceCollection, theme: Theme) {
     features: data.features.map((feature) => {
       const score = feature.properties.score;
       const color = score === null ? noDataColor : bandColors(bandFor(score), theme).color;
+      // `incomplete` rides along as it is: some data was missing, so the score is "at least".
       return { ...feature, properties: { ...feature.properties, color, noData: score === null } };
     }),
   };
@@ -195,6 +197,21 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus }: Props) {
             firstRoad ?? firstLabel,
           );
         }
+        // Stripes over the colour of provinces whose score is missing a signal.
+        const lines = hatchImage(palette, false);
+        if (lines) {
+          theMap.addImage(HATCH_LINES, lines);
+          theMap.addLayer(
+            {
+              id: 'province-incomplete',
+              type: 'fill',
+              source: 'provinces',
+              filter: ['all', ['==', ['get', 'incomplete'], true], ['==', ['get', 'noData'], false]],
+              paint: { 'fill-pattern': HATCH_LINES, 'fill-opacity': fillOpacityRef.current },
+            },
+            firstRoad ?? firstLabel,
+          );
+        }
         theMap.addLayer(
           {
             id: 'province-outline',
@@ -244,8 +261,10 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus }: Props) {
           if (!properties) return;
           theMap.getCanvas().style.cursor = 'pointer';
           // Read at hover time, so the label follows the language chosen now.
-          const score =
-            typeof properties.score === 'number' ? properties.score : getI18n().t.map.noScoreYet;
+          const score = scoreText(
+            typeof properties.score === 'number' ? properties.score : null,
+            properties.incomplete === true,
+          );
           popup
             .setLngLat(event.lngLat)
             .setText(`${properties.name}: ${score}`)
@@ -324,7 +343,9 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus }: Props) {
     // so a click on land still picks a spot.
     const opacity = layers.scores ? fillOpacityRef.current : 0;
     map.setPaintProperty('province-fill', 'fill-opacity', opacity);
-    if (map.getLayer('province-nodata')) map.setPaintProperty('province-nodata', 'fill-opacity', opacity);
+    for (const id of ['province-nodata', 'province-incomplete']) {
+      if (map.getLayer(id)) map.setPaintProperty(id, 'fill-opacity', opacity);
+    }
     const show = (ids: string[], on: boolean) => {
       for (const id of ids) {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');

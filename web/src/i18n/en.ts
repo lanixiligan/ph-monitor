@@ -13,6 +13,9 @@ export const en = {
     jumpHeadlines: 'Headlines',
     jumpStreams: 'Live streams',
     loadError: 'Could not load the scores. Is the server running?',
+    // {feeds} is a list of names from `feeds` below.
+    staleBanner: 'Out of date: {feeds}. What you see for these may be old or missing.',
+    statusError: 'Could not check how fresh the data is.',
     creditQuakes: 'Earthquakes:',
     creditWeather: 'Weather (modelled):',
     creditWeatherEnd: ', CC BY 4.0.',
@@ -31,6 +34,18 @@ export const en = {
     creditBasemapMid: ', ©',
     creditBasemapData: ', data ©',
     creditBasemapEnd: 'contributors.',
+  },
+
+  // Feed names for the "out of date" banner, by the id the server sends.
+  feeds: {
+    earthquakes: 'earthquakes',
+    weather: 'weather',
+    events: 'disaster events (GDACS)',
+    naturalEvents: 'natural events (NASA EONET)',
+    storms: 'storm tracks',
+    outlook: '7-day outlook',
+    riverFlow: 'river flow',
+    news: 'headlines',
   },
 
   // The language switch. The draft note is shown only when Filipino is chosen.
@@ -58,6 +73,7 @@ export const en = {
   legend: {
     title: 'Stress score (0–100)',
     noScore: 'No score yet',
+    incomplete: 'Stripes over a colour: some data is missing, the score may be higher',
     event: 'Disaster event (thicker ring = higher alert)',
     stormPast: 'Storm track so far',
     stormForecast: 'Storm forecast',
@@ -75,7 +91,7 @@ export const en = {
 
   // Score bands.
   bands: {
-    calm: 'Calm',
+    calm: 'Nothing detected',
     low: 'Low',
     moderate: 'Moderate',
     high: 'High',
@@ -143,17 +159,20 @@ export const en = {
     eventEnded: ' (now ended)',
     noWeatherProvince: 'No recent weather data for this province.',
     noWeatherSpot: 'No recent weather data for this spot.',
+    noQuakeData: 'The earthquake feed has not answered lately, so recent earthquakes may be missing.',
+    noEventData: 'The disaster event feed (GDACS) has not answered lately, so events may be missing.',
     rain: 'Rain: {rain1h} mm in the last hour, {rain24h} mm in the last 24 hours{level}.',
-    rainLevel: ' (PAGASA {level} rainfall level)',
+    rainLevel: " (a model estimate at PAGASA's {level} rainfall threshold; not a PAGASA warning)",
     heat: 'Heat index {heat} °C{band}.',
     heatBand: ' (PAGASA "{band}" band)',
-    calm: 'No significant earthquake, weather or disaster event stress right now.',
+    calm: 'Nothing detected here right now: no strong earthquake nearby, no heavy rain or extreme heat in the model, no disaster alert. This is not an all-clear.',
   },
 
   // Map popups and hover labels.
   map: {
     sampleNotice: 'Sample data, not a real storm',
     noScoreYet: 'no score yet',
+    atLeast: 'at least {score}',
     popupKind: 'Kind: {kind}',
     popupAlert: 'Alert level: {level}',
     popupSource: 'Source: {source}',
@@ -178,6 +197,9 @@ export const en = {
     staleText: 'Some data is more than 1 hour old.',
     bandAtSpot: '{band} at this spot',
     parts: 'Earthquakes {quake} · Weather {weather} · Events {event}',
+    partUnknown: 'unknown',
+    incomplete: 'Some data is missing, so the real score may be higher.',
+    nearTitle: 'Storms and disaster events near here',
     wholeProvince: 'Whole province ({province}): {score}, {band}',
     why: 'Why',
     quakesTitle: 'Earthquakes, last 3 days',

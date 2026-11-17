@@ -41,6 +41,10 @@ export function Legend({ layers, onChange }: Props) {
         <span className="swatch swatch-nodata" />
         {t.legend.noScore}
       </div>
+      <div className="legend-row legend-indent">
+        <span className="swatch swatch-incomplete" />
+        {t.legend.incomplete}
+      </div>
 
       <label className="legend-row">
         <input type="checkbox" checked={layers.events} onChange={() => toggle('events')} />

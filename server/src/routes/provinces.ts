@@ -9,6 +9,7 @@ import type {
   ProvinceDetail,
   ProvinceMapProperties,
   ScoreReason,
+  SignalName,
 } from '@ph-monitor/shared';
 import { getConditions } from '../conditions.ts';
 import { pool } from '../db.ts';
@@ -54,7 +55,11 @@ provincesRouter.get('/', async (_req, res) => {
     quake_score: number;
     weather_score: number;
     event_score: number;
-  }>('SELECT province_psgc, score, quake_score, weather_score, event_score FROM province_scores');
+    unknown_signals: SignalName[];
+  }>(
+    `SELECT province_psgc, score, quake_score, weather_score, event_score, unknown_signals
+     FROM province_scores`,
+  );
 
   const scoreByPsgc = new Map(scores.rows.map((row) => [row.province_psgc, row]));
 
@@ -68,6 +73,7 @@ provincesRouter.get('/', async (_req, res) => {
       quake_score: score?.quake_score ?? null,
       weather_score: score?.weather_score ?? null,
       event_score: score?.event_score ?? null,
+      incomplete: (score?.unknown_signals.length ?? 0) > 0,
       point_lat: shape.point_lat,
       point_lon: shape.point_lon,
     };
@@ -116,10 +122,11 @@ provincesRouter.get('/:psgc', async (req, res) => {
     quake_score: number;
     weather_score: number;
     event_score: number;
+    unknown_signals: SignalName[];
     reasons: unknown[];
     computed_at: Date;
   }>(
-    `SELECT score, quake_score, weather_score, event_score, reasons, computed_at
+    `SELECT score, quake_score, weather_score, event_score, unknown_signals, reasons, computed_at
      FROM province_scores WHERE province_psgc = $1`,
     [psgc],
   );
@@ -197,6 +204,7 @@ provincesRouter.get('/:psgc', async (req, res) => {
           quakeScore: score.quake_score,
           weatherScore: score.weather_score,
           eventScore: score.event_score,
+          unknownSignals: score.unknown_signals,
           reasons: keyedReasons(score.reasons),
           computedAt: score.computed_at.toISOString(),
         }

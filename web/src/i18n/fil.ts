@@ -13,6 +13,8 @@ export const fil: Strings = {
     jumpHeadlines: 'Mga balita', // REVIEW
     jumpStreams: 'Mga live stream', // REVIEW
     loadError: 'Hindi ma-load ang mga score. Tumatakbo ba ang server?', // REVIEW
+    staleBanner: 'Hindi na bago: {feeds}. Maaaring luma o kulang ang nakikita mo para sa mga ito.', // REVIEW
+    statusError: 'Hindi matiyak kung gaano kabago ang datos.', // REVIEW
     creditQuakes: 'Mga lindol:', // REVIEW
     creditWeather: 'Panahon (mula sa modelo):', // REVIEW: unsure about "modelo"
     creditWeatherEnd: ', CC BY 4.0.', // REVIEW
@@ -31,6 +33,18 @@ export const fil: Strings = {
     creditBasemapMid: ', ©', // REVIEW
     creditBasemapData: ', data ©', // REVIEW
     creditBasemapEnd: 'contributors.', // REVIEW: unsure about "contributors"
+  },
+
+  // Mga pangalan ng feed para sa babalang "hindi na bago".
+  feeds: {
+    earthquakes: 'lindol', // REVIEW
+    weather: 'panahon', // REVIEW
+    events: 'mga sakuna (GDACS)', // REVIEW
+    naturalEvents: 'mga likas na pangyayari (NASA EONET)', // REVIEW
+    storms: 'landas ng bagyo', // REVIEW
+    outlook: 'susunod na 7 araw', // REVIEW
+    riverFlow: 'agos ng ilog', // REVIEW
+    news: 'mga balita', // REVIEW
   },
 
   // The language switch. The draft note is shown only when Filipino is chosen.
@@ -57,6 +71,7 @@ export const fil: Strings = {
   legend: {
     title: 'Stress score (0–100)', // REVIEW
     noScore: 'Wala pang score', // REVIEW
+    incomplete: 'May guhit sa ibabaw ng kulay: may kulang na datos, maaaring mas mataas ang score', // REVIEW
     event: 'Sakuna (mas makapal na ring = mas mataas na alerto)', // REVIEW
     stormPast: 'Landas ng bagyo hanggang ngayon', // REVIEW
     stormForecast: 'Forecast ng bagyo', // REVIEW
@@ -74,7 +89,7 @@ export const fil: Strings = {
 
   // Score bands.
   bands: {
-    calm: 'Kalmado', // REVIEW
+    calm: 'Walang natukoy', // REVIEW
     low: 'Mababa', // REVIEW
     moderate: 'Katamtaman', // REVIEW
     high: 'Mataas', // REVIEW
@@ -142,17 +157,20 @@ export const fil: Strings = {
     eventEnded: ' (tapos na)', // REVIEW
     noWeatherProvince: 'Walang bagong datos ng panahon para sa probinsyang ito.', // REVIEW
     noWeatherSpot: 'Walang bagong datos ng panahon para sa lugar na ito.', // REVIEW
+    noQuakeData: 'Hindi sumasagot kamakailan ang feed ng lindol, kaya maaaring may kulang na bagong lindol.', // REVIEW
+    noEventData: 'Hindi sumasagot kamakailan ang feed ng sakuna (GDACS), kaya maaaring may kulang.', // REVIEW
     rain: 'Ulan: {rain1h} mm sa nakaraang oras, {rain24h} mm sa nakaraang 24 oras{level}.', // REVIEW
-    rainLevel: ' (antas ng ulan ng PAGASA: {level})', // REVIEW: unsure about "antas ng ulan"
+    rainLevel: ' (tantiya ng modelo na abot sa {level} na antas ng ulan ng PAGASA; hindi ito babala ng PAGASA)', // REVIEW: unsure about "antas ng ulan"
     heat: 'Heat index {heat} °C{band}.', // REVIEW
     heatBand: ' (antas ng PAGASA: "{band}")', // REVIEW
-    calm: 'Walang malaking stress mula sa lindol, panahon o sakuna sa ngayon.', // REVIEW
+    calm: 'Walang natukoy dito sa ngayon: walang malakas na lindol sa malapit, walang malakas na ulan o matinding init sa modelo, walang alerto ng sakuna. Hindi ito nangangahulugang ligtas na.', // REVIEW
   },
 
   // Map popups and hover labels.
   map: {
     sampleNotice: 'Sample na datos, hindi totoong bagyo', // REVIEW
     noScoreYet: 'wala pang score', // REVIEW
+    atLeast: 'hindi bababa sa {score}', // REVIEW
     popupKind: 'Uri: {kind}', // REVIEW
     popupAlert: 'Antas ng alerto: {level}', // REVIEW
     popupSource: 'Pinagmulan: {source}', // REVIEW
@@ -177,6 +195,9 @@ export const fil: Strings = {
     staleText: 'May datos na mahigit 1 oras na.', // REVIEW
     bandAtSpot: '{band} sa lugar na ito', // REVIEW
     parts: 'Lindol {quake} · Panahon {weather} · Mga sakuna {event}', // REVIEW
+    partUnknown: 'hindi alam', // REVIEW
+    incomplete: 'May kulang na datos, kaya maaaring mas mataas ang totoong score.', // REVIEW
+    nearTitle: 'Mga bagyo at sakuna malapit dito', // REVIEW
     wholeProvince: 'Buong probinsya ({province}): {score}, {band}', // REVIEW
     why: 'Bakit', // REVIEW
     quakesTitle: 'Mga lindol, nakaraang 3 araw', // REVIEW

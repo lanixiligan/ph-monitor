@@ -31,15 +31,19 @@ export function readPalette(): Palette {
  * don't know" never looks like calm or like empty sea. Returns null if the
  * browser can't draw it (the plain no-data colour is used then).
  */
-export function hatchImage(palette: Palette): ImageData | null {
+// `withBackground = false` draws the lines only, to lay over a score colour
+// when the score is incomplete ("at least N").
+export function hatchImage(palette: Palette, withBackground = true): ImageData | null {
   const size = 8;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const context = canvas.getContext('2d');
   if (!context) return null;
-  context.fillStyle = palette.noData;
-  context.fillRect(0, 0, size, size);
+  if (withBackground) {
+    context.fillStyle = palette.noData;
+    context.fillRect(0, 0, size, size);
+  }
   context.strokeStyle = palette.inkSoft;
   context.lineWidth = 1.5;
   // One line corner to corner, plus two short ends, so tiles join seamlessly.

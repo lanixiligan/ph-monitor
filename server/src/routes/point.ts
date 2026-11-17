@@ -7,16 +7,16 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import type { DisasterKind, HazardEvent, PointDetail } from '@ph-monitor/shared';
-import { getConditions } from '../conditions.ts';
+import { getConditions, OPEN_EVENT_FRESH_SQL } from '../conditions.ts';
 import { pool } from '../db.ts';
-import { buildFreshness, getLastOk } from '../freshness.ts';
+import { buildFreshness, getFeedHealth, getLastOk, staleSignals } from '../freshness.ts';
 import { getPointWeather } from '../pointWeather.ts';
 import {
   buildReasons,
+  combineSignals,
   eventScore,
   quakeScore,
   radiusKm,
-  totalScore,
   weatherScore,
   WEIGHTS,
 } from '../scoring/scoring.ts';
@@ -123,6 +123,7 @@ pointRouter.get('/', async (req, res) => {
      FROM spot, events e
      WHERE e.alert_level IS NOT NULL AND e.kind = ANY($3::text[])
        AND (e.ended_at IS NULL OR e.ended_at >= $4)
+       AND ${OPEN_EVENT_FRESH_SQL}
        AND ST_DWithin(e.geom::geography, spot.pt::geography, $5)`,
     [
       lon,
@@ -159,6 +160,13 @@ pointRouter.get('/', async (req, res) => {
   const quake = quakeScore(quakeInputs);
   const weather = weatherScore(weatherInput);
   const eventPoints = eventScore(eventInputs);
+  // A signal whose feed has not answered lately is "unknown", not calm.
+  const stale = staleSignals(await getFeedHealth(now));
+  const { score, unknown } = combineSignals({
+    quake: stale.includes('quake') ? null : quake,
+    weather,
+    event: stale.includes('event') ? null : eventPoints,
+  });
 
   const events: HazardEvent[] = quakeRows.map((row) => ({
     kind: 'earthquake',
@@ -196,11 +204,12 @@ pointRouter.get('/', async (req, res) => {
     },
     provinceScore: province.province_score,
     score: {
-      score: totalScore(quake, weather, eventPoints),
+      score,
       quakeScore: quake,
-      weatherScore: weather,
+      weatherScore: weather ?? 0,
       eventScore: eventPoints,
-      reasons: buildReasons(quakeInputs, weatherInput, 'point', eventInputs),
+      unknownSignals: unknown,
+      reasons: buildReasons(quakeInputs, weatherInput, 'point', eventInputs, unknown),
       computedAt: now.toISOString(),
     },
     events,

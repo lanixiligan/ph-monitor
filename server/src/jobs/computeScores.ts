@@ -5,12 +5,14 @@
 // The formulas themselves are all in scoring/scoring.ts.
 
 import type { DisasterKind } from '@ph-monitor/shared';
+import { OPEN_EVENT_FRESH_SQL } from '../conditions.ts';
 import { pool } from '../db.ts';
+import { getFeedHealth, staleSignals } from '../freshness.ts';
 import {
   buildReasons,
+  combineSignals,
   eventScore,
   quakeScore,
-  totalScore,
   weatherScore,
   WEIGHTS,
 } from '../scoring/scoring.ts';
@@ -21,6 +23,10 @@ const HOUR_MS = 60 * 60 * 1000;
 
 export async function computeScores(): Promise<void> {
   const now = new Date();
+
+  // Signals whose feed has not answered lately. Their stored data may be
+  // missing something new, so they count as "unknown", not as calm.
+  const stale = staleSignals(await getFeedHealth(now));
 
   const provinces = await pool.query<{ psgc: number; name: string }>(
     'SELECT psgc, name FROM provinces ORDER BY psgc',
@@ -72,7 +78,8 @@ export async function computeScores(): Promise<void> {
      FROM events e
      JOIN provinces p ON ST_DWithin(p.geom::geography, e.geom::geography, $1)
      WHERE e.alert_level IS NOT NULL AND e.kind = ANY($2::text[])
-       AND (e.ended_at IS NULL OR e.ended_at >= $3)`,
+       AND (e.ended_at IS NULL OR e.ended_at >= $3)
+       AND ${OPEN_EVENT_FRESH_SQL}`,
     [maxReachKm * 1000, WEIGHTS.event.kinds, new Date(now.getTime() - WEIGHTS.event.endedFadeHours * HOUR_MS)],
   );
 
@@ -111,6 +118,7 @@ export async function computeScores(): Promise<void> {
   }
 
   let highest = { name: '', score: -1 };
+  let incomplete = 0;
 
   const client = await pool.connect();
   try {
@@ -122,27 +130,35 @@ export async function computeScores(): Promise<void> {
 
       const events = eventsByProvince.get(province.psgc) ?? [];
 
+      // null = unknown. Stored quakes and events still count (the score is
+      // then "at least" this much); only the claim "nothing else" is dropped.
       const quake = quakeScore(quakes);
       const weatherPoints = weatherScore(weather);
       const eventPoints = eventScore(events);
-      const score = totalScore(quake, weatherPoints, eventPoints);
-      const reasons = buildReasons(quakes, weather, 'province', events);
+      const { score, unknown } = combineSignals({
+        quake: stale.includes('quake') ? null : quake,
+        weather: weatherPoints,
+        event: stale.includes('event') ? null : eventPoints,
+      });
+      const reasons = buildReasons(quakes, weather, 'province', events, unknown);
 
       if (score > highest.score) highest = { name: province.name, score };
+      if (unknown.length > 0) incomplete += 1;
 
       // The latest score: one row per province, replaced each time.
       await client.query(
         `INSERT INTO province_scores
-           (province_psgc, score, quake_score, weather_score, reasons, computed_at, event_score)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+           (province_psgc, score, quake_score, weather_score, reasons, computed_at, event_score, unknown_signals)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8::text[])
          ON CONFLICT (province_psgc) DO UPDATE SET
            score = EXCLUDED.score,
            quake_score = EXCLUDED.quake_score,
            weather_score = EXCLUDED.weather_score,
            event_score = EXCLUDED.event_score,
+           unknown_signals = EXCLUDED.unknown_signals,
            reasons = EXCLUDED.reasons,
            computed_at = EXCLUDED.computed_at`,
-        [province.psgc, score, quake, weatherPoints, JSON.stringify(reasons), now, eventPoints],
+        [province.psgc, score, quake, weatherPoints ?? 0, JSON.stringify(reasons), now, eventPoints, unknown],
       );
 
       // The history: a new row every time.
@@ -162,6 +178,7 @@ export async function computeScores(): Promise<void> {
   }
 
   console.log(
-    `Scores: computed ${provinces.rows.length}. Highest: ${highest.name} (${highest.score}).`,
+    `Scores: computed ${provinces.rows.length} (${incomplete} with missing data). ` +
+      `Highest: ${highest.name} (${highest.score}).`,
   );
 }

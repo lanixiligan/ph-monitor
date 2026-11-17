@@ -421,6 +421,31 @@ label.legend-row {
   background: repeating-linear-gradient(-45deg, var(--ink-soft) 0 1px, var(--no-data) 1px 4px);
 }
 
+/* Storms and events at the top of the status card. */
+.near-here {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-left: 4px solid var(--ink);
+  background: var(--paper);
+}
+
+.panel .near-here h3 {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.near-here h4 {
+  margin: 8px 0 2px;
+  font-size: 13px;
+}
+
+/* Stripes over a score colour: the score is missing some data. */
+.swatch-incomplete {
+  background: repeating-linear-gradient(-45deg, var(--ink-soft) 0 1px, transparent 1px 4px);
+  border: 1px solid var(--ink-soft);
+}
+
 /* The marks for events and storms: drawn with borders only. */
 .mark {
   display: inline-block;
@@ -669,7 +694,8 @@ label.legend-row {
 }
 
 .ranking-score {
-  width: 28px;
+  min-width: 28px;
+  white-space: nowrap;
   font-family: var(--font-title);
   font-size: 19px;
   line-height: 1;

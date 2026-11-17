@@ -3,7 +3,7 @@
 
 import type { ProvinceCollection } from '../api.ts';
 import { useStrings } from '../i18n/index.ts';
-import { bandFor, bandLabel } from '../scoreScale.ts';
+import { bandFor, bandLabel, scoreText } from '../scoreScale.ts';
 import { Ladder } from './Ladder.tsx';
 
 const HOW_MANY = 10;
@@ -36,7 +36,7 @@ export function SpotHint({ provinces }: Props) {
               <span className="ranking-name">{province.name}</span>
               <Ladder score={province.score} />
               <span className="ranking-band muted">{bandLabel(bandFor(province.score ?? 0))}</span>
-              <strong className="ranking-score">{province.score}</strong>
+              <strong className="ranking-score">{scoreText(province.score, province.incomplete)}</strong>
             </li>
           ))}
         </ol>

@@ -59,6 +59,9 @@ export type WeatherEvent = {
  */
 export type HazardEvent = EarthquakeEvent | WeatherEvent;
 
+/** One of the three things the score is built from. */
+export type SignalName = 'quake' | 'weather' | 'event';
+
 /** A province's current stress score. */
 export type ProvinceScore = {
   psgc: number;
@@ -68,6 +71,11 @@ export type ProvinceScore = {
   weatherScore: number;
   /** From disaster events with an alert level (GDACS). */
   eventScore: number;
+  /**
+   * Signals we could not check (feed down or no recent reading). When this is
+   * not empty the score is a lower limit: "at least N".
+   */
+  unknownSignals: SignalName[];
   /** Why the score is what it is. `ScoreReason[]` means "a list of ScoreReason". */
   reasons: ScoreReason[];
   computedAt: string;
@@ -106,6 +114,10 @@ export type ScoreReason =
     }
   /** No weather reading recent enough to use. */
   | { key: 'noWeather'; target: 'province' | 'point' }
+  /** The earthquake feed has not answered lately, so recent quakes may be missing. */
+  | { key: 'noQuakeData' }
+  /** The disaster event feed has not answered lately. */
+  | { key: 'noEventData' }
   /** `level` is PAGASA's rainfall level: 'yellow', 'orange', 'red', or null below yellow. */
   | { key: 'rain'; rain1hMm: number; rain24hMm: number; level: string | null }
   /** `band` is PAGASA's heat band, e.g. 'danger'. */
@@ -122,6 +134,32 @@ export type Freshness = {
   isStale: boolean;
 };
 
+/** The feeds shown in the "out of date" banner. */
+export type FeedId =
+  | 'earthquakes'
+  | 'weather'
+  | 'events'
+  | 'naturalEvents'
+  | 'storms'
+  | 'outlook'
+  | 'riverFlow'
+  | 'news';
+
+/** How one feed is doing. */
+export type FeedHealth = {
+  id: FeedId;
+  /** Last successful fetch; null if it has never succeeded. */
+  lastOkAt: string | null;
+  /** True when the last success is older than that feed's own limit. */
+  isStale: boolean;
+};
+
+/** Returned by GET /api/status */
+export type StatusReport = {
+  checkedAt: string;
+  feeds: FeedHealth[];
+};
+
 /**
  * What the map knows about each province shape.
  * These are the `properties` of every feature in GET /api/provinces (GeoJSON).
@@ -134,6 +172,8 @@ export type ProvinceMapProperties = {
   quake_score: number | null;
   weather_score: number | null;
   event_score: number | null;
+  /** True when a signal could not be checked: the score is "at least" this much. */
+  incomplete: boolean;
   /** A spot inside the province, where the map pins its headlines. */
   point_lat: number;
   point_lon: number;
@@ -164,6 +204,8 @@ export type PointScore = {
   quakeScore: number;
   weatherScore: number;
   eventScore: number;
+  /** Signals we could not check; when not empty the score is "at least N". */
+  unknownSignals: SignalName[];
   reasons: ScoreReason[];
   computedAt: string;
 };

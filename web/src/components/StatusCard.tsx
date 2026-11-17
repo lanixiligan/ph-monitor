@@ -8,10 +8,10 @@ import type { Spot } from '../api.ts';
 import { formatTime, formatValue } from '../format.ts';
 import { reasonText } from '../reasonText.ts';
 import { fill, useStrings } from '../i18n/index.ts';
-import { bandColors, bandFor, bandLabel } from '../scoreScale.ts';
+import { bandColors, bandFor, bandLabel, scoreText } from '../scoreScale.ts';
 import { useTheme } from '../theme/index.ts';
 import { WarnIcon } from './WarnIcon.tsx';
-import { ConditionsSections } from './Conditions.tsx';
+import { ConditionsSections, NearHere } from './Conditions.tsx';
 import { Disclaimer } from './Disclaimer.tsx';
 import { Ladder } from './Ladder.tsx';
 
@@ -81,6 +81,11 @@ export function StatusCard({ spot, onClose }: Props) {
 
   const { place, province, provinceScore, score, events, freshness } = detail;
   const band = bandFor(score.score);
+  // Some signal could not be checked: the score is a lower limit.
+  const incomplete = score.unknownSignals.length > 0;
+  // A part of the score, or the word "unknown" when it could not be checked.
+  const part = (name: 'quake' | 'weather' | 'event', value: number) =>
+    score.unknownSignals.includes(name) ? t.card.partUnknown : value;
   const colors = bandColors(band, theme);
 
   // Split the events by kind. The `(e): e is ...` part tells TypeScript what
@@ -107,23 +112,36 @@ export function StatusCard({ spot, onClose }: Props) {
         </p>
       )}
 
+      {/* Storms and events come before the score, so a low number never hides them. */}
+      <NearHere conditions={detail.conditions} />
+
       <div className="score-row">
         {/* The number sits on its band's colour; `ink` is the text colour that reads on it. */}
         <span className="score-number" style={{ background: colors.color, color: colors.ink }}>
           {score.score}
         </span>
         <span>
-          <strong>{fill(t.card.bandAtSpot, { band: bandLabel(band) })}</strong> <Ladder score={score.score} />
+          <strong>
+            {incomplete
+              ? scoreText(score.score, true)
+              : fill(t.card.bandAtSpot, { band: bandLabel(band) })}
+          </strong>{' '}
+          <Ladder score={score.score} />
           <br />
           <span className="muted">
             {fill(t.card.parts, {
-              quake: score.quakeScore,
-              weather: score.weatherScore,
-              event: score.eventScore,
+              quake: part('quake', score.quakeScore),
+              weather: part('weather', score.weatherScore),
+              event: part('event', score.eventScore),
             })}
           </span>
         </span>
       </div>
+      {incomplete && (
+        <p className="notice">
+          <WarnIcon /> {t.card.incomplete}
+        </p>
+      )}
       {provinceScore !== null && (
         <p className="muted">
           {fill(t.card.wholeProvince, {

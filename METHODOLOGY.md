@@ -66,8 +66,8 @@ National Weather Service method (the Rothfusz regression with its two adjustment
 PAGASA also uses. We do not use Open-Meteo's own "apparent temperature", which follows a
 different formula. Code: `server/src/heatIndex.ts`.
 
-A weather reading older than 3 hours is not used; the weather score is then 0 and the card says
-there is no recent weather data.
+A weather reading older than 3 hours is not used; the weather signal is then unknown (see
+"Unknown is not calm" below).
 
 ## Disaster event score
 
@@ -103,7 +103,22 @@ suggests.
 An average would hide a severe earthquake behind calm weather, so the strongest signal always
 counts in full.
 
-On the map: 0–19 calm, 20–39 low, 40–59 moderate, 60–79 high, 80–100 severe.
+On the map: 0–19 nothing detected, 20–39 low, 40–59 moderate, 60–79 high, 80–100 severe.
+The lowest band is named for what we know ("nothing detected"); it is not an all-clear.
+
+## Unknown is not calm
+
+A signal that could not be checked is **unknown**, never 0:
+
+| Signal | Unknown when |
+|---|---|
+| Weather | the province (or spot) has no reading from the last 3 hours |
+| Earthquakes | the USGS fetch has not succeeded for 1 hour |
+| Disaster events | the GDACS fetch has not succeeded for 2 hours |
+
+The score is then built from the signals we do know, so it is a lower limit. The page writes it
+as "at least N", draws stripes over the province, and names the missing signal in the reasons.
+Earthquakes and events already saved still count while their feed is down.
 
 ## Score for one spot
 
@@ -131,7 +146,15 @@ change any score.
 
 Earthquakes are fetched every 15 minutes, weather and disaster events every 30. The card shows
 when the earthquake and weather feeds were last fetched **successfully**. If either is more than
-1 hour old, the data is marked stale. (Disaster events are not yet part of the stale check.)
+1 hour old, the data is marked stale.
+
+Every feed also has its own limit (`FEED_RULES` in `server/src/freshness.ts`): earthquakes and
+headlines 1 hour, weather 90 minutes, disaster events and storm tracks 2 hours, the outlook 13
+hours. A banner at the top of the page names each feed past its limit. A weather run counts as
+a success only when at least 90% of provinces got a reading; each request is tried twice.
+
+A disaster event with no end date is dropped from the score and the map once its feed stops
+listing it, or after 24 hours without a refresh.
 A quiet day with no earthquakes is not stale: what counts is that the fetch worked.
 
 ## Known limitations

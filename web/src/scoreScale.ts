@@ -8,7 +8,7 @@
 // This is presentation only: how the score is CALCULATED lives in
 // server/src/scoring/scoring.ts.
 
-import { getI18n } from './i18n/index.ts';
+import { fill, getI18n } from './i18n/index.ts';
 import type { Theme } from './theme/index.ts';
 
 type BandId = 'calm' | 'low' | 'moderate' | 'high' | 'severe';
@@ -68,4 +68,14 @@ export function bandFor(score: number): ScoreBand {
     if (score >= band.from) match = band;
   }
   return match;
+}
+
+/**
+ * A score as words: "12", "at least 12" when some data was missing
+ * (`incomplete`), or "no score yet" when there is none.
+ */
+export function scoreText(score: number | null, incomplete: boolean): string {
+  const t = getI18n().t.map;
+  if (score === null) return t.noScoreYet;
+  return incomplete ? fill(t.atLeast, { score }) : String(score);
 }

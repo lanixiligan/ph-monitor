@@ -1,7 +1,7 @@
 // Job: fetch active tropical storms and save them with their tracks.
 // JMA is the main source. JTWC is the backup: it is used only when JMA fails,
 // and otherwise just looked at, to log storms JMA does not list.
-// There is no npm script yet; see the report for how to run it by hand.
+// Run by hand with: npm run ingest:storms
 
 import { pool } from '../db.ts';
 import { fetchJmaStorms } from '../fetchers/jma.ts';

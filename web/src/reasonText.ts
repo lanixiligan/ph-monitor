@@ -42,6 +42,10 @@ export function reasonText(reason: ScoreReason): string {
     }
     case 'noWeather':
       return reason.target === 'province' ? r.noWeatherProvince : r.noWeatherSpot;
+    case 'noQuakeData':
+      return r.noQuakeData;
+    case 'noEventData':
+      return r.noEventData;
     case 'rain': {
       const level = reason.level
         ? fill(r.rainLevel, { level: lookup(t.rainLevels, reason.level) })

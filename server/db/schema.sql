@@ -70,6 +70,10 @@ CREATE TABLE IF NOT EXISTS province_scores (
 -- Phase 2: the share of the score that comes from disaster event alert levels.
 ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS event_score SMALLINT NOT NULL DEFAULT 0;
 
+-- Signals that could not be checked when the score was computed ('quake',
+-- 'weather', 'event'). Not empty = the score is a lower limit ("at least N").
+ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS unknown_signals TEXT[] NOT NULL DEFAULT '{}';
+
 -- Every past score (one row per province per recompute).
 CREATE TABLE IF NOT EXISTS province_score_history (
   province_psgc BIGINT REFERENCES provinces,
@@ -81,9 +85,13 @@ CREATE TABLE IF NOT EXISTS province_score_history (
 -- When each feed last succeeded. Used to tell "no quakes lately" apart from
 -- "the earthquake fetch has been failing".
 CREATE TABLE IF NOT EXISTS fetch_runs (
-  source      TEXT PRIMARY KEY,                -- 'usgs' or 'open-meteo'
+  source      TEXT PRIMARY KEY,                -- 'usgs', 'open-meteo', 'gdacs', ... (see freshness.ts)
   last_ok_at  TIMESTAMPTZ NOT NULL
 );
+-- How much the latest run saved, even when it was too little to count as a
+-- success (weather only: provinces saved, out of how many).
+ALTER TABLE fetch_runs ADD COLUMN IF NOT EXISTS last_saved INTEGER;
+ALTER TABLE fetch_runs ADD COLUMN IF NOT EXISTS last_total INTEGER;
 
 -- Cities and municipalities. Used to name the spot a reader clicks on.
 -- Loaded by `npm run load-places`.

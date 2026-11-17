@@ -11,6 +11,7 @@ import { test } from 'node:test';
 import { parseEonet } from '../src/fetchers/eonet.ts';
 import { gdacsKind, toAlertLevel } from '../src/fetchers/eventRecord.ts';
 import { parseGdacsApi, parseGdacsRss } from '../src/fetchers/gdacs.ts';
+import { droppedEventIds } from '../src/fetchers/eventRecord.ts';
 
 // Reads a sample file next to this test. `import.meta.url` is this file's own location.
 function sample(name: string): string {
@@ -192,4 +193,15 @@ test('EONET: broken events are skipped, good ones are kept', () => {
   assert.equal(result.skipped, 4);
   assert.equal(result.events.length, 1);
   assert.equal(result.events[0]?.id, 'eonet:EONET_25339');
+});
+
+// ---------- Events that left the feed ----------
+
+test('an open event that is no longer in the feed is picked for closing', () => {
+  const open = ['gdacs:TC:1', 'gdacs:FL:2', 'gdacs:VO:3'];
+  assert.deepEqual(droppedEventIds(open, ['gdacs:FL:2', 'gdacs:EQ:9']), ['gdacs:TC:1', 'gdacs:VO:3']);
+});
+
+test('nothing is closed while every open event is still listed', () => {
+  assert.deepEqual(droppedEventIds(['gdacs:TC:1'], ['gdacs:TC:1']), []);
 });

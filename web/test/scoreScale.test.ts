@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bandColors, bandFor, SCORE_BANDS } from '../src/scoreScale.ts';
+import { bandColors, bandFor, SCORE_BANDS, scoreText } from '../src/scoreScale.ts';
+import { en } from '../src/i18n/en.ts';
 
 // How bright a '#rrggbb' colour looks, 0 (black) to 1 (white): the WCAG formula.
 function luminance(hex: string): number {
@@ -41,4 +42,18 @@ test('the text on every band is readable (contrast at least 4.5:1)', () => {
       assert.ok(contrast(color, ink) >= 4.5, `${theme} ${band.id}: ${contrast(color, ink).toFixed(2)}`);
     }
   }
+});
+
+test('the lowest band says what we know ("nothing detected"), not that all is calm', () => {
+  assert.equal(en.bands.calm, 'Nothing detected');
+});
+
+test('a score with missing data is written as "at least N"', () => {
+  assert.equal(scoreText(12, false), '12');
+  assert.equal(scoreText(12, true), 'at least 12');
+  assert.equal(scoreText(null, false), 'no score yet');
+});
+
+test('modelled rain is never worded as a PAGASA warning', () => {
+  assert.match(en.reasons.rainLevel, /not a PAGASA warning/);
 });

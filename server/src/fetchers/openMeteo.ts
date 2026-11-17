@@ -6,6 +6,8 @@
 // station. Each value is valid for a specific hour, which we keep as `validAt`.
 
 import { z } from 'zod';
+import { fetchWithRetry } from './retry.ts';
+import type { RetryOptions } from './retry.ts';
 
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 
@@ -94,11 +96,19 @@ export function parseOpenMeteoLocation(json: unknown, now: Date): WeatherReading
 
 /**
  * Downloads the weather for every point.
- * The result has one entry per point, in the same order (null = failed checks).
+ * The result has one entry per point, in the same order (null = no usable
+ * answer). Each request is tried twice; if it still fails, its points are
+ * null and the other requests carry on. Throws only when every request failed.
+ * `options` lets a test pass in a pretend `fetch`.
  */
-export async function fetchOpenMeteo(points: Point[]): Promise<(WeatherReading | null)[]> {
+export async function fetchOpenMeteo(
+  points: Point[],
+  options: RetryOptions = {},
+): Promise<(WeatherReading | null)[]> {
   const now = new Date();
   const readings: (WeatherReading | null)[] = [];
+  let requests = 0;
+  const problems: string[] = [];
 
   for (let start = 0; start < points.length; start += POINTS_PER_REQUEST) {
     const chunk = points.slice(start, start + POINTS_PER_REQUEST);
@@ -112,25 +122,36 @@ export async function fetchOpenMeteo(points: Point[]): Promise<(WeatherReading |
       timeformat: 'unixtime',
     });
 
-    const response = await fetch(`${OPEN_METEO_URL}?${params}`, {
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!response.ok) {
-      throw new Error(`Open-Meteo request failed: HTTP ${response.status}`);
-    }
+    requests += 1;
+    try {
+      // Give up on each try after 30 seconds instead of waiting forever.
+      const response = await fetchWithRetry(
+        `${OPEN_METEO_URL}?${params}`,
+        () => ({ signal: AbortSignal.timeout(30_000) }),
+        options,
+      );
 
-    // For several points the answer is a list; for one point it is a single
-    // object. Make it a list either way.
-    const json: unknown = await response.json();
-    const locations = Array.isArray(json) ? json : [json];
-    if (locations.length !== chunk.length) {
-      throw new Error(`Open-Meteo sent ${locations.length} answers for ${chunk.length} points`);
-    }
-
-    for (const location of locations) {
-      readings.push(parseOpenMeteoLocation(location, now));
+      // For several points the answer is a list; for one point it is a single
+      // object. Make it a list either way.
+      const json: unknown = await response.json();
+      const locations = Array.isArray(json) ? json : [json];
+      if (locations.length !== chunk.length) {
+        throw new Error(`${locations.length} answers for ${chunk.length} points`);
+      }
+      for (const location of locations) {
+        readings.push(parseOpenMeteoLocation(location, now));
+      }
+    } catch (error) {
+      // This request is lost; its points get "no answer" and the rest go on.
+      const why = error instanceof Error ? error.message : String(error);
+      problems.push(why);
+      console.warn(`Open-Meteo: a request for ${chunk.length} points failed twice: ${why}`);
+      for (let i = 0; i < chunk.length; i += 1) readings.push(null);
     }
   }
 
+  if (requests > 0 && problems.length === requests) {
+    throw new Error(`Open-Meteo: every request failed (${problems[0]})`);
+  }
   return readings;
 }
