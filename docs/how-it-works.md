@@ -78,6 +78,7 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/provinces` | Every province's shape and score, for the map |
 | `GET /api/provinces/:psgc` | One province in detail |
 | `GET /api/point?lat=..&lon=..` | The score for one exact spot, worked out on demand |
+| `GET /api/places?q=..` | Place search: cities, municipalities and provinces by name, from our own database |
 | `GET /api/events` | Current disaster events, for map markers |
 | `GET /api/storms` | Active storms with their tracks |
 | `GET /api/news` | Latest headlines; optional `category`, `psgc`, `limit` (1–100, default 30) |

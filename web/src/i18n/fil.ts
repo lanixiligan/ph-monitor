@@ -9,7 +9,7 @@ import type { Strings } from './en.ts';
 export const fil: Strings = {
   // The page itself (header, jump links, load error, footer credits).
   app: {
-    intro: 'Stress ngayon mula sa lindol, panahon at mga sakuna. I-click ang kahit saang lupa para sa lugar na iyon.', // REVIEW: unsure about "I-click"
+    intro: 'Stress ngayon mula sa lindol, panahon at mga sakuna. Maghanap ng lugar o i-click ang kahit saang lupa.', // REVIEW: unsure about "i-click"
     jumpHeadlines: 'Mga balita', // REVIEW
     jumpStreams: 'Mga live stream', // REVIEW
     loadError: 'Hindi ma-load ang mga score. Tumatakbo ba ang server?', // REVIEW
@@ -84,11 +84,23 @@ export const fil: Strings = {
   // The side panel before a spot is picked.
   spot: {
     title: 'Pumili ng lugar', // REVIEW
-    hint: 'I-click ang kahit saang lupa. Dito lalabas ang score para sa mismong lugar na iyon, ang mga dahilan nito at ang susunod na 7 araw.', // REVIEW
+    hint: 'Maghanap ng lugar, gamitin ang iyong lokasyon, o i-click ang kahit saang lupa. Dito lalabas ang score para sa mismong lugar na iyon, ang mga dahilan nito at ang susunod na 7 araw.', // REVIEW
     highest: 'Pinakamataas na score ng mga lalawigan ngayon', // REVIEW
     noScores: 'Wala pang lalawigang may score.', // REVIEW
     alertsTitle: 'Mga opisyal na babalang may bisa', // REVIEW
     alertsNone: 'Walang nakalistang general flood advisory o tropical cyclone alert ang PAGASA na may bisa. Hindi sinusuri dito ang ibang babala (ulan, wind signal, bulkan).', // REVIEW
+  },
+
+  // Ang search box sa ibabaw ng mapa at ang button na "gamitin ang aking lokasyon".
+  search: {
+    label: 'Maghanap ng lugar', // REVIEW
+    placeholder: 'Maghanap ng lungsod, bayan o lalawigan', // REVIEW
+    province: 'lalawigan', // REVIEW
+    none: 'Walang lugar na may ganyang pangalan. Subukan ang pangalan ng bayan o lalawigan.', // REVIEW
+    failed: 'Hindi gumagana ang paghahanap sa ngayon. Maaari mo pa ring i-click ang mapa.', // REVIEW
+    locate: 'Gamitin ang aking lokasyon', // REVIEW
+    locateOutside: 'Nasa labas ng Pilipinas ang iyong lokasyon, kaya walang score para dito.', // REVIEW
+    locateFailed: 'Hindi makuha ang iyong lokasyon. Tiyaking pinapayagan ang pahinang ito na gamitin ito.', // REVIEW
   },
 
   // Score bands.

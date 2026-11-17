@@ -213,6 +213,18 @@ export type PointScore = {
   computedAt: string;
 };
 
+/** One answer of the place search. Returned (as a list) by GET /api/places?q=... */
+export type PlaceMatch = {
+  psgc: number;
+  name: string;
+  kind: 'province' | 'city' | 'municipality';
+  /** The province a city or municipality is in; null for a province itself. */
+  provinceName: string | null;
+  /** A point inside the place: the spot that is opened when the reader picks it. */
+  lat: number;
+  lon: number;
+};
+
 /** Everything the status card needs for a clicked spot. Returned by GET /api/point */
 export type PointDetail = {
   lat: number;

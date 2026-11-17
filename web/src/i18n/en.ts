@@ -9,7 +9,7 @@ export const en = {
   // The page itself (header, jump links, load error, footer credits).
   app: {
     intro:
-      'Stress right now from earthquakes, weather and disaster events. Click anywhere on land for that spot.',
+      'Stress right now from earthquakes, weather and disaster events. Search for a place or click anywhere on land.',
     jumpHeadlines: 'Headlines',
     jumpStreams: 'Live streams',
     loadError: 'Could not load the scores. Is the server running?',
@@ -86,11 +86,24 @@ export const en = {
   // The side panel before a spot is picked.
   spot: {
     title: 'Pick a spot',
-    hint: 'Click anywhere on land. The score for that exact spot, the reasons for it and the next 7 days open here.',
+    hint: 'Search for a place, use your location, or click anywhere on land. The score for that exact spot, the reasons for it and the next 7 days open here.',
     highest: 'Highest province scores now',
     noScores: 'No province has a score yet.',
     alertsTitle: 'Official alerts in effect',
     alertsNone: 'PAGASA lists no flood advisory or tropical cyclone alert in effect. Other warnings (rainfall, wind signals, volcanoes) are not checked here.',
+  },
+
+  // The search box over the map and the "use my location" button.
+  search: {
+    label: 'Find a place',
+    placeholder: 'Search a city, municipality or province',
+    // Shown beside a match that is a province (a town shows its province's name there).
+    province: 'province',
+    none: 'No place with that name. Try the name of the town or province.',
+    failed: 'Search is not working right now. You can still click the map.',
+    locate: 'Use my location',
+    locateOutside: 'Your location is outside the Philippines, so there is no score for it.',
+    locateFailed: 'Could not get your location. Check that this page is allowed to use it.',
   },
 
   // Score bands.

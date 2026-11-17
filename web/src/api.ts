@@ -7,6 +7,7 @@ import type {
   DisasterEvent,
   NewsItem,
   OfficialAlert,
+  PlaceMatch,
   PointDetail,
   ProvinceMapProperties,
   StatusReport,
@@ -38,6 +39,12 @@ export type Spot = { lat: number; lon: number };
 /** The score and details for one spot. */
 export async function fetchPointDetail(spot: Spot): Promise<PointDetail> {
   return (await getJson(`/api/point?lat=${spot.lat}&lon=${spot.lon}`)) as PointDetail;
+}
+
+/** Cities, municipalities and provinces whose name matches the text. May come back empty. */
+export async function searchPlaces(query: string): Promise<PlaceMatch[]> {
+  // encodeURIComponent makes any typed text safe to put in an address.
+  return (await getJson(`/api/places?q=${encodeURIComponent(query)}`)) as PlaceMatch[];
 }
 
 // The Phase 2 lists. Each one may come back empty.

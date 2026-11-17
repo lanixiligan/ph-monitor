@@ -246,6 +246,68 @@ p {
   border-color: transparent;
 }
 
+/* ---------- Place search (PlaceSearch.tsx) ---------- */
+.search {
+  /* Lets the list below be placed against this box. */
+  position: relative;
+  padding: 8px 12px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--ink);
+}
+
+.search input {
+  width: 100%;
+  padding: 7px 9px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+}
+
+.search input::placeholder {
+  color: var(--ink-soft);
+}
+
+/* The matches drop down over the map instead of pushing it away. */
+.search-list {
+  position: absolute;
+  z-index: 3;
+  left: 12px;
+  right: 12px;
+  top: calc(100% - 9px);
+  max-height: 300px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+}
+
+.search-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 9px;
+  cursor: pointer;
+}
+
+.search-list li + li {
+  border-top: 1px solid var(--line-soft);
+}
+
+/* The row under the pointer, or the one the arrow keys are on. */
+.search-list li:hover,
+.search-list li[aria-selected='true'] {
+  background: var(--sea);
+}
+
+.search-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
 /* ---------- Map ---------- */
 .map-area {
   display: flex;
@@ -823,6 +885,23 @@ footer {
     position: absolute;
     inset: 0;
     height: auto;
+  }
+
+  /* The search box floats over the top-left corner of the map. */
+  .search {
+    position: absolute;
+    z-index: 2;
+    left: 12px;
+    top: 12px;
+    width: 356px;
+    padding: 8px;
+    border: 1px solid var(--ink);
+  }
+
+  .search-list {
+    left: -1px;
+    right: -1px;
+    top: 100%;
   }
 
   /* The legend floats over the bottom-left corner of the map. */

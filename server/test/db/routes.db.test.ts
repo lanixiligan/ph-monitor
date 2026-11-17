@@ -11,10 +11,11 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import express from 'express';
-import type { PointDetail, ProvinceDetail, StatusReport } from '@ph-monitor/shared';
+import type { PlaceMatch, PointDetail, ProvinceDetail, StatusReport } from '@ph-monitor/shared';
 import { computeScores } from '../../src/jobs/computeScores.ts';
 import { readDueJobs } from '../../src/jobs/due.ts';
 import { conditionsRouter } from '../../src/routes/conditions.ts';
+import { placesRouter } from '../../src/routes/places.ts';
 import { pointRouter } from '../../src/routes/point.ts';
 import { provincesRouter } from '../../src/routes/provinces.ts';
 
@@ -63,6 +64,7 @@ before(async () => {
   const app = express();
   app.use('/api/provinces', provincesRouter);
   app.use('/api/point', pointRouter);
+  app.use('/api/places', placesRouter);
   app.use('/api', conditionsRouter);
   // Port 0 = "any free port". The Promise waits until the server is listening.
   await new Promise<void>((resolve) => {
@@ -115,6 +117,24 @@ test('spot route: just outside a province still counts; the open sea and bad inp
   assert.equal((await get('/api/point?lat=6&lon=118')).status, 404);
   assert.equal((await get('/api/point?lat=99&lon=121')).status, 400);
   assert.equal((await get('/api/point?lat=abc&lon=121')).status, 400);
+});
+
+test('place search: finds towns and provinces by name, each with a point inside it that the spot route accepts', async () => {
+  const { status, body } = await get('/api/places?q=alpha');
+  assert.equal(status, 200);
+  const matches = body as PlaceMatch[];
+  assert.deepEqual(
+    matches.map((match) => [match.name, match.kind, match.provinceName]),
+    [['Alpha City', 'city', 'Alpha'], ['Alpha', 'province', null]],
+  );
+  // Alpha City is the square 121.4–121.6, 14.4–14.6.
+  const city = matches[0];
+  assert.ok(city && city.lat > 14.4 && city.lat < 14.6 && city.lon > 121.4 && city.lon < 121.6);
+  const opened = await get(`/api/point?lat=${city.lat}&lon=${city.lon}`);
+  assert.equal((opened.body as PointDetail).place?.name, 'Alpha City');
+
+  assert.deepEqual((await get('/api/places?q=zzz')).body, []);
+  assert.equal((await get('/api/places')).status, 400);
 });
 
 test('map data: every province comes with its shape, score and "incomplete" mark', async () => {

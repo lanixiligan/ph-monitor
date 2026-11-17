@@ -10,6 +10,7 @@ import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
 import { Legend } from './components/Legend.tsx';
 import { NewsPanel } from './components/NewsPanel.tsx';
+import { PlaceSearch } from './components/PlaceSearch.tsx';
 import { ProvinceMap } from './components/ProvinceMap.tsx';
 import { Ladder } from './components/Ladder.tsx';
 import { SpotHint } from './components/SpotHint.tsx';
@@ -52,6 +53,11 @@ export function App() {
   // Provinces picked from a headline, outlined on the map. A new object on
   // every click, so picking the same place twice still moves the map.
   const [focus, setFocus] = useState<{ psgcs: number[] } | null>(null);
+  // A place picked in the search box, for the map to fly to. A new object on
+  // every pick, so picking the same place twice still moves the map.
+  const [goTo, setGoTo] = useState<Spot | null>(null);
+  // What went wrong with "use my location", if anything.
+  const [locateProblem, setLocateProblem] = useState<'outside' | 'failed' | null>(null);
 
   function showOnMap(psgcs: number[]) {
     setFocus({ psgcs });
@@ -142,6 +148,21 @@ export function App() {
 
       <div className="workspace">
         <main className="map-area">
+          <PlaceSearch
+            onPick={(picked) => {
+              setSpot(picked);
+              setFocus(null);
+              setGoTo({ ...picked });
+              setLocateProblem(null);
+            }}
+            note={
+              locateProblem === 'outside'
+                ? t.search.locateOutside
+                : locateProblem === 'failed'
+                  ? t.search.locateFailed
+                  : null
+            }
+          />
           <ProvinceMap
             data={provinces}
             spot={spot}
@@ -152,6 +173,8 @@ export function App() {
             }}
             layers={layers}
             focus={focus}
+            goTo={goTo}
+            onLocateResult={setLocateProblem}
           />
           <Legend layers={layers} onChange={setLayers} />
         </main>

@@ -31,6 +31,7 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    weatherPoints.ts (extra sample points, worst reading per province),
                    sources.ts (every news feed and stream link, outlet categories),
                    conditions.ts (outlook, nearby events, storms, news, official alerts),
+                   placeSearch.ts (which place names match a typed text),
                    scoreHistory.ts (a history row only when a score changed)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
                    jma, jtwc, openMeteoDaily, openMeteoFlood, rss, pagasa (official
@@ -43,6 +44,7 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
   scoring/         scoring.ts (WEIGHTS + all formulas)
   replay/          replay.ts (archived records → score inputs for a past hour)
   routes/          provinces.ts (map data), point.ts (score for one spot),
+                   places.ts (place search),
                    conditions.ts (events, storms, news, streams, bulletins)
 server/test/       one test file per area, real feed samples in fixtures/
   db/              database tests (testDb.ts seeds a small map; import it first)
@@ -96,7 +98,8 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   (darker = worse) and a dark version (brighter = worse). Errors and stale data use ink, the
   `WarnIcon` and words, never red or amber. Two fonts, Barlow Condensed (titles, numbers) and Atkinson Hyperlegible (text), come
   from `@fontsource` npm packages and ship with the app; never load a font from a font site.
-- Layout: top bar, map on the left with the legend (its tick boxes switch map layers), panels
+- Layout: top bar, map on the left with the place search (top left), the zoom and locate
+  buttons (top right) and the legend (its tick boxes switch map layers), panels
   on the right (spot, live streams, headlines), credits along the bottom. Under 900px wide it
   is one scrolling page.
 - The web app talks only to our own `/api`, with two exceptions: the basemap tiles come straight

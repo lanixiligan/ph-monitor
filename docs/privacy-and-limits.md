@@ -10,6 +10,20 @@ The web page talks only to our own `/api`, with two exceptions:
 
 The browser never calls USGS, Open-Meteo, GDACS or any news site. The server does that.
 
+## Search and "use my location"
+
+- **Place search** looks names up in our own database through `/api/places`. What the reader
+  types goes to our server only, never to an outside search service, and is not saved.
+- **"Use my location"** (the button under the map's zoom buttons) works only after the reader
+  presses it and allows it in the browser's own permission prompt. The browser gives the page
+  one position; it is not followed afterwards.
+- That position is treated exactly like a click on the map: rounded to 4 decimals (about 11 m),
+  sent to our own `/api/point`, and written into the page address (`?lat=..&lon=..`). The server
+  does not save it. It asks Open-Meteo for the weather of the surrounding 5 km cell, not of the
+  exact position.
+- **Sharing the page address shares that spot.** After using the button, a copied link shows
+  where the reader was.
+
 ## Keys and settings
 
 - `.env` is read only by the server and is never committed. `.env.example` lists every setting.

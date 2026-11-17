@@ -1,5 +1,6 @@
 // The map: provinces coloured by score. Hover shows the province's name and
-// score; a click picks the exact spot under the pointer.
+// score; a click picks the exact spot under the pointer. The locate button
+// (under the zoom buttons) picks the spot where the reader is.
 //
 // MapLibre draws the map itself (outside React), so this component's job is
 // to create it once and then pass along changes: new data, new selection.
@@ -20,6 +21,7 @@ import { provincesBox } from '../newsGeo.ts';
 import { NEWS_LAYERS, useNewsDots } from '../newsOverlay.ts';
 import { hatchImage, readPalette } from '../palette.ts';
 import { bandColors, bandFor, scoreText } from '../scoreScale.ts';
+import { getI18n, useStrings } from '../i18n/index.ts';
 import { useTheme } from '../theme/index.ts';
 import type { Theme } from '../theme/index.ts';
 
@@ -91,7 +93,18 @@ type Props = {
   layers: MapLayers;
   /** Provinces picked from a headline: outlined, and the map moves to them. null = none. */
   focus: { psgcs: number[] } | null;
+  /** A place picked in the search box: the map flies to it. A new object for every pick. null = none. */
+  goTo: Spot | null;
+  /**
+   * Called after the locate button was used: 'outside' = the reader is not in
+   * the Philippines, 'failed' = the browser gave no location, null = it worked.
+   */
+  // `'outside' | 'failed' | null` is a union: exactly one of these three values.
+  onLocateResult: (problem: 'outside' | 'failed' | null) => void;
 };
+
+// The box a spot must be in to have a score (the same limits as the server's /api/point).
+const SPOT_BOX = { minLat: 4, maxLat: 22, minLon: 116, maxLon: 128 };
 
 // No province has this code, so a filter with it matches nothing.
 const MATCH_NONE: maplibregl.FilterSpecification = ['in', ['get', 'psgc'], ['literal', [-1]]];
@@ -101,12 +114,15 @@ const MATCH_NONE: maplibregl.FilterSpecification = ['in', ['get', 'psgc'], ['lit
 // `ExpressionSpecification` is MapLibre's type for a rule like this one.
 const FADE_WITH_ZOOM: maplibregl.ExpressionSpecification = ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 0.45];
 
-export function ProvinceMap({ data, spot, onSelect, layers, focus }: Props) {
+export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocateResult }: Props) {
   // A "ref" holds a value that survives re-renders without causing one.
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const onLocateResultRef = useRef(onLocateResult);
+  onLocateResultRef.current = onLocateResult;
+  const { t } = useStrings();
   const spotRef = useRef(spot);
   spotRef.current = spot;
   const dataRef = useRef(data);
@@ -137,6 +153,11 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus }: Props) {
         fitBoundsOptions: { padding: 24 },
         // Stops the reader from panning or zooming out to the rest of the world.
         maxBounds: MAX_BOUNDS,
+        // The locate button's tooltip, in the language chosen now.
+        locale: {
+          'GeolocateControl.FindMyLocation': getI18n().t.search.locate,
+          'GeolocateControl.LocationNotAvailable': getI18n().t.search.locateFailed,
+        },
       };
       // After a theme change, open where the reader was instead.
       const camera = cameraRef.current;
@@ -148,7 +169,36 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus }: Props) {
       map = new maplibregl.Map(options);
       const theMap = map;
       mapRef.current = theMap;
-      theMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+      // Top right, because the search box sits in the top-left corner.
+      theMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+      // "Use my location": the browser asks the reader for permission first.
+      // We ask once per press (no tracking) and mark the place with our own
+      // spot dot, so MapLibre's blue dot is switched off.
+      const locate = new maplibregl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: false, timeout: 10_000 },
+        trackUserLocation: false,
+        showUserLocation: false,
+        // Town level, not street level.
+        fitBoundsOptions: { maxZoom: 10 },
+      });
+      locate.on('geolocate', (event) => {
+        const { latitude, longitude } = event.coords;
+        const inside =
+          latitude >= SPOT_BOX.minLat && latitude <= SPOT_BOX.maxLat &&
+          longitude >= SPOT_BOX.minLon && longitude <= SPOT_BOX.maxLon;
+        if (!inside) {
+          onLocateResultRef.current('outside');
+          return;
+        }
+        onLocateResultRef.current(null);
+        // 4 decimals (about 11 m), like a click.
+        onSelectRef.current({ lat: Number(latitude.toFixed(4)), lon: Number(longitude.toFixed(4)) });
+      });
+      // Further away than the map can even show.
+      locate.on('outofmaxbounds', () => onLocateResultRef.current('outside'));
+      locate.on('error', () => onLocateResultRef.current('failed'));
+      theMap.addControl(locate, 'top-right');
 
       theMap.on('load', () => {
         theMap.addSource('provinces', {
@@ -334,6 +384,22 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus }: Props) {
     // maxZoom stops a small province from filling the whole screen.
     if (box) map.fitBounds(box, { padding: 60, maxZoom: 8 });
   }, [ready, focus]);
+
+  // A place picked in the search box: fly to it, zooming in to town level
+  // (zoom 9) unless the reader is already closer.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !goTo) return;
+    map.flyTo({ center: [goTo.lon, goTo.lat], zoom: Math.max(map.getZoom(), 9) });
+  }, [ready, goTo]);
+
+  // Keep the locate button's tooltip in the reader's language when it changes.
+  useEffect(() => {
+    if (!ready) return;
+    const button = containerRef.current?.querySelector('.maplibregl-ctrl-geolocate');
+    button?.setAttribute('title', t.search.locate);
+    button?.setAttribute('aria-label', t.search.locate);
+  }, [ready, t]);
 
   // Show or hide layers when a legend tick box changes.
   useEffect(() => {
