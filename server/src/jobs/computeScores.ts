@@ -8,6 +8,8 @@ import type { DisasterKind } from '@ph-monitor/shared';
 import { OPEN_EVENT_FRESH_SQL } from '../conditions.ts';
 import { pool } from '../db.ts';
 import { getFeedHealth, staleSignals } from '../freshness.ts';
+import { needsHistoryRow } from '../scoreHistory.ts';
+import type { HistoryEntry } from '../scoreHistory.ts';
 import {
   buildReasons,
   combineSignals,
@@ -117,8 +119,36 @@ export async function computeScores(): Promise<void> {
     eventsByProvince.set(row.province_psgc, list);
   }
 
+  // The newest history row of each province, to tell whether its score changed.
+  const historyRows = await pool.query<{
+    province_psgc: number;
+    score: number;
+    quake_score: number | null;
+    weather_score: number | null;
+    event_score: number | null;
+    unknown_signals: string[] | null;
+    computed_at: Date;
+  }>(
+    `SELECT DISTINCT ON (province_psgc)
+            province_psgc, score, quake_score, weather_score, event_score, unknown_signals, computed_at
+     FROM province_score_history
+     ORDER BY province_psgc, computed_at DESC`,
+  );
+  const lastHistory = new Map<number, HistoryEntry>();
+  for (const row of historyRows.rows) {
+    lastHistory.set(row.province_psgc, {
+      score: row.score,
+      quakeScore: row.quake_score,
+      weatherScore: row.weather_score,
+      eventScore: row.event_score,
+      unknownSignals: row.unknown_signals,
+      computedAt: row.computed_at,
+    });
+  }
+
   let highest = { name: '', score: -1 };
   let incomplete = 0;
+  let historyAdded = 0;
 
   const client = await pool.connect();
   try {
@@ -161,12 +191,24 @@ export async function computeScores(): Promise<void> {
         [province.psgc, score, quake, weatherPoints ?? 0, JSON.stringify(reasons), now, eventPoints, unknown],
       );
 
-      // The history: a new row every time.
-      await client.query(
-        `INSERT INTO province_score_history (province_psgc, score, computed_at)
-         VALUES ($1, $2, $3)`,
-        [province.psgc, score, now],
-      );
+      // The history: a new row only when something changed (see scoreHistory.ts).
+      const entry: HistoryEntry = {
+        score,
+        quakeScore: quake,
+        weatherScore: weatherPoints ?? 0,
+        eventScore: eventPoints,
+        unknownSignals: unknown,
+        computedAt: now,
+      };
+      if (needsHistoryRow(lastHistory.get(province.psgc) ?? null, entry)) {
+        await client.query(
+          `INSERT INTO province_score_history
+             (province_psgc, score, computed_at, quake_score, weather_score, event_score, unknown_signals)
+           VALUES ($1, $2, $3, $4, $5, $6, $7::text[])`,
+          [province.psgc, score, now, quake, weatherPoints ?? 0, eventPoints, unknown],
+        );
+        historyAdded += 1;
+      }
     }
 
     await client.query('COMMIT');
@@ -178,7 +220,8 @@ export async function computeScores(): Promise<void> {
   }
 
   console.log(
-    `Scores: computed ${provinces.rows.length} (${incomplete} with missing data). ` +
+    `Scores: computed ${provinces.rows.length} (${incomplete} with missing data, ` +
+      `${historyAdded} changed and added to the history). ` +
       `Highest: ${highest.name} (${highest.score}).`,
   );
 }

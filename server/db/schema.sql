@@ -74,13 +74,21 @@ ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS event_score SMALLINT NOT NU
 -- 'weather', 'event'). Not empty = the score is a lower limit ("at least N").
 ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS unknown_signals TEXT[] NOT NULL DEFAULT '{}';
 
--- Every past score (one row per province per recompute).
+-- Past scores. A row is added only when a province's score, a part-score or
+-- its unknown signals changed (and once a day anyway; see scoreHistory.ts).
+-- A province's score at some time is its newest row at or before that time.
 CREATE TABLE IF NOT EXISTS province_score_history (
   province_psgc BIGINT REFERENCES provinces,
   score         SMALLINT NOT NULL,
   computed_at   TIMESTAMPTZ NOT NULL,
   PRIMARY KEY (province_psgc, computed_at)
 );
+-- The part-scores behind the total. NULL only in rows saved before these
+-- columns existed.
+ALTER TABLE province_score_history ADD COLUMN IF NOT EXISTS quake_score SMALLINT;
+ALTER TABLE province_score_history ADD COLUMN IF NOT EXISTS weather_score SMALLINT;
+ALTER TABLE province_score_history ADD COLUMN IF NOT EXISTS event_score SMALLINT;
+ALTER TABLE province_score_history ADD COLUMN IF NOT EXISTS unknown_signals TEXT[];
 
 -- When each feed last succeeded. Used to tell "no quakes lately" apart from
 -- "the earthquake fetch has been failing".

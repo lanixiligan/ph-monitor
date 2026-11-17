@@ -54,7 +54,7 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `province_weather_points` | Extra sample points for big provinces (`npm run weather-points`) |
 | `official_alerts` | PAGASA alerts, in PAGASA's own words |
 | `province_scores` | The latest score and reasons for each province |
-| `province_score_history` | Every past score |
+| `province_score_history` | Past scores with their part-scores; a row is added only when something changed |
 | `events` | Disaster events from GDACS and EONET |
 | `storms`, `storm_track_points` | Tropical storms and their past and forecast positions |
 | `forecast_days` | The 7-day outlook per province |
