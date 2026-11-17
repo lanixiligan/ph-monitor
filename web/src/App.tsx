@@ -1,6 +1,6 @@
 // The whole page: a top bar, the map with its legend on the left, and on the
 // right the panel for the clicked spot, the live streams and the headlines.
-// The credits line runs along the bottom.
+// The bottom line holds the "not official" notice and a link to the credits page.
 
 import { useEffect, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
@@ -18,7 +18,7 @@ import { StatusCard } from './components/StatusCard.tsx';
 import { StreamsPanel } from './components/StreamsPanel.tsx';
 import { WarnIcon } from './components/WarnIcon.tsx';
 import { fill, LanguageSwitch, lookup, useStrings } from './i18n/index.ts';
-import { ALL_LAYERS_ON, SHOW_BASEMAP } from './mapSettings.ts';
+import { ALL_LAYERS_ON } from './mapSettings.ts';
 import { ThemeSwitch } from './theme/index.ts';
 
 // How often the map asks the server for new scores.
@@ -201,34 +201,9 @@ export function App() {
         </div>
       </div>
 
+      {/* The notice stays here; the data credits have their own page (CreditsPage.tsx). */}
       <footer>
-        <Disclaimer />{' '}
-        {t.app.creditQuakes} <a href="https://earthquake.usgs.gov/">USGS</a>.{' '}
-        {t.app.creditWeather} <a href="https://open-meteo.com/">Open-Meteo</a>
-        {t.app.creditWeatherEnd} {t.app.creditBoundaries}{' '}
-        <a href="https://github.com/faeldon/philippines-json-maps">philippines-json-maps</a>.{' '}
-        {t.app.creditEvents} <a href="https://www.gdacs.org/">GDACS</a>
-        {t.app.creditEventsMid} <a href="https://eonet.gsfc.nasa.gov/">NASA EONET</a>.{' '}
-        {t.app.creditStorms}{' '}
-        <a href="https://www.jma.go.jp/bosai/map.html#contents=typhoon">JMA</a> {t.app.creditStormsMid}{' '}
-        <a href="https://www.metoc.navy.mil/jtwc/jtwc.html">JTWC</a>.{' '}
-        {t.app.creditOutlook} <a href="https://open-meteo.com/">Open-Meteo</a>
-        {t.app.creditOutlookMid}{' '}
-        <a href="https://open-meteo.com/en/docs/flood-api">GloFAS via Open-Meteo</a>
-        {t.app.creditOutlookEnd} {t.app.creditAlerts} {t.app.creditNews} {t.app.creditVideo}{' '}
-        <a href="https://www.youtube.com/">YouTube</a>
-        {t.app.creditVideoEnd}
-        {/* The basemap credit is only needed when the basemap is shown. */}
-        {SHOW_BASEMAP && (
-          <>
-            {' '}
-            {t.app.creditBasemap} <a href="https://openfreemap.org/">OpenFreeMap</a>
-            {t.app.creditBasemapMid} <a href="https://www.openmaptiles.org/">OpenMapTiles</a>
-            {t.app.creditBasemapData}{' '}
-            <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>{' '}
-            {t.app.creditBasemapEnd}
-          </>
-        )}
+        <Disclaimer /> <a href="/credits">{t.app.creditsLink}</a>
       </footer>
     </div>
   );

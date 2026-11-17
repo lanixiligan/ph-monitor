@@ -15,6 +15,9 @@ export const fil: Strings = {
     loadError: 'Hindi ma-load ang mga score. Tumatakbo ba ang server?', // REVIEW
     staleBanner: 'Hindi na bago: {feeds}. Maaaring luma o kulang ang nakikita mo para sa mga ito.', // REVIEW
     statusError: 'Hindi matiyak kung gaano kabago ang datos.', // REVIEW
+    creditsLink: 'Mga pinagmulan ng datos at pagkilala', // REVIEW: unsure about "pagkilala"
+    creditsTitle: 'Mga pinagmulan ng datos at pagkilala', // REVIEW: unsure about "pagkilala"
+    backToMap: 'Bumalik sa mapa', // REVIEW
     creditQuakes: 'Mga lindol:', // REVIEW
     creditWeather: 'Panahon (mula sa modelo):', // REVIEW: unsure about "modelo"
     creditWeatherEnd: ', CC BY 4.0.', // REVIEW

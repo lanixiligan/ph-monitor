@@ -16,6 +16,10 @@ export const en = {
     // {feeds} is a list of names from `feeds` below.
     staleBanner: 'Out of date: {feeds}. What you see for these may be old or missing.',
     statusError: 'Could not check how fresh the data is.',
+    // The footer link and the credits page (CreditsPage.tsx).
+    creditsLink: 'Data sources and credits',
+    creditsTitle: 'Data sources and credits',
+    backToMap: 'Back to the map',
     creditQuakes: 'Earthquakes:',
     creditWeather: 'Weather (modelled):',
     creditWeatherEnd: ', CC BY 4.0.',

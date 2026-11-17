@@ -12,6 +12,7 @@ import '@fontsource/atkinson-hyperlegible/400.css';
 import '@fontsource/atkinson-hyperlegible/700.css';
 import './styles.css';
 import { App } from './App.tsx';
+import { CreditsPage } from './components/CreditsPage.tsx';
 import { LanguageProvider } from './i18n/index.ts';
 import { ThemeProvider } from './theme/index.ts';
 
@@ -28,7 +29,8 @@ createRoot(root).render(
   <StrictMode>
     <LanguageProvider>
       <ThemeProvider>
-        <App />
+        {/* Only two pages, so a plain address check is enough (no router needed). */}
+        {window.location.pathname === '/credits' ? <CreditsPage /> : <App />}
       </ThemeProvider>
     </LanguageProvider>
   </StrictMode>,

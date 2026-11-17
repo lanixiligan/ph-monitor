@@ -102,7 +102,8 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   from `@fontsource` npm packages and ship with the app; never load a font from a font site.
 - Layout: top bar, map on the left with the place search (top left), the zoom and locate
   buttons (top right) and the legend (its tick boxes switch map layers), panels
-  on the right (spot, live streams, headlines), credits along the bottom. Under 900px wide it
+  on the right (spot, live streams, headlines), and along the bottom the notice plus a link to the
+  credits page (`/credits`, `web/src/components/CreditsPage.tsx`). Under 900px wide it
   is one scrolling page.
 - The web app talks only to our own `/api`, with two exceptions: the basemap tiles come straight
   from OpenFreeMap (switch: `SHOW_BASEMAP` in `web/src/mapSettings.ts`), and a video plays in
