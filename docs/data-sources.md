@@ -12,6 +12,7 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 |---|---|---|---|
 | Earthquakes | USGS | every 15 min | Yes |
 | Current weather | Open-Meteo | every 30 min | Yes |
+| Official alerts | PAGASA public alert feed | every 15 min | No, shown above the score |
 | Disaster events with alert levels | GDACS | every 30 min | Yes (typhoon, flood, volcano, wildfire) |
 | Natural events | NASA EONET | every 30 min | No, shown only |
 | Storm tracks | JMA, with JTWC as backup | every 30 min | No, shown only |
@@ -118,9 +119,26 @@ Roads and place names under the provinces. The reader's browser loads these tile
 from [OpenFreeMap](https://openfreemap.org/) (© OpenMapTiles, data © OpenStreetMap
 contributors, ODbL). Turn it off with `SHOW_BASEMAP` in `web/src/mapSettings.ts`.
 
+## Official alerts: PAGASA
+
+- **Address:** `https://publicalert.pagasa.dost.gov.ph/feeds/`, a list of the latest alerts;
+  each one links to its own CAP file (Common Alerting Protocol, an XML standard).
+- **What it carries (seen so far):** General Flood Advisories, whose areas are provinces with
+  their place codes, and Tropical Cyclone Alerts, whose one area is the whole Philippine Area
+  of Responsibility. Not in the feed: rainfall warnings, wind signals by province, anything
+  from PHIVOLCS.
+- **What we keep:** PAGASA's own headline, text, level, issue and end times, and the areas,
+  matched to our provinces by place code (then by name). An alert that matches no province
+  is shown for the whole country.
+- **Shown:** while it has not expired, has not been replaced by a newer alert, and is not a
+  "final" (all-clear) message. Always above the score, never part of it.
+- **Licence:** "Copyright PAGASA. Licensed under CC BY 4.0" (the feed's own rights line).
+- **Limits:** a cyclone alert with wind signals over named provinces has not been seen yet.
+- **Code:** `fetchers/pagasa.ts`, `jobs/ingestAlerts.ts`. By hand: `npm run ingest:alerts`.
+
 ## Official bulletin links
 
-The status card links to four official pages. We only link to them; nothing is fetched.
+The status card also links to four official pages. We only link to them; nothing is fetched.
 
 | Agency | Page |
 |---|---|

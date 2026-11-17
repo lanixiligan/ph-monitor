@@ -2,14 +2,15 @@
 //
 // Core cycle (feeds the score), every 15 minutes:
 //   earthquakes every 15 minutes, weather every 30, then the scores.
-// Extras cycle (Phase 2 data, not part of the score yet), every 15 minutes:
-//   news every 15 minutes; events, storms and the live stream check every 30;
+// Extras cycle (shown on the page; only GDACS alert levels reach the score), every 15 minutes:
+//   official alerts and news every 15 minutes; events, storms and the live stream check every 30;
 //   feed link check every hour; the 7-day outlook every 6 hours.
 
 import cron from 'node-cron';
 import { pool } from '../db.ts';
 import { checkFeeds, checkStreams } from './checkSources.ts';
 import { computeScores } from './computeScores.ts';
+import { ingestAlerts } from './ingestAlerts.ts';
 import { ingestEarthquakes } from './ingestEarthquakes.ts';
 import { ingestEvents } from './ingestEvents.ts';
 import { ingestForecast } from './ingestForecast.ts';
@@ -79,6 +80,7 @@ async function runExtras(minute: number | 'start'): Promise<void> {
     const halfHour = minute === 'start' || minute % 30 === 0;
     const fullHour = minute === 'start' || minute === 0;
 
+    await runJob('official alerts', ingestAlerts);
     await runJob('news', ingestNews);
     if (halfHour) {
       await runJob('events', ingestEvents);

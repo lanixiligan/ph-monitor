@@ -22,7 +22,7 @@ and typhoon tracks.
 | 5. News panel | Done (ingest, `/api/news`, panel with category filter) |
 | 6. Live streams panel | Done (`/api/streams`, panel; a video loads from youtube-nocookie.com only after Play) |
 | 7. Link checker | Done |
-| 8. Official PH bulletins | Skipped. Plain links to the PAGASA and PHIVOLCS pages are on the card instead |
+| 8. Official PH bulletins | Partly done: PAGASA's public alert feed (flood advisories, cyclone alerts) is shown above the score. Wind signals, rainfall warnings and PHIVOLCS alert levels have no feed; plain links stay on the card |
 | 9. Filipino option | Built as a draft. Every string in `web/src/i18n/fil.ts` is marked `// REVIEW` and waits for the owner's review |
 | 10. AI summaries | Skipped |
 
@@ -49,7 +49,8 @@ Not verified yet, because nothing real was available to test with:
 | Rappler, Inquirer, PhilStar, GMA, PTV, Bombo Radyo, Manila Times, Interaksyon, SunStar, MindaNews RSS | Local news | in use (13 feeds with Google News) |
 | ABS-CBN, PNA, PIA, DZRH, News5, Manila Bulletin RSS | Local news | dropped: no working news feed (404, 403, or entertainment only) |
 | ReliefWeb API v2 | Humanitarian reports | not used (needs a free approved `appname`) |
-| PAGASA, PHIVOLCS | Official PH bulletins | web pages only, no API; linked from the card, not scraped |
+| PAGASA | Official alerts | CAP alert feed (CC BY 4.0) in use; other bulletins are web pages only, linked not scraped |
+| PHIVOLCS | Official PH bulletins | web pages only, no API; linked from the card, not scraped |
 | YouTube oEmbed `youtube.com/oembed?url=...` | Can a video be embedded | used only without a key; accepts video links, not channel links |
 | YouTube channel feed `youtube.com/feeds/videos.xml?channel_id=...` | A channel's newest videos | used only without a key; fails at random (404/500 for real channels) |
 | YouTube Data API | A channel's live stream or latest video | in use with the owner's key; 1-unit calls only, about 1,200 of 10,000 units a day |

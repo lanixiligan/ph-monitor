@@ -138,6 +138,7 @@ export type Freshness = {
 export type FeedId =
   | 'earthquakes'
   | 'weather'
+  | 'officialAlerts'
   | 'events'
   | 'naturalEvents'
   | 'storms'
@@ -362,6 +363,36 @@ export type Conditions = {
   stormsComing: StormComing[];
   /** Recent headlines that name the province. */
   news: NewsItem[];
+  /** Official alerts in effect for the province (or the whole country), newest first. */
+  officialAlerts: OfficialAlert[];
+};
+
+/**
+ * One official alert, in the agency's own words. Never part of the score:
+ * it is shown above it.
+ */
+export type OfficialAlert = {
+  id: string;
+  /** 'PAGASA' for now. */
+  agency: string;
+  /** What kind of alert, e.g. "General Flood Advisory (Moderate)". */
+  event: string;
+  headline: string;
+  /** CAP scale: 'Extreme', 'Severe', 'Moderate', 'Minor' or 'Unknown'. */
+  severity: string;
+  description: string;
+  instruction: string | null;
+  /** The agency's page about this kind of alert. */
+  web: string | null;
+  /** The alert file itself. */
+  url: string;
+  sentAt: string;
+  expiresAt: string;
+  /** The areas as the agency names them. */
+  areaNames: string[];
+  provincePsgcs: number[];
+  /** True when the alert covers the whole country (no single province named). */
+  isNationwide: boolean;
 };
 
 /** A link to an official bulletin page. */

@@ -6,6 +6,7 @@ import type {
   BulletinLink,
   DisasterEvent,
   NewsItem,
+  OfficialAlert,
   PointDetail,
   ProvinceMapProperties,
   StatusReport,
@@ -66,4 +67,9 @@ export async function fetchBulletins(): Promise<BulletinLink[]> {
 /** When each feed last succeeded, and which ones are out of date. */
 export async function fetchStatus(): Promise<StatusReport> {
   return (await getJson('/api/status')) as StatusReport;
+}
+
+/** Official alerts in effect anywhere in the country. May come back empty. */
+export async function fetchAlerts(): Promise<OfficialAlert[]> {
+  return (await getJson('/api/alerts')) as OfficialAlert[];
 }

@@ -28,6 +28,7 @@
     "sample-storm": "npm run sample-storm --workspace server",
     "ingest:forecast": "npm run ingest:forecast --workspace server",
     "ingest:news": "npm run ingest:news --workspace server",
+    "ingest:alerts": "npm run ingest:alerts --workspace server",
     "check:sources": "npm run check:sources --workspace server",
     "test": "npm test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"

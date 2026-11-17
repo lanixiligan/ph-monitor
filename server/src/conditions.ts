@@ -11,10 +11,12 @@ import type {
   ForecastDay,
   NewsItem,
   NewsOutletLink,
+  OfficialAlert,
   OutletCategory,
   StormComing,
 } from '@ph-monitor/shared';
 import { pool } from './db.ts';
+import { isAlertInEffect } from './fetchers/pagasa.ts';
 
 /** An event is listed on the card when it is within this distance. */
 export const NEAR_EVENT_KM = 300;
@@ -194,5 +196,62 @@ export async function getConditions(
     nearbyEvents: events.rows.map(toDisasterEvent),
     stormsComing,
     news: news.rows.map(toNewsItem),
+    officialAlerts: await getOfficialAlerts(psgc),
   };
+}
+
+type AlertRow = {
+  id: string;
+  agency: string;
+  event: string;
+  headline: string;
+  severity: string;
+  description: string;
+  instruction: string | null;
+  web: string | null;
+  url: string;
+  sent_at: Date;
+  expires_at: Date;
+  is_all_clear: boolean;
+  is_replaced: boolean;
+  area_names: string[];
+  province_psgcs: string[]; // BIGINT[] comes back as a list of text
+  is_nationwide: boolean;
+};
+
+/**
+ * Official alerts in effect, newest first. With a province code: the ones
+ * that name it, plus the country-wide ones. null = all of them.
+ */
+export async function getOfficialAlerts(psgc: number | null): Promise<OfficialAlert[]> {
+  const result = await pool.query<AlertRow>(
+    `SELECT id, agency, event, headline, severity, description, instruction, web, url, sent_at,
+            expires_at, is_all_clear, is_replaced, area_names, province_psgcs, is_nationwide
+     FROM official_alerts
+     WHERE expires_at > now()
+       AND ($1::bigint IS NULL OR is_nationwide OR $1 = ANY(province_psgcs))
+     ORDER BY sent_at DESC`,
+    [psgc],
+  );
+  const now = new Date();
+  return result.rows
+    .filter((row) =>
+      isAlertInEffect({ expiresAt: row.expires_at, isAllClear: row.is_all_clear, isReplaced: row.is_replaced }, now),
+    )
+    .map((row) => ({
+      id: row.id,
+      agency: row.agency,
+      event: row.event,
+      headline: row.headline,
+      severity: row.severity,
+      description: row.description,
+      instruction: row.instruction,
+      web: row.web,
+      url: row.url,
+      sentAt: row.sent_at.toISOString(),
+      expiresAt: row.expires_at.toISOString(),
+      areaNames: row.area_names,
+      provincePsgcs: row.province_psgcs.map(Number),
+      isNationwide: row.is_nationwide,
+    }));
 }

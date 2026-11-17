@@ -27,7 +27,8 @@ The scheduler (`server/src/jobs/scheduler.ts`) ticks every 15 minutes while the 
 | Job | How often | By hand |
 |---|---|---|
 | Earthquakes | 15 min | `npm run ingest:earthquakes` |
-| Weather | 30 min | `npm run ingest:weather` |
+| Weather | 1 hour | `npm run ingest:weather` |
+| Official alerts | 15 min | `npm run ingest:alerts` |
 | Scores (after the two above) | 15 min | `npm run compute:scores` |
 | News | 15 min | `npm run ingest:news` |
 | Disaster events | 30 min | `npm run ingest:events` |
@@ -50,6 +51,7 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `earthquakes` | One row per USGS quake |
 | `earthquake_provinces` | Which provinces each quake reaches, with the distance |
 | `weather_readings` | Weather at each province's sample point, per model hour |
+| `official_alerts` | PAGASA alerts, in PAGASA's own words |
 | `province_scores` | The latest score and reasons for each province |
 | `province_score_history` | Every past score |
 | `events` | Disaster events from GDACS and EONET |
@@ -78,6 +80,7 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/news` | Latest headlines; optional `category`, `psgc`, `limit` (1–100, default 30) |
 | `GET /api/streams` | Stream slots the page may show |
 | `GET /api/bulletins` | Links to official PAGASA and PHIVOLCS pages |
+| `GET /api/alerts` | Official alerts in effect (PAGASA) |
 | `GET /api/status` | When each feed last succeeded, and which are out of date |
 
 ## What the reader sees

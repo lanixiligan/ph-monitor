@@ -28,10 +28,11 @@ server/scripts/    migrate.ts, load-provinces.ts, load-places.ts, run-job.ts,
 server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    pointWeather.ts (on-demand weather for one spot),
                    sources.ts (every news feed and stream link, outlet categories),
-                   conditions.ts (outlook, nearby events, storms, news for the card)
+                   conditions.ts (outlook, nearby events, storms, news, official alerts)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
-                   jma, jtwc, openMeteoDaily, openMeteoFlood, rss
-  jobs/            ingestEarthquakes, ingestWeather, ingestEvents, ingestStorms,
+                   jma, jtwc, openMeteoDaily, openMeteoFlood, rss, pagasa (official
+                   alerts), retry (one more try for a failed download)
+  jobs/            ingestEarthquakes, ingestWeather, ingestEvents, ingestStorms, ingestAlerts,
                    ingestForecast, ingestNews, checkSources, computeScores, scheduler
   news/            keyword filter, same-story merging, province tagging
   checker/         link checks for feeds and YouTube streams
@@ -61,7 +62,7 @@ npm run dev:web          map on :5173
 npm test                 tests
 npm run typecheck        tsc over all workspaces
 npm run ingest:earthquakes | ingest:weather | compute:scores   one job by hand
-npm run ingest:events | ingest:storms | ingest:forecast | ingest:news
+npm run ingest:events | ingest:storms | ingest:forecast | ingest:news | ingest:alerts
 npm run check:sources    check every feed and stream link, print a table
 npm run sample-storm     load a sample storm track (add `-- remove` to delete it)
 ```
@@ -96,8 +97,13 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
 - `.env` is server-only and never committed. `YOUTUBE_API_KEY` is optional and never reaches
   the browser. The YouTube checker uses only 1-unit API calls (never `search.list`).
 - Every news feed and stream link lives in `server/src/sources.ts`.
+- Unknown is never calm: a signal that could not be checked is `null`, the score is then
+  "at least N" and the province is striped. Feed limits live in `server/src/freshness.ts`.
+- Official alerts (PAGASA) are shown above the score in the agency's own words and never
+  change the score. Sections are tagged Official, Global assessment or Model estimate.
 - Data credits (USGS, Open-Meteo CC BY 4.0, NAMRIA/PSA via OCHA CC BY 3.0 IGO, OpenStreetMap,
-  GDACS CC BY 4.0, NASA EONET, JMA, JTWC, GloFAS via Open-Meteo, the news outlets) must stay
+  GDACS CC BY 4.0, NASA EONET, JMA, JTWC, GloFAS via Open-Meteo, PAGASA CC BY 4.0, the news
+  outlets) must stay
   visible in the UI and README. A new source gets its credit line in both.
 - The "not an official warning service" notice must stay on the page footer, the status card
   (`web/src/components/Disclaimer.tsx`), the README and METHODOLOGY.

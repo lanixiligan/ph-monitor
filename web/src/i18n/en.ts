@@ -27,6 +27,7 @@ export const en = {
     creditOutlook: '7-day outlook:',
     creditOutlookMid: '; river flow from',
     creditOutlookEnd: ', CC BY 4.0.',
+    creditAlerts: 'Official alerts: © PAGASA, CC BY 4.0, from its public alert feed.',
     creditNews: 'News headlines: the outlets named beside each headline, some found through Google News.',
     creditVideo: 'Video:',
     creditVideoEnd: ", from each outlet's own channel.",
@@ -40,6 +41,7 @@ export const en = {
   feeds: {
     earthquakes: 'earthquakes',
     weather: 'weather',
+    officialAlerts: 'official alerts (PAGASA)',
     events: 'disaster events (GDACS)',
     naturalEvents: 'natural events (NASA EONET)',
     storms: 'storm tracks',
@@ -87,6 +89,8 @@ export const en = {
     hint: 'Click anywhere on land. The score for that exact spot, the reasons for it and the next 7 days open here.',
     highest: 'Highest province scores now',
     noScores: 'No province has a score yet.',
+    alertsTitle: 'Official alerts in effect',
+    alertsNone: 'PAGASA lists no flood advisory or tropical cyclone alert in effect. Other warnings (rainfall, wind signals, volcanoes) are not checked here.',
   },
 
   // Score bands.
@@ -273,6 +277,23 @@ export const en = {
     videoTitle: '{outlet} video',
     play: 'Play',
     stop: 'Stop',
+  },
+
+  // Where a piece of information comes from, shown as a small tag.
+  tiers: {
+    official: 'Official · {agency}',
+    global: 'Global assessment',
+    model: 'Model estimate',
+  },
+
+  // Official alerts (the text of an alert itself is the agency's, never ours).
+  alerts: {
+    title: 'Official alerts for this area',
+    nationwide: 'Whole Philippine area',
+    times: 'Issued {sent} · in effect until {expires}',
+    fullText: "Read {agency}'s full text",
+    file: '{agency} alert file',
+    about: 'About this kind of alert',
   },
 
   // Small words used by the formatting helpers.

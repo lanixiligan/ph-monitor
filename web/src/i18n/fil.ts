@@ -26,6 +26,7 @@ export const fil: Strings = {
     creditOutlook: 'Panahon sa susunod na 7 araw:', // REVIEW
     creditOutlookMid: '; daloy ng ilog mula sa', // REVIEW
     creditOutlookEnd: ', CC BY 4.0.', // REVIEW
+    creditAlerts: 'Mga opisyal na babala: © PAGASA, CC BY 4.0, mula sa public alert feed nito.', // REVIEW
     creditNews: 'Mga headline ng balita: ang mga news outlet na nakasaad sa tabi ng bawat headline, ang ilan ay nakuha sa pamamagitan ng Google News.', // REVIEW
     creditVideo: 'Video:', // REVIEW
     creditVideoEnd: ', mula sa sariling channel ng bawat outlet.', // REVIEW
@@ -39,6 +40,7 @@ export const fil: Strings = {
   feeds: {
     earthquakes: 'lindol', // REVIEW
     weather: 'panahon', // REVIEW
+    officialAlerts: 'mga opisyal na babala (PAGASA)', // REVIEW
     events: 'mga sakuna (GDACS)', // REVIEW
     naturalEvents: 'mga likas na pangyayari (NASA EONET)', // REVIEW
     storms: 'landas ng bagyo', // REVIEW
@@ -85,6 +87,8 @@ export const fil: Strings = {
     hint: 'I-click ang kahit saang lupa. Dito lalabas ang score para sa mismong lugar na iyon, ang mga dahilan nito at ang susunod na 7 araw.', // REVIEW
     highest: 'Pinakamataas na score ng mga lalawigan ngayon', // REVIEW
     noScores: 'Wala pang lalawigang may score.', // REVIEW
+    alertsTitle: 'Mga opisyal na babalang may bisa', // REVIEW
+    alertsNone: 'Walang nakalistang general flood advisory o tropical cyclone alert ang PAGASA na may bisa. Hindi sinusuri dito ang ibang babala (ulan, wind signal, bulkan).', // REVIEW
   },
 
   // Score bands.
@@ -272,6 +276,24 @@ export const fil: Strings = {
     stop: 'Ihinto', // REVIEW
   },
 
+  // Kung saan galing ang impormasyon, ipinapakita bilang maliit na tatak.
+  tiers: {
+    official: 'Opisyal · {agency}', // REVIEW
+    global: 'Pandaigdigang pagtatasa', // REVIEW
+    model: 'Tantiya ng modelo', // REVIEW
+  },
+
+  // Mga opisyal na babala (ang teksto ng babala ay sa ahensya, hindi sa atin).
+  alerts: {
+    title: 'Mga opisyal na babala para sa lugar na ito', // REVIEW
+    nationwide: 'Buong saklaw ng Pilipinas', // REVIEW
+    times: 'Inilabas {sent} · may bisa hanggang {expires}', // REVIEW
+    fullText: 'Basahin ang buong teksto ng {agency}', // REVIEW
+    file: 'Alert file ng {agency}', // REVIEW
+    about: 'Tungkol sa ganitong babala', // REVIEW
+  },
+
+  // Isang linya bawat panganib sa status card.
   // Small words used by the formatting helpers.
   format: {
     never: 'hindi pa', // REVIEW: unsure about "hindi pa"

@@ -10,7 +10,7 @@ const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60 * 
 
 // Every feed fetched 5 minutes ago. Tests change one thing at a time.
 function allFresh(): Map<string, Date> {
-  const names = ['usgs', 'open-meteo', 'gdacs', 'eonet', 'jma', 'jtwc', 'open-meteo-daily', 'open-meteo-flood', 'news'];
+  const names = ['usgs', 'open-meteo', 'pagasa', 'gdacs', 'eonet', 'jma', 'jtwc', 'open-meteo-daily', 'open-meteo-flood', 'news'];
   return new Map(names.map((name) => [name, minutesAgo(5)]));
 }
 
@@ -25,7 +25,7 @@ test('every feed is listed, and none is stale when all were just fetched', () =>
   const health = buildFeedHealth(allFresh(), now);
   assert.deepEqual(
     health.map((entry) => entry.id),
-    ['earthquakes', 'weather', 'events', 'naturalEvents', 'storms', 'outlook', 'riverFlow', 'news'],
+    ['earthquakes', 'weather', 'officialAlerts', 'events', 'naturalEvents', 'storms', 'outlook', 'riverFlow', 'news'],
   );
   assert.ok(health.every((entry) => !entry.isStale));
 });

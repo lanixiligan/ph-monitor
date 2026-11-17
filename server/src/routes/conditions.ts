@@ -4,6 +4,7 @@
 //   GET /api/news       → latest disaster headlines; ?category=tv  ?psgc=...  ?limit=...
 //   GET /api/streams    → live stream slots the page may show
 //   GET /api/bulletins  → links to official PAGASA and PHIVOLCS pages
+//   GET /api/alerts     → official alerts in effect (PAGASA), newest first
 //   GET /api/status     → when each feed last succeeded, and which are out of date
 
 import { Router } from 'express';
@@ -12,6 +13,7 @@ import type { StatusReport, Storm, StormTrackPoint, StreamSlot, OutletCategory }
 import {
   CURRENT_EVENT_SQL,
   EVENT_COLUMNS,
+  getOfficialAlerts,
   NEWS_COLUMNS,
   toDisasterEvent,
   toNewsItem,
@@ -152,4 +154,8 @@ conditionsRouter.get('/status', async (_req, res) => {
   const now = new Date();
   const report: StatusReport = { checkedAt: now.toISOString(), feeds: await getFeedHealth(now) };
   res.json(report);
+});
+
+conditionsRouter.get('/alerts', async (_req, res) => {
+  res.json(await getOfficialAlerts(null));
 });

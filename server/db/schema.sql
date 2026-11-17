@@ -200,3 +200,30 @@ ALTER TABLE sources ADD COLUMN IF NOT EXISTS video_published_at TIMESTAMPTZ;
 -- Stream only: since when every check has failed to get an answer (NULL = the
 -- last check got one). After a day of this the link is marked 'dead'.
 ALTER TABLE sources ADD COLUMN IF NOT EXISTS failing_since TIMESTAMPTZ;
+
+-- ---------- Phase 2 of the audit: official alerts ----------
+
+-- Official alerts from PAGASA's public alert feed (CAP files). The text is
+-- PAGASA's own. An alert is shown while it has not expired, has not been
+-- replaced by a newer one, and is not an all-clear.
+CREATE TABLE IF NOT EXISTS official_alerts (
+  id             TEXT PRIMARY KEY,             -- PAGASA's own identifier
+  agency         TEXT NOT NULL,                -- 'PAGASA'
+  event          TEXT NOT NULL,                -- e.g. 'General Flood Advisory (Moderate)'
+  headline       TEXT NOT NULL,
+  severity       TEXT NOT NULL,                -- CAP scale: Extreme, Severe, Moderate, Minor, Unknown
+  description    TEXT NOT NULL,                -- PAGASA's full text
+  instruction    TEXT,
+  web            TEXT,                         -- PAGASA's page about this kind of alert
+  url            TEXT NOT NULL,                -- the alert file itself
+  sent_at        TIMESTAMPTZ NOT NULL,
+  expires_at     TIMESTAMPTZ NOT NULL,         -- the file's end time, or sent + 24 hours if it gave none
+  is_all_clear   BOOLEAN NOT NULL,             -- a "final" message: the alert is over
+  is_replaced    BOOLEAN NOT NULL DEFAULT false,  -- a newer alert names this one in `replaces`
+  replaces       TEXT[] NOT NULL DEFAULT '{}', -- ids of the earlier alerts this one replaces
+  area_names     TEXT[] NOT NULL DEFAULT '{}', -- the areas as PAGASA names them
+  province_psgcs BIGINT[] NOT NULL DEFAULT '{}',  -- those areas matched to our provinces
+  is_nationwide  BOOLEAN NOT NULL,             -- no area matched a province: shown everywhere
+  fetched_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS official_alerts_expires_idx ON official_alerts (expires_at);

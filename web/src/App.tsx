@@ -185,7 +185,7 @@ export function App() {
         {t.app.creditOutlook} <a href="https://open-meteo.com/">Open-Meteo</a>
         {t.app.creditOutlookMid}{' '}
         <a href="https://open-meteo.com/en/docs/flood-api">GloFAS via Open-Meteo</a>
-        {t.app.creditOutlookEnd} {t.app.creditNews} {t.app.creditVideo}{' '}
+        {t.app.creditOutlookEnd} {t.app.creditAlerts} {t.app.creditNews} {t.app.creditVideo}{' '}
         <a href="https://www.youtube.com/">YouTube</a>
         {t.app.creditVideoEnd}
         {/* The basemap credit is only needed when the basemap is shown. */}

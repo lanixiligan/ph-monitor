@@ -26,6 +26,7 @@ type FeedRule = {
 export const FEED_RULES: FeedRule[] = [
   { id: 'earthquakes', sources: ['usgs'], staleAfterMinutes: 60, signal: 'quake' },
   { id: 'weather', sources: ['open-meteo'], staleAfterMinutes: 90 },
+  { id: 'officialAlerts', sources: ['pagasa'], staleAfterMinutes: 60 },
   { id: 'events', sources: ['gdacs'], staleAfterMinutes: 120, signal: 'event' },
   { id: 'naturalEvents', sources: ['eonet'], staleAfterMinutes: 120 },
   // JTWC is the backup for JMA, so one of the two is enough.

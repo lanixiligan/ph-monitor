@@ -12,6 +12,7 @@ import { bandColors, bandFor, bandLabel, scoreText } from '../scoreScale.ts';
 import { useTheme } from '../theme/index.ts';
 import { WarnIcon } from './WarnIcon.tsx';
 import { ConditionsSections, NearHere } from './Conditions.tsx';
+import { OfficialAlerts } from './OfficialAlerts.tsx';
 import { Disclaimer } from './Disclaimer.tsx';
 import { Ladder } from './Ladder.tsx';
 
@@ -112,7 +113,14 @@ export function StatusCard({ spot, onClose }: Props) {
         </p>
       )}
 
-      {/* Storms and events come before the score, so a low number never hides them. */}
+      {/* Official alerts first, then storms and events, then the score: a low
+          number must never hide any of them. */}
+      {detail.conditions.officialAlerts.length > 0 && (
+        <div className="near-here">
+          <h3>{t.alerts.title}</h3>
+          <OfficialAlerts alerts={detail.conditions.officialAlerts} />
+        </div>
+      )}
       <NearHere conditions={detail.conditions} />
 
       <div className="score-row">
@@ -193,7 +201,9 @@ export function StatusCard({ spot, onClose }: Props) {
         </ul>
       )}
 
-      <h3>{t.card.weatherTitle}</h3>
+      <h3>
+        {t.card.weatherTitle} <span className="tag">{t.tiers.model}</span>
+      </h3>
       {weather ? (
         <>
           <table>

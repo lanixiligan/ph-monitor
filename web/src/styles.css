@@ -429,6 +429,12 @@ label.legend-row {
   background: var(--paper);
 }
 
+.panel h3 .tag {
+  font-family: var(--font-body);
+  font-weight: 400;
+  vertical-align: middle;
+}
+
 .panel .near-here h3 {
   margin-top: 0;
   padding-top: 0;
@@ -438,6 +444,29 @@ label.legend-row {
 .near-here h4 {
   margin: 8px 0 2px;
   font-size: 13px;
+}
+
+/* Official alerts: one block per alert. */
+.alert {
+  margin-bottom: 8px;
+}
+
+.alert details {
+  margin: 4px 0;
+}
+
+.alert summary {
+  cursor: pointer;
+}
+
+/* The agency's own text: keep its line breaks, wrap long lines. */
+.alert-text {
+  margin: 6px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
 }
 
 /* Stripes over a score colour: the score is missing some data. */

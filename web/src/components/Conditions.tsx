@@ -32,7 +32,9 @@ export function NearHere({ conditions }: Props) {
 
   return (
     <div className="near-here">
-      <h3>{t.card.nearTitle}</h3>
+      <h3>
+        {t.card.nearTitle} <span className="tag">{t.tiers.global}</span>
+      </h3>
       {stormsComing.length > 0 && (
         <>
           <h4>{c.stormsTitle}</h4>
@@ -88,7 +90,9 @@ export function ConditionsSections({ conditions }: Props) {
     <>
       {outlook.length > 0 && (
         <>
-          <h3>{c.outlookTitle}</h3>
+          <h3>
+            {c.outlookTitle} <span className="tag">{t.tiers.model}</span>
+          </h3>
           <div className="outlook">
             {outlook.map((day) => (
               <div className="outlook-day" key={day.day}>

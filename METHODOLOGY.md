@@ -135,6 +135,10 @@ saved:
 
 The card also shows the whole province's score for comparison.
 
+## Official alerts are not in the score
+
+PAGASA's alerts (flood advisories, tropical cyclone alerts) are shown above the score in
+PAGASA's own words. They never raise or lower the number, and a low number never hides them.
 ## Reasons on the card
 
 Along with each score the server sends the reasons behind it as message keys plus numbers
