@@ -1,53 +1,31 @@
-// Helpers for sampling the weather at more than one point in a big province.
-// One point cannot stand for Palawan (650 km long); a few well-spread points
-// get much closer. Pure functions: no network, no database.
+// Helpers for the weather grid. Weather is fetched at a few hundred points
+// (a grid over the land, plus each province's own point); every city and
+// municipality takes its reading from the points it is linked to.
+// Pure functions: no network, no database.
 
-import type { Point, WeatherReading } from './fetchers/openMeteo.ts';
+import type { WeatherReading } from './fetchers/openMeteo.ts';
 import { heatIndexC } from './heatIndex.ts';
 
-/** At most this many extra points per province. */
-export const MAX_EXTRA_POINTS = 2;
-/** An extra point must be at least this far from every point already picked. */
-export const MIN_SPACING_KM = 40;
+/** Grid spacing in degrees. 0.25° is about 28 km. */
+export const GRID_DEGREES = 0.25;
+/** A grid cell gets a point only if at least this share of it is land. */
+export const MIN_LAND_SHARE = 0.25;
+/** A town further than this from every point gets a point of its own. */
+export const OWN_POINT_KM = 30;
 
-const EARTH_RADIUS_KM = 6371;
-const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-
-/** Distance between two points on the round Earth, in km (the haversine formula). */
-export function distanceKm(a: Point, b: Point): number {
-  const dLat = toRadians(b.lat - a.lat);
-  const dLon = toRadians(b.lon - a.lon);
-  const h =
-    Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(a.lat)) * Math.cos(toRadians(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(h));
-}
+/** Which points a town reads its weather from. */
+export type TownPoints = { use: 'inside' | 'nearest' | 'own'; ids: number[] };
 
 /**
- * Picks extra weather points for a province. `first` is the point it already
- * has; `candidates` are places inside it (one per city or municipality).
- * Each round takes the candidate furthest from everything picked so far, and
- * stops when that is closer than MIN_SPACING_KM. A small province gets none.
+ * The rule for one town. `inside` are the ids of the points inside it;
+ * `nearest` is the closest point and how far it is (null if there are none).
+ * Points inside win; otherwise the nearest one, if it is close enough;
+ * otherwise the town needs a point of its own (added by the caller).
  */
-export function pickExtraPoints(first: Point, candidates: Point[]): Point[] {
-  const picked = [first];
-  const extras: Point[] = [];
-
-  while (extras.length < MAX_EXTRA_POINTS) {
-    let best: Point | null = null;
-    let bestDistance = MIN_SPACING_KM;
-    for (const candidate of candidates) {
-      // How far this candidate is from the nearest point already picked.
-      const nearest = Math.min(...picked.map((point) => distanceKm(point, candidate)));
-      if (nearest >= bestDistance) {
-        best = candidate;
-        bestDistance = nearest;
-      }
-    }
-    if (best === null) break;
-    picked.push(best);
-    extras.push(best);
-  }
-  return extras;
+export function townPoints(inside: number[], nearest: { id: number; km: number } | null): TownPoints {
+  if (inside.length > 0) return { use: 'inside', ids: inside };
+  if (nearest !== null && nearest.km <= OWN_POINT_KM) return { use: 'nearest', ids: [nearest.id] };
+  return { use: 'own', ids: [] };
 }
 
 /**

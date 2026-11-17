@@ -1,6 +1,7 @@
 # PH Monitor — plan
 
 > **Phase 2 below is the current plan (built; Filipino text awaits review; see "Progress").**
+> Reliability work from the audit has its own phases: see "Reliability roadmap".
 > Everything from "Amendments" down is the historical Phase 1 plan, kept for reference; it has
 > not been kept up to date. Where it differs, [README.md](README.md),
 > [METHODOLOGY.md](METHODOLOGY.md) and the code are correct.
@@ -202,6 +203,166 @@ To settle before designing:
 - Keyword rules or an AI model for topics?
 - How to stop person names being read as provinces.
 - How many markers the map can show before it becomes unreadable (how many days, grouping).
+
+## Reliability roadmap (from the audit of 2026-11-16)
+
+Goal: make what exists more reliable and trustworthy, not add features. These phases are
+numbered on their own, separate from the product phases above. Finding numbers (1.1 to 1.20)
+refer to the audit report.
+
+| Phase | Goal | Status |
+|---|---|---|
+| 1 | Data integrity: unknown is never calm, `/api/status` and banner, close dropped events, retries, wording | Built, not committed |
+| 2 | Official warnings: PAGASA alert feed, three-tier labels, official block at the top of the card | Built, not committed |
+| 3 | Geography and hazards: storm distance to the track line, JTWC fallback, extra weather points, "not covered" list, per-hazard levels | Built, not committed |
+| 4 | Stability: jobs run only when due (1.11), score history with part-scores (1.12), deployment basics (1.13), database tests in CI, historical replay | Not started |
+| 5 | Experience: place search and "use my location" (1.17), card order (1.18), keyboard and touch (1.19), Filipino review, news fixes (1.14, 1.15) | Not started |
+| 6 | Later: see below | Waits for Phase 4's replay |
+
+### Phase 6 — later
+
+Starts only after Phase 4's historical replay has run, because its main job is acting on what
+the replay shows.
+
+- **Tune the weights from replay results.** Change `WEIGHTS` in `scoring.ts` only where the
+  replay shows a clear miss: a known disaster that never reached "High" at the right time, or
+  an ordinary week with false "High" readings. Tests first; update METHODOLOGY.md.
+- **Headline number.** Decide whether the total stays "strongest + 0.25 × each other" or
+  becomes the worst single hazard. Today rain 39 plus earthquakes 6 gives 41 ("Moderate")
+  when no single hazard is above "Low". Owner's call; the replay helps decide.
+- **USGS impact fields (1.10).** USGS's PAGER `alert`, `mmi` (shaking intensity) and
+  `tsunami` are already saved in `raw` but not used. Use them in the earthquake signal, or
+  at least show them on the card.
+- **Landslide and storm surge maps.** There is no live feed for either. Static hazard maps
+  (for example government geohazard maps) could mark areas at risk, but only if their licence
+  allows reuse with credit. Check the licence first; if none allows it, keep the "not
+  covered" line on the card.
+
+Small leftovers with no phase: a repeated identical headline is dropped for 14 days (1.16),
+and a few outdated comments (1.20).
+
+## Per-town map colours (approved 2026-11-17, being built)
+
+**Problem.** The map colours whole provinces, using the worst of up to 3 weather points. The
+card scores the exact spot. Clicking Kiamba gives 12 on the card, while the map under it says
+"Sarangani: 21". **Goal:** colour each of the 1,642 cities and municipalities, so the colour
+under a click belongs to that town.
+
+### Weather budget (Open-Meteo terms, checked 2026-11-17)
+
+Free limits: 600 calls a minute, 5,000 an hour, 10,000 a day, 300,000 a month. The docs don't
+say how a request with many locations is counted, so we count each location as one call.
+
+| | Points | Runs a day | Calls a day |
+|---|---|---|---|
+| Today: province points + extras | 197 | 24 (hourly) | 4,728 |
+| Today: outlook + river flow | 88 × 2 | 4 | 704 |
+| One point per town, hourly | 1,642 | 24 | 39,408 (far too many) |
+| **Proposed grid, every 2 hours** | **599** | **12** | **7,188** |
+| Coarser grid instead, hourly | 301 | 24 | 7,224 |
+
+The proposed grid plus the outlook is about 7,900 calls a day, which leaves about 2,100 for
+card clicks. Each click asks for one ~5.5 km cell, and the answer is reused for 30 minutes.
+
+**Why every 2 hours is acceptable.** Each fetch already brings back the last 24 hours, so no
+rain is missed for the 24-hour total. The global models behind Open-Meteo publish new runs only
+every few hours, so an hourly fetch mostly re-reads the same run. The cost is that the "last
+hour" of rain can be up to 2 hours old.
+
+**Pacing.** 599 locations in one burst would come close to the 600-a-minute limit. The job
+waits about 10 seconds between its 12 requests, which spreads one run over about 2 minutes.
+
+### Grid design
+
+- A 0.25° square grid (about 28 km). A cell gets a point only if at least a quarter of it is
+  land. The point is the cell's centre, or a point on its land when the centre is in the sea.
+  That gives 482 points.
+- Every province's own weather point is kept, so small islands always have one. That adds 88.
+- A town gets the worst reading of the grid points inside it (most rain, hottest point, the
+  same rule as `worstReading`). Most towns are smaller than a cell (median 112 km², a cell is
+  about 770 km²). Those take their nearest point, which is under 30 km away.
+- Measured: 29 small-island towns are more than 30 km from any point. They are in Batanes,
+  Sulu, Tawi-Tawi, the Palawan islands, Calayan and similar places; Kalayaan is about 430 km
+  away. Each gets a point of its own (599 in all).
+- Provinces take the worst of the points inside them. That replaces `province_weather_points`
+  and `npm run weather-points`, which were built in audit Phase 3 and are not committed yet.
+
+### Database
+
+```
+weather_points        id, geom, kind ('grid' | 'province' | 'town')    built once by a script
+place_weather_points  place_psgc, point_id    the points inside the town, or its nearest one
+point_readings        point_id, valid_at, temp, humidity, heat index, rain 1h/24h
+                      (only the last 2 days are kept)
+place_scores          place_psgc, score, quake/weather/event parts, unknown_signals, reasons,
+                      computed_at    one row per town, replaced on every run
+```
+
+- `weather_readings` (per province) keeps being written, so the province card and history are
+  unchanged.
+- **No town history for now.** It would add about 158,000 rows a day. Phase 4's score history
+  decides that.
+
+### Scoring (`computeScores`)
+
+- **Same formulas, new unit.** Quakes and GDACS events are measured from the epicentre or event
+  to the town's edge (0 if inside), using the same radius, reach and fading as provinces. This
+  runs in SQL at score time, because there are only a few dozen recent quakes and events. The
+  existing map index on `places.geom` narrows the search down first.
+- **Missing data carries over.** Stale feeds count as unknown for every town (from
+  `staleSignals`, as today). A town whose weather points all failed gets `weather = null`. The
+  town then shows "at least N" and gets stripes.
+- **Province colour (owner's choice).**
+  - Recommended: the province score becomes the highest town score in it, with that town's
+    reasons. The province is striped if any town is. "Sarangani: 21" then always matches a
+    real town, and the hover can name it.
+  - The other option keeps today's province formula, fed by the same grid. The province number
+    is then close to its worst town, but not always equal.
+- **Freshness.** With a run every 2 hours, the weather limit in `FEED_RULES` goes from 150 to
+  270 minutes, and `WEIGHTS.weather.maxAgeHours` from 3 to 4.5. As today, that lets one failed
+  run pass before the page warns. "Fresh enough" becomes at least 90% of points answered.
+  METHODOLOGY.md gets updated.
+
+### API
+
+- `GET /api/places/shapes` returns GeoJSON of the town shapes, simplified to about 500 m
+  (742 kB raw, 37,557 vertices), with `psgc`, `name` and `province_psgc`. The server keeps it
+  in memory, and the browser downloads it once, the first time the reader zooms in to about
+  7.5.
+- `GET /api/places/scores` returns `{ computedAt, places: [{ psgc, score, incomplete }] }`,
+  about 50 kB. It reloads every 5 minutes with the rest of the page.
+- The browser joins the two by `psgc`. New shared types go in `shared/src/types.ts`.
+
+### Map
+
+- Province colours below zoom 8. From 7.5 to 8.5 the town colours fade in and the province fill
+  fades out. Province outlines stay drawn; town outlines are thin.
+- Hover shows "Kiamba, Sarangani: 12" (or "at least 12"). Incomplete towns get the same
+  stripes. Clicking still opens the card for the exact spot.
+- Known side effect: the database can't keep shared edges while simplifying (its geometry
+  library is too old for that), so neighbouring towns may show slivers of up to about 500 m
+  at high zoom. A faint province fill left underneath hides most of them.
+- The card stays per spot (`pointWeather.ts`). It uses a 5.5 km cell, while the town uses its
+  grid point, so the two can still differ by a few points. That is far less than today's
+  21 against 12.
+
+### Build steps (each ends with `npm test` + `npm run typecheck`, and something to see)
+
+1. Schema plus a rewritten `npm run weather-points` that builds the grid and the town links.
+   You should see "599 points; 1,642 towns linked".
+2. The weather job fetches points with pacing, saves `point_readings`, and keeps writing
+   province readings. You should see "Weather: 599 points, saved N".
+3. Town scores in `computeScores`, plus the province rule the owner picks. You should see
+   "Scores: 88 provinces, 1,642 towns".
+4. The two API routes. `curl /api/places/scores | head` shows them.
+5. The town layer, hover text, stripes and legend note, with the new strings in en/fil.
+6. METHODOLOGY.md, docs/how-it-works.md and docs/data-sources.md.
+
+**Owner's decisions (2026-11-17):** (a) a province shows its highest town score; (b) the 0.25°
+grid, fetched every 2 hours.
+
+**Progress:** step 1 done (599 points: 482 grid, 88 province, 29 town; 1,642 towns linked).
+The weather job still reads the old `province_weather_points` until step 2.
 
 ## Amendments (2026-11-15, after step 1)
 

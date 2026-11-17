@@ -1,5 +1,5 @@
 // Tests for the geography and hazard pieces: which storm source to trust,
-// extra weather points for big provinces, and per-hazard scores.
+// the worst reading of several weather points, and per-hazard scores.
 // Pure functions only: no network, no database.
 
 import assert from 'node:assert/strict';
@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import type { StormRecord } from '../src/fetchers/stormRecord.ts';
 import { chooseStorms } from '../src/jobs/ingestStorms.ts';
 import { hazardScores } from '../src/scoring/scoring.ts';
-import { distanceKm, pickExtraPoints, worstReading } from '../src/weatherPoints.ts';
+import { worstReading } from '../src/weatherPoints.ts';
 
 // ---------- Storm sources ----------
 
@@ -38,29 +38,6 @@ test('storms: nothing to save when both sources failed', () => {
 });
 
 // ---------- Weather points ----------
-
-test('distance: Manila to Cebu City is about 570 km', () => {
-  const km = distanceKm({ lat: 14.5995, lon: 120.9842 }, { lat: 10.3157, lon: 123.8854 });
-  assert.ok(km > 560 && km < 580, `got ${km}`);
-});
-
-test('extra points: the furthest places are added, each far from the ones already picked', () => {
-  const first = { lat: 10, lon: 119 };
-  const candidates = [
-    { lat: 10.1, lon: 119 }, // 11 km away: too close to matter
-    { lat: 12, lon: 120 }, // far north-east
-    { lat: 8, lon: 117.5 }, // far south-west
-    { lat: 11.9, lon: 120 }, // right beside the north-east one
-  ];
-  assert.deepEqual(pickExtraPoints(first, candidates), [
-    { lat: 8, lon: 117.5 },
-    { lat: 12, lon: 120 },
-  ]);
-});
-
-test('extra points: a small province gets none', () => {
-  assert.deepEqual(pickExtraPoints({ lat: 10, lon: 119 }, [{ lat: 10.2, lon: 119.1 }]), []);
-});
 
 const reading = (rain1hMm: number | null, rain24hMm: number | null, tempC: number | null, hour = 3) => ({
   validAt: new Date(Date.UTC(2026, 10, 16, hour)),

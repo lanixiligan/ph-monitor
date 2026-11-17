@@ -238,3 +238,23 @@ CREATE TABLE IF NOT EXISTS province_weather_points (
   geom          geometry(Point, 4326) NOT NULL,
   PRIMARY KEY (province_psgc, n)
 );
+
+-- ---------- Per-town map colours: the weather grid ----------
+
+-- Every point the weather job asks Open-Meteo about. Rebuilt by
+-- `npm run weather-points`: a ~28 km grid over the land, each province's own
+-- point, and a point for any town too far from all the others.
+CREATE TABLE IF NOT EXISTS weather_points (
+  id   SERIAL PRIMARY KEY,                     -- SERIAL: the database numbers the rows 1, 2, 3...
+  kind TEXT NOT NULL,                          -- 'grid', 'province' or 'town'
+  geom geometry(Point, 4326) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS weather_points_geom_idx ON weather_points USING GIST (geom);
+
+-- Which points each city or municipality reads its weather from: the points
+-- inside it, or else its nearest one (the rule is townPoints() in weatherPoints.ts).
+CREATE TABLE IF NOT EXISTS place_weather_points (
+  place_psgc BIGINT REFERENCES places ON DELETE CASCADE,
+  point_id   INTEGER REFERENCES weather_points ON DELETE CASCADE,
+  PRIMARY KEY (place_psgc, point_id)
+);
