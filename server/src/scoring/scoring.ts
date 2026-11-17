@@ -82,8 +82,11 @@ export const WEIGHTS = {
   },
 
   weather: {
-    /** A weather reading older than this is not used for scoring. */
-    maxAgeHours: 3,
+    /**
+     * A weather reading older than this is not used for scoring. Weather is
+     * fetched every 2 hours, so one failed run still leaves a usable reading.
+     */
+    maxAgeHours: 4.5,
   },
 
   event: {

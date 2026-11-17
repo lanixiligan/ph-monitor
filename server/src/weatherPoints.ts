@@ -67,3 +67,30 @@ export function worstReading(readings: (WeatherReading | null)[]): WeatherReadin
     rain24hMm: most(real.map((reading) => reading.rain24hMm)),
   };
 }
+
+/** One link: a province or town (`owner`) reads its weather from this point. */
+export type PointLink = { owner: number; pointId: number };
+
+/**
+ * The worst reading for each owner (a province or a town), from the readings
+ * of the points it is linked to. An owner whose points all gave nothing is
+ * left out, so the caller sees it as "no reading".
+ */
+export function worstByOwner(
+  links: PointLink[],
+  readings: Map<number, WeatherReading | null>,
+): Map<number, WeatherReading> {
+  // Gather each owner's readings first: owner → its readings.
+  const byOwner = new Map<number, (WeatherReading | null)[]>();
+  for (const link of links) {
+    const list = byOwner.get(link.owner) ?? [];
+    list.push(readings.get(link.pointId) ?? null);
+    byOwner.set(link.owner, list);
+  }
+  const result = new Map<number, WeatherReading>();
+  for (const [owner, list] of byOwner) {
+    const worst = worstReading(list);
+    if (worst) result.set(owner, worst);
+  }
+  return result;
+}

@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { dueJobs, isDue, jobsOnTick } from '../src/jobs/due.ts';
+import { dueJobs, isDue, jobsOnTick, SLOW_JOBS } from '../src/jobs/due.ts';
 
 const now = new Date('2026-11-17T12:00:00Z');
 const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60 * 1000);
@@ -44,11 +44,11 @@ test('dueJobs: with an empty database every job is due', () => {
 test('dueJobs: each job follows its own interval', () => {
   const runs = allRecent();
   runs.set('usgs', minutesAgo(20)); // every 15 minutes: due
-  runs.set('open-meteo', minutesAgo(20)); // hourly: not due
+  runs.set('open-meteo', minutesAgo(100)); // every 2 hours: not due
   runs.set('open-meteo-daily', minutesAgo(5 * 60)); // every 6 hours: not due
   assert.deepEqual(dueJobs(runs, now), ['earthquakes']);
 
-  runs.set('open-meteo', minutesAgo(61));
+  runs.set('open-meteo', minutesAgo(120));
   runs.set('open-meteo-daily', minutesAgo(6 * 60));
   assert.deepEqual(dueJobs(runs, now), ['earthquakes', 'weather', 'outlook']);
 });
@@ -73,4 +73,8 @@ test('jobsOnTick: the clock decides which jobs a tick wants', () => {
   assert.deepEqual(jobsOnTick(0), [
     'earthquakes', 'weather', 'alerts', 'news', 'events', 'storms', 'streamCheck', 'feedCheck', 'outlook',
   ]);
+});
+
+test('slow jobs: weather (every 2 hours) and the outlook must also be due when a tick wants them', () => {
+  assert.deepEqual(SLOW_JOBS, ['weather', 'outlook']);
 });

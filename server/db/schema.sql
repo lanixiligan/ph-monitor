@@ -269,3 +269,18 @@ CREATE TABLE IF NOT EXISTS place_weather_points (
   point_id   INTEGER REFERENCES weather_points ON DELETE CASCADE,
   PRIMARY KEY (place_psgc, point_id)
 );
+
+-- The newest readings at each weather point, written by the weather job.
+-- Only the last 2 days are kept.
+CREATE TABLE IF NOT EXISTS point_readings (
+  point_id     INTEGER REFERENCES weather_points ON DELETE CASCADE,
+  valid_at     TIMESTAMPTZ NOT NULL,
+  temp_c       REAL,
+  humidity_pct REAL,
+  heat_index_c REAL,
+  rain_1h_mm   REAL,
+  rain_24h_mm  REAL,
+  fetched_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (point_id, valid_at)
+);
+
