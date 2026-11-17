@@ -8,6 +8,8 @@ import type {
   NewsItem,
   OfficialAlert,
   PlaceMatch,
+  PlaceScores,
+  PlaceShapeProperties,
   PointDetail,
   ProvinceMapProperties,
   StatusReport,
@@ -17,6 +19,9 @@ import type {
 
 /** All province shapes with their scores, as GeoJSON. */
 export type ProvinceCollection = FeatureCollection<Geometry, ProvinceMapProperties>;
+
+/** All city and municipality shapes, as GeoJSON (no scores; those come separately). */
+export type PlaceCollection = FeatureCollection<Geometry, PlaceShapeProperties>;
 
 async function getJson(path: string): Promise<unknown> {
   const response = await fetch(path);
@@ -31,6 +36,16 @@ async function getJson(path: string): Promise<unknown> {
 
 export async function fetchProvinces(): Promise<ProvinceCollection> {
   return (await getJson('/api/provinces')) as ProvinceCollection;
+}
+
+/** Every town's shape. Large (about 750 kB), so the map asks for it only once, when needed. */
+export async function fetchPlaceShapes(): Promise<PlaceCollection> {
+  return (await getJson('/api/places/shapes')) as PlaceCollection;
+}
+
+/** Every town's latest score. */
+export async function fetchPlaceScores(): Promise<PlaceScores> {
+  return (await getJson('/api/places/scores')) as PlaceScores;
 }
 
 /** One exact place on the map: latitude and longitude in degrees. */
