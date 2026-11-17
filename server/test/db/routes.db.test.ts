@@ -4,14 +4,17 @@
 // out to the internet. Run with: npm run test:db
 
 import {
-  addNews, addQuake, addWeather, ALPHA, ALPHA_CITY, BRAVO, hoursAgo, minutesAgo, pool, resetDb, setFeedRuns, SPOT,
+  addNews, addQuake, addTownWeather, addWeather, ALPHA, ALPHA_CITY, BRAVO, hoursAgo, minutesAgo, pool, resetDb,
+  setFeedRuns, SPOT,
 } from './testDb.ts';
 import assert from 'node:assert/strict';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import express from 'express';
-import type { NewsItem, PlaceMatch, PointDetail, ProvinceDetail, StatusReport } from '@ph-monitor/shared';
+import type {
+  NewsItem, PlaceMatch, PlaceScores, PlaceShapeProperties, PointDetail, ProvinceDetail, StatusReport,
+} from '@ph-monitor/shared';
 import { computeScores } from '../../src/jobs/computeScores.ts';
 import { readDueJobs } from '../../src/jobs/due.ts';
 import { conditionsRouter } from '../../src/routes/conditions.ts';
@@ -50,6 +53,7 @@ before(async () => {
   // A magnitude 5 quake half a degree (about 55 km) north of the spot, on Alpha's north edge.
   await addQuake('q1', { lat: 15.0, lon: 121.5, magnitude: 5, occurredAt: hoursAgo(2), reachKm: 100 });
   await addWeather(ALPHA, { validAt: minutesAgo(30), rain1hMm: 0, rain24hMm: 5 });
+  await addTownWeather(ALPHA_CITY, { validAt: minutesAgo(30), rain1hMm: 0, rain24hMm: 5 });
   await addWeather(BRAVO, { validAt: minutesAgo(30), rain1hMm: 0, rain24hMm: 0 });
   await computeScores();
 
@@ -91,8 +95,10 @@ test('spot route: names the town and province, and measures the quake from the s
   assert.ok(quake && quake.kind === 'earthquake');
   assert.ok(quake.distanceKm > 53 && quake.distanceKm < 57, `distance was ${quake.distanceKm} km`);
   assert.ok(detail.score.quakeScore > 0);
-  // The province's own score measures the same quake from its edge (0 km), so it is higher.
-  assert.ok((detail.provinceScore ?? 0) > detail.score.score);
+  // The town measures the same quake from its edge (about 44 km), so its quake part is higher.
+  assert.ok(detail.placeScore !== null && detail.placeScore.score > 0);
+  // The province shows its highest (here: only) town.
+  assert.equal(detail.provinceScore, detail.placeScore.score);
 });
 
 test('spot route: weather is fetched for the spot, scored, and reused for the same 5 km cell', async () => {
@@ -149,6 +155,27 @@ test('map data: every province comes with its shape, score and "incomplete" mark
   // Charlie has no weather reading: its score is "at least", so it is marked.
   assert.deepEqual(collection.features.map((feature) => feature.properties.incomplete), [false, false, true]);
   assert.ok((collection.features[0]?.properties.score ?? 0) > 0);
+});
+
+test('map data: a province names the town it shows; one without towns names none', async () => {
+  const collection = (await get('/api/provinces')).body as { features: { properties: { top_place: string | null } }[] };
+  assert.deepEqual(collection.features.map((feature) => feature.properties.top_place), ['Alpha City', null, null]);
+});
+
+test('town map data: shapes and scores, joined by psgc', async () => {
+  const shapes = (await get('/api/places/shapes')).body as {
+    features: { id: number; properties: PlaceShapeProperties; geometry: { type: string } }[];
+  };
+  assert.deepEqual(shapes.features.map((feature) => feature.properties), [
+    { psgc: ALPHA_CITY, name: 'Alpha City', province_name: 'Alpha' },
+  ]);
+  assert.ok(shapes.features[0]?.geometry.type.endsWith('Polygon'));
+
+  const scores = (await get('/api/places/scores')).body as PlaceScores;
+  assert.ok(scores.computedAt !== null);
+  assert.equal(scores.places.length, 1);
+  assert.equal(scores.places[0]?.psgc, ALPHA_CITY);
+  assert.equal(scores.places[0]?.incomplete, false);
 });
 
 test('province card: the saved score, the quakes linked to the province and its latest weather', async () => {

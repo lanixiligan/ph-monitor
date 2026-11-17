@@ -284,3 +284,19 @@ CREATE TABLE IF NOT EXISTS point_readings (
   PRIMARY KEY (point_id, valid_at)
 );
 
+-- The latest score for each city and municipality (one row per town,
+-- replaced on every run; no history).
+CREATE TABLE IF NOT EXISTS place_scores (
+  place_psgc      BIGINT PRIMARY KEY REFERENCES places ON DELETE CASCADE,
+  score           SMALLINT NOT NULL,
+  quake_score     SMALLINT NOT NULL,
+  weather_score   SMALLINT NOT NULL,
+  event_score     SMALLINT NOT NULL,
+  unknown_signals TEXT[] NOT NULL DEFAULT '{}',
+  reasons         JSONB NOT NULL,
+  computed_at     TIMESTAMPTZ NOT NULL
+);
+
+-- The town whose score the province shows (its highest). NULL for a province
+-- with no towns loaded, which is scored as a whole instead.
+ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS top_place_psgc BIGINT;

@@ -2,7 +2,8 @@
 // against real PostGIS with a small seeded map. Run with: npm run test:db
 
 import {
-  addEvent, addQuake, addWeather, ALPHA, BRAVO, CHARLIE, hoursAgo, minutesAgo, pool, resetDb, setFeedRuns,
+  addEvent, addQuake, addTownWeather, addWeather, ALPHA, ALPHA_CITY, BRAVO, CHARLIE, hoursAgo, minutesAgo, pool,
+  resetDb, setFeedRuns,
 } from './testDb.ts';
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
@@ -40,6 +41,7 @@ before(async () => {
   // Alpha: a strong quake inside it an hour ago, and light rain.
   await addQuake('q1', { lat: 14.5, lon: 121.5, magnitude: 6.5, occurredAt: hoursAgo(1), reachKm: 280 });
   await addWeather(ALPHA, { validAt: minutesAgo(30), rain1hMm: 0, rain24hMm: 5 });
+  await addTownWeather(ALPHA_CITY, { validAt: minutesAgo(30), rain1hMm: 0, rain24hMm: 5 });
   // Bravo: heavy rain, no quake. An older reading must lose to the newer one.
   await addWeather(BRAVO, { validAt: minutesAgo(90), rain1hMm: 0, rain24hMm: 0 });
   await addWeather(BRAVO, { validAt: minutesAgo(30), rain1hMm: 30, rain24hMm: 120 });
@@ -110,4 +112,52 @@ test('score job: when the earthquake feed is out of date, every province is "at 
     assert.deepEqual((await scoreOf(psgc)).unknown_signals, ['quake']);
   }
   assert.deepEqual((await scoreOf(CHARLIE)).unknown_signals, ['quake', 'weather']);
+});
+
+test('town scores: every town gets a score, and a province shows its highest town', async () => {
+  await setFeedRuns();
+  // A quake 0.3° (about 33 km) east of Alpha City, still inside Alpha.
+  await addQuake('q-town', { lat: 14.5, lon: 121.9, magnitude: 6, occurredAt: hoursAgo(1), reachKm: 200 });
+  await computeScores();
+  const town = await pool.query<{
+    score: number;
+    quake_score: number;
+    unknown_signals: string[];
+    reasons: { key: string; distanceKm?: number }[];
+  }>(
+    'SELECT score, quake_score, unknown_signals, reasons FROM place_scores WHERE place_psgc = $1',
+    [ALPHA_CITY],
+  );
+  const row = town.rows[0];
+  assert.ok(row, 'no town score saved');
+  assert.ok(row.quake_score > 0);
+  assert.deepEqual(row.unknown_signals, []);
+  // Measured from the town's edge (121.6° → 121.9°, about 32 km), not from the province (0 km).
+  const quake = row.reasons.find((reason) => reason.key === 'quake');
+  assert.ok(quake?.distanceKm !== undefined && quake.distanceKm > 30 && quake.distanceKm < 34, `distance was ${quake?.distanceKm}`);
+
+  const alpha = await scoreOf(ALPHA);
+  assert.equal(alpha.score, row.score);
+  const top = await pool.query<{ top_place_psgc: number | null }>(
+    'SELECT top_place_psgc FROM province_scores WHERE province_psgc = $1',
+    [ALPHA],
+  );
+  assert.equal(top.rows[0]?.top_place_psgc, ALPHA_CITY);
+  // Bravo has no towns, so it is scored as a whole and names no town.
+  const bravo = await pool.query<{ top_place_psgc: number | null }>(
+    'SELECT top_place_psgc FROM province_scores WHERE province_psgc = $1',
+    [BRAVO],
+  );
+  assert.equal(bravo.rows[0]?.top_place_psgc, null);
+});
+
+test('town scores: a town whose weather points have no recent reading is "at least", and so is its province', async () => {
+  await pool.query('UPDATE point_readings SET valid_at = $1', [hoursAgo(6)]);
+  await computeScores();
+  const town = await pool.query<{ unknown_signals: string[] }>(
+    'SELECT unknown_signals FROM place_scores WHERE place_psgc = $1',
+    [ALPHA_CITY],
+  );
+  assert.deepEqual(town.rows[0]?.unknown_signals, ['weather']);
+  assert.deepEqual((await scoreOf(ALPHA)).unknown_signals, ['weather']);
 });

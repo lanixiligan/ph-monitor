@@ -56,9 +56,11 @@ provincesRouter.get('/', async (_req, res) => {
     weather_score: number;
     event_score: number;
     unknown_signals: SignalName[];
+    top_place: string | null;
   }>(
-    `SELECT province_psgc, score, quake_score, weather_score, event_score, unknown_signals
-     FROM province_scores`,
+    `SELECT s.province_psgc, s.score, s.quake_score, s.weather_score, s.event_score, s.unknown_signals,
+            c.name AS top_place
+     FROM province_scores s LEFT JOIN places c ON c.psgc = s.top_place_psgc`,
   );
 
   const scoreByPsgc = new Map(scores.rows.map((row) => [row.province_psgc, row]));
@@ -74,6 +76,7 @@ provincesRouter.get('/', async (_req, res) => {
       weather_score: score?.weather_score ?? null,
       event_score: score?.event_score ?? null,
       incomplete: (score?.unknown_signals.length ?? 0) > 0,
+      top_place: score?.top_place ?? null,
       point_lat: shape.point_lat,
       point_lon: shape.point_lon,
     };

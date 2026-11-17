@@ -1,5 +1,10 @@
-// Job: work out every province's score from what is in the database.
-// Run by hand with: npm run compute:scores
+// Job: work out every town's and every province's score from what is in the
+// database. Run by hand with: npm run compute:scores
+//
+// A town (city or municipality) is scored from the quakes and events near it
+// and the weather at its points. A province shows its highest town's score
+// (see highestTown in scoring.ts); a province with no towns loaded is scored
+// as a whole, from its own inputs.
 //
 // This file only gathers the inputs and saves the results.
 // The formulas themselves are all in scoring/scoring.ts.
@@ -10,16 +15,10 @@ import { pool } from '../db.ts';
 import { getFeedHealth, staleSignals } from '../freshness.ts';
 import { needsHistoryRow } from '../scoreHistory.ts';
 import type { HistoryEntry } from '../scoreHistory.ts';
-import {
-  buildReasons,
-  combineSignals,
-  eventScore,
-  quakeScore,
-  weatherScore,
-  WEIGHTS,
-} from '../scoring/scoring.ts';
+import { highestTown, scoreArea, WEIGHTS } from '../scoring/scoring.ts';
 // `import type` brings in types only; it disappears when the code runs.
-import type { EventInput, QuakeInput, WeatherInput } from '../scoring/scoring.ts';
+import type { AreaScore, EventInput, QuakeInput, WeatherInput } from '../scoring/scoring.ts';
+import { readTownInputs } from './townInputs.ts';
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -146,6 +145,16 @@ export async function computeScores(): Promise<void> {
     });
   }
 
+  // Every town's score, grouped by province: province psgc → its towns.
+  const towns = await readTownInputs(now);
+  const townsByProvince = new Map<number, { psgc: number; area: AreaScore }[]>();
+  for (const town of towns) {
+    const list = townsByProvince.get(town.provincePsgc) ?? [];
+    list.push({ psgc: town.psgc, area: scoreArea(town.quakes, town.weather, town.events, stale) });
+    townsByProvince.set(town.provincePsgc, list);
+  }
+  const townScores = [...townsByProvince.values()].flat();
+
   let highest = { name: '', score: -1 };
   let incomplete = 0;
   let historyAdded = 0;
@@ -154,23 +163,43 @@ export async function computeScores(): Promise<void> {
   try {
     await client.query('BEGIN');
 
+    // The latest town scores: replaced as a whole, in one statement.
+    // `unnest` turns the lists into rows, one row per position.
+    await client.query('DELETE FROM place_scores');
+    if (townScores.length > 0) {
+      await client.query(
+        `INSERT INTO place_scores
+           (place_psgc, score, quake_score, weather_score, event_score, unknown_signals, reasons, computed_at)
+         SELECT psgc, score, quake, weather, event, string_to_array(unknown, ','), reasons::jsonb, $8
+         FROM unnest($1::bigint[], $2::int[], $3::int[], $4::int[], $5::int[], $6::text[], $7::text[])
+           AS t(psgc, score, quake, weather, event, unknown, reasons)`,
+        [
+          townScores.map((town) => town.psgc),
+          townScores.map((town) => town.area.score),
+          townScores.map((town) => town.area.quake),
+          townScores.map((town) => town.area.weather ?? 0),
+          townScores.map((town) => town.area.event),
+          // A list of lists can't go through unnest, so each list travels as "quake,weather".
+          townScores.map((town) => town.area.unknown.join(',')),
+          townScores.map((town) => JSON.stringify(town.area.reasons)),
+          now,
+        ],
+      );
+    }
+
     for (const province of provinces.rows) {
-      const quakes = quakesByProvince.get(province.psgc) ?? [];
-      const weather = weatherByProvince.get(province.psgc) ?? null;
-
-      const events = eventsByProvince.get(province.psgc) ?? [];
-
-      // null = unknown. Stored quakes and events still count (the score is
-      // then "at least" this much); only the claim "nothing else" is dropped.
-      const quake = quakeScore(quakes);
-      const weatherPoints = weatherScore(weather);
-      const eventPoints = eventScore(events);
-      const { score, unknown } = combineSignals({
-        quake: stale.includes('quake') ? null : quake,
-        weather: weatherPoints,
-        event: stale.includes('event') ? null : eventPoints,
-      });
-      const reasons = buildReasons(quakes, weather, 'province', events, unknown);
+      // The highest town, or (no towns loaded) the province as a whole.
+      const top = highestTown(townsByProvince.get(province.psgc) ?? []);
+      const area =
+        top?.area ??
+        scoreArea(
+          quakesByProvince.get(province.psgc) ?? [],
+          weatherByProvince.get(province.psgc) ?? null,
+          eventsByProvince.get(province.psgc) ?? [],
+          stale,
+        );
+      const { score, quake, event: eventPoints, unknown, reasons } = area;
+      const weatherPoints = area.weather;
 
       if (score > highest.score) highest = { name: province.name, score };
       if (unknown.length > 0) incomplete += 1;
@@ -178,8 +207,9 @@ export async function computeScores(): Promise<void> {
       // The latest score: one row per province, replaced each time.
       await client.query(
         `INSERT INTO province_scores
-           (province_psgc, score, quake_score, weather_score, reasons, computed_at, event_score, unknown_signals)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8::text[])
+           (province_psgc, score, quake_score, weather_score, reasons, computed_at, event_score, unknown_signals,
+            top_place_psgc)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8::text[], $9)
          ON CONFLICT (province_psgc) DO UPDATE SET
            score = EXCLUDED.score,
            quake_score = EXCLUDED.quake_score,
@@ -187,8 +217,12 @@ export async function computeScores(): Promise<void> {
            event_score = EXCLUDED.event_score,
            unknown_signals = EXCLUDED.unknown_signals,
            reasons = EXCLUDED.reasons,
-           computed_at = EXCLUDED.computed_at`,
-        [province.psgc, score, quake, weatherPoints ?? 0, JSON.stringify(reasons), now, eventPoints, unknown],
+           computed_at = EXCLUDED.computed_at,
+           top_place_psgc = EXCLUDED.top_place_psgc`,
+        [
+          province.psgc, score, quake, weatherPoints ?? 0, JSON.stringify(reasons), now, eventPoints, unknown,
+          top?.psgc ?? null,
+        ],
       );
 
       // The history: a new row only when something changed (see scoreHistory.ts).
@@ -220,8 +254,8 @@ export async function computeScores(): Promise<void> {
   }
 
   console.log(
-    `Scores: computed ${provinces.rows.length} (${incomplete} with missing data, ` +
-      `${historyAdded} changed and added to the history). ` +
+    `Scores: ${provinces.rows.length} provinces, ${townScores.length} towns ` +
+      `(${incomplete} provinces with missing data, ${historyAdded} changed and added to the history). ` +
       `Highest: ${highest.name} (${highest.score}).`,
   );
 }
