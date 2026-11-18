@@ -11,6 +11,7 @@ import type {
 } from '@ph-monitor/shared';
 import { getConditions, OPEN_EVENT_FRESH_SQL } from '../conditions.ts';
 import { pool } from '../db.ts';
+import { getHazardZones } from '../hazardZones.ts';
 import { buildFreshness, getFeedHealth, getLastOk, staleSignals } from '../freshness.ts';
 import { getPointWeather } from '../pointWeather.ts';
 import { readQuakeImpact } from '../quakeImpact.ts';
@@ -259,6 +260,8 @@ pointRouter.get('/', async (req, res) => {
     // Earthquakes come from the scheduled fetch; weather was fetched for this spot.
     freshness: buildFreshness(lastOk.earthquakes, pointWeather?.fetchedAt ?? null),
     conditions: await getConditions(province.psgc, { lat, lon }),
+    // Fixed hazard maps (Project NOAH) for this spot; never part of the score.
+    hazardZones: await getHazardZones(lat, lon, province.psgc),
   };
   res.json(detail);
 });

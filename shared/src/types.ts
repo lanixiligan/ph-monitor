@@ -286,6 +286,8 @@ export type PointDetail = {
   freshness: Freshness;
   /** Phase 2: outlook, nearby events, storms and news. Not part of the score. */
   conditions: Conditions;
+  /** Fixed hazard maps (Project NOAH) for this spot. Not part of the score. */
+  hazardZones: HazardZones;
 };
 
 // ---------- Hazard maps (Project NOAH, ODbL) ----------

@@ -99,6 +99,8 @@ test('spot route: names the town and province, and measures the quake from the s
   assert.ok(detail.placeScore !== null && detail.placeScore.score > 0);
   // The province shows its highest (here: only) town.
   assert.equal(detail.provinceScore, detail.placeScore.score);
+  // No hazard map is loaded in this test: both maps are unknown, never "safe".
+  assert.deepEqual(detail.hazardZones, { landslide: null, stormSurge: null });
 });
 
 test('spot route: the town score is the very one the map colours, hazard by hazard with its reasons', async () => {
