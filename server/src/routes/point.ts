@@ -13,6 +13,7 @@ import { getConditions, OPEN_EVENT_FRESH_SQL } from '../conditions.ts';
 import { pool } from '../db.ts';
 import { buildFreshness, getFeedHealth, getLastOk, staleSignals } from '../freshness.ts';
 import { getPointWeather } from '../pointWeather.ts';
+import { readQuakeImpact } from '../quakeImpact.ts';
 import {
   buildReasons,
   combineSignals,
@@ -128,9 +129,11 @@ pointRouter.get('/', async (req, res) => {
     occurred_at: Date;
     url: string | null;
     distance_km: number;
+    props: unknown; // the USGS record's properties, checked by readQuakeImpact
   }>(
     `WITH spot AS (SELECT ST_SetSRID(ST_MakePoint($1, $2), 4326) AS pt)
      SELECT q.id, q.magnitude, q.depth_km, q.place, q.occurred_at, q.url,
+            q.raw->'properties' AS props,
             ST_Distance(q.geom::geography, spot.pt::geography) / 1000 AS distance_km
      FROM spot, earthquakes q
      WHERE q.occurred_at >= $3 AND q.magnitude >= $4
@@ -213,6 +216,8 @@ pointRouter.get('/', async (req, res) => {
     occurredAt: row.occurred_at.toISOString(),
     distanceKm: row.distance_km,
     url: row.url,
+    // `...` copies in the fields readQuakeImpact returns (PAGER alert, mmi, tsunami link).
+    ...readQuakeImpact(row.props),
   }));
   if (pointWeather) {
     events.push({
