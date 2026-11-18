@@ -217,12 +217,16 @@ refer to the audit report.
 | 3 | Geography and hazards: storm distance to the track line, JTWC fallback, extra weather points, "not covered" list, per-hazard levels | Built, not committed |
 | 4 | Stability: jobs run only when due (1.11), score history with part-scores (1.12), database tests in CI, historical replay (results: `docs/replay-results.md`) | Built, not committed. Deployment basics (1.13) skipped for now: no plan to go online soon |
 | 5 | Experience: place search and "use my location" (1.17), card order (1.18), keyboard and touch (1.19), Filipino review, news fixes (1.14, 1.15) | Built, not committed. 5.4: headlines sorted into nine kinds of disaster (owner's choice). 5.5: owner read all 230 Filipino lines on 2026-11-17 and changed three ("lalawigan/probinsya" everywhere, "Ayon sa uri ng banta"); every line still has its `// REVIEW` mark, as asked |
-| 6 | Later: see below | Replay has run; not started |
+| 6 | Later: see below | Replay re-run with towns and the weather grid (2026-11-18); tuning not started |
 
 ### Phase 6 — later
 
 Starts only after Phase 4's historical replay has run, because its main job is acting on what
 the replay shows.
+
+Replay re-run on 2026-11-18, scoring towns on the weather grid like the live app: every known
+disaster still reaches "High", and the ordinary week has 30 "High" province-hours (was 7), all
+from a single heavy hour of rain (`docs/replay-results.md`).
 
 - **Tune the weights from replay results.** Change `WEIGHTS` in `scoring.ts` only where the
   replay shows a clear miss: a known disaster that never reached "High" at the right time, or
