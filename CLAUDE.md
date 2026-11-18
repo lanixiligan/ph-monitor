@@ -94,7 +94,7 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   key fails the typecheck). The server sends score reasons as message keys plus numbers
   (`ScoreReason`), never as sentences. The Filipino text is a draft until the owner reviews it.
 - The app name appears in the UI only through `APP_NAME` (`shared/src/appInfo.ts`).
-- UI look ("sea chart"): cool sea-and-ink colours, defined once as CSS variables at the top of
+- UI look ("sea chart"): cool sea-and-ink colours (plus one red, `--live`, only for the LIVE stream badge), defined once as CSS variables at the top of
   `web/src/styles.css`, with a light set and a dark set (`[data-theme='dark']`). Never write a
   hex colour anywhere else: the map reads the variables through `web/src/palette.ts`. The score
   scale (`web/src/scoreScale.ts`) is the only warm colour on the page; it has a light version

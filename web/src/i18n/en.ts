@@ -85,7 +85,7 @@ export const en = {
     stormForecast: 'Storm forecast',
     news: 'Place named in the news (bigger = more headlines)',
     showLabel: 'Show on the map',
-    towns: 'Zoom in to see each city and municipality. A province shows its highest town.',
+    towns: 'Each city and municipality is coloured by its own score. Zoom in to see the borders.',
   },
 
   // The side panel before a spot is picked.
@@ -207,7 +207,7 @@ export const en = {
   // Map popups and hover labels.
   map: {
     // Read out by a screen reader when it reaches the map.
-    label: 'Map of the Philippines coloured by score: provinces, and cities and municipalities when zoomed in. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
+    label: 'Map of the Philippines with each city and municipality coloured by its score. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
     sampleNotice: 'Sample data, not a real storm',
     noScoreYet: 'no score yet',
     atLeast: 'at least {score}',
@@ -238,14 +238,16 @@ export const en = {
     stale: 'STALE',
     staleText: 'Some data is more than 1 hour old.',
     bandAtSpot: '{band} at this spot',
+    bandInTown: '{band} across {town}',
     hazardsTitle: 'By hazard',
     notCovered:
       'Not covered here: landslides, storm surge, tsunami, PAGASA wind signals and rainfall warnings, PHIVOLCS volcano alert levels. Use the official links below.',
     incomplete: 'Some data is missing, so the real score may be higher.',
     nearTitle: 'Storms and disaster events near here',
-    wholeTown: 'Whole town ({town}): {score}, {band}',
+    exactSpot: 'At the exact spot you picked: {score}, {band}',
     wholeProvince: 'Whole province ({province}): {score}, {band}',
     areaNote: 'This score is for the exact spot you picked. The town and province numbers on the map count the most exposed part of each, so they can be higher.',
+    townNote: 'The big number is the whole town, the same score that colours it on the map. It counts the most exposed part of the town (its hottest, wettest, closest-to-a-quake reading), so the exact spot can be lower. A province shows its highest town.',
     why: 'Why',
     quakesTitle: 'Earthquakes, last 3 days',
     quakesNone: 'None within reach of this spot.',
@@ -320,6 +322,9 @@ export const en = {
     videoTitle: '{outlet} video',
     play: 'Play',
     stop: 'Stop',
+    refresh: 'Refresh',
+    refreshing: 'Checking…',
+    refreshLabel: 'Check the channels again for new live streams and videos',
   },
 
   // Where a piece of information comes from, shown as a small tag.

@@ -101,6 +101,21 @@ test('spot route: names the town and province, and measures the quake from the s
   assert.equal(detail.provinceScore, detail.placeScore.score);
 });
 
+test('spot route: the town score is the very one the map colours, hazard by hazard with its reasons', async () => {
+  const { body } = await get(`/api/point?lat=${SPOT.lat}&lon=${SPOT.lon}`);
+  const town = (body as PointDetail).placeScore;
+  assert.ok(town, 'no town score');
+  const map = await get('/api/places/scores');
+  const onMap = (map.body as PlaceScores).places.find((place) => place.psgc === ALPHA_CITY);
+  assert.equal(town.score, onMap?.score);
+  // The town's own parts: the quake measured from the town's edge, and its stored weather.
+  assert.equal(town.hazards.quake, town.quakeScore);
+  assert.ok(town.hazards.quake > 0);
+  assert.equal(typeof town.hazards.rain, 'number'); // the town has a stored rain reading
+  assert.ok(town.reasons.length > 0);
+  assert.deepEqual(town.unknownSignals, []);
+});
+
 test('spot route: weather is fetched for the spot, scored, and reused for the same 5 km cell', async () => {
   const before = weatherCalls;
   const { body } = await get(`/api/point?lat=${SPOT.lat + 0.01}&lon=${SPOT.lon}`);

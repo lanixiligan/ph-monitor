@@ -117,6 +117,9 @@ export async function fetchOpenMeteo(
   const readings: (WeatherReading | null)[] = [];
   let requests = 0;
   const problems: string[] = [];
+  // A big run (the weather grid) prints one line per request so it does not look stuck.
+  const totalRequests = Math.ceil(points.length / POINTS_PER_REQUEST);
+  const showProgress = totalRequests > 1;
 
   for (let start = 0; start < points.length; start += POINTS_PER_REQUEST) {
     const chunk = points.slice(start, start + POINTS_PER_REQUEST);
@@ -151,11 +154,13 @@ export async function fetchOpenMeteo(
       for (const location of locations) {
         readings.push(parseOpenMeteoLocation(location, now));
       }
+      if (showProgress) console.log(`Open-Meteo: request ${requests} of ${totalRequests} ok`);
     } catch (error) {
       // This request is lost; its points get "no answer" and the rest go on.
       const why = error instanceof Error ? error.message : String(error);
       problems.push(why);
-      console.warn(`Open-Meteo: a request for ${chunk.length} points failed twice: ${why}`);
+      const which = showProgress ? ` (request ${requests} of ${totalRequests})` : '';
+      console.warn(`Open-Meteo: a request for ${chunk.length} points failed twice${which}: ${why}`);
       for (let i = 0; i < chunk.length; i += 1) readings.push(null);
     }
   }

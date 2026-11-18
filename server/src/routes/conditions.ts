@@ -3,6 +3,7 @@
 //   GET /api/storms     → active storms with their tracks (for the map)
 //   GET /api/news       → latest disaster headlines; ?type=flood (or general)  ?category=tv  ?psgc=...  ?limit=...
 //   GET /api/streams    → live stream slots the page may show
+//   POST /api/streams/refresh → check the channels again (limited), then the same slots
 //   GET /api/bulletins  → links to official PAGASA and PHIVOLCS pages
 //   GET /api/alerts     → official alerts in effect (PAGASA), newest first
 //   GET /api/status     → when each feed last succeeded, and which are out of date
@@ -22,6 +23,7 @@ import {
 import type { EventRow, NewsRow } from '../conditions.ts';
 import { pool } from '../db.ts';
 import { getFeedHealth } from '../freshness.ts';
+import { refreshStreams } from '../jobs/streamRefresh.ts';
 import { BULLETIN_LINKS, OUTLET_CATEGORIES } from '../sources.ts';
 
 export const conditionsRouter = Router();
@@ -120,7 +122,8 @@ conditionsRouter.get('/news', async (req, res) => {
   res.json(result.rows.map(toNewsItem));
 });
 
-conditionsRouter.get('/streams', async (_req, res) => {
+// The stream slots the page may show.
+async function readStreamSlots(): Promise<StreamSlot[]> {
   // Dead and not-embeddable links are never sent, so the page cannot show them.
   const result = await pool.query<{
     id: string;
@@ -147,7 +150,17 @@ conditionsRouter.get('/streams', async (_req, res) => {
     isLive: row.is_live,
     lastCheckedAt: row.last_checked_at.toISOString(),
   }));
-  res.json(slots);
+  return slots;
+}
+
+conditionsRouter.get('/streams', async (_req, res) => {
+  res.json(await readStreamSlots());
+});
+
+// POST, because it can make the server do work (a fresh check of the channels).
+conditionsRouter.post('/streams/refresh', async (_req, res) => {
+  await refreshStreams();
+  res.json(await readStreamSlots());
 });
 
 conditionsRouter.get('/bulletins', (_req, res) => {

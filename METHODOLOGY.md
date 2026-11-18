@@ -118,8 +118,8 @@ The lowest band is named for what we know ("nothing detected"); it is not an all
   (`highestTown`). So the number on the map always belongs to a real town, and the hover label
   names it. If any of its towns is missing a signal, the province is "at least N" too. A
   province with no towns loaded is scored as a whole, from its own inputs.
-- **The map** shows province colours when zoomed out and town colours from zoom 8 (they fade
-  in between 7.5 and 8.5).
+- **The map** colours every town by its own score at every zoom level, never by its
+  province's highest town. Province colours show only until the town shapes have loaded.
 - Town scores are replaced on every run and have no history; province history is kept as
   before.
 
@@ -150,8 +150,13 @@ saved:
 - **Place name:** the city or municipality containing the spot. A click up to 2 km outside a
   boundary still counts as the nearest one, because the drawn shapes are simplified.
 
-The card also shows the whole town's and the whole province's score, as the map shows them,
-with a note that those count the most exposed part of each and so can be higher.
+**The card's main number is the town's**, the very score that colours the town on the map, with
+its hazard rows and reasons. So the number always matches the colour that was clicked. The
+exact spot's own score is a smaller line under it, with a note that the town counts its most
+exposed part, so the spot can be lower. (Example: Santa Catalina reads a coastal grid point,
+heat index 38 → 32, while a spot in its hills reads 32.7 → 10.) Without a town score (no town
+there, or before the first score run) the main number is the spot's. The card also shows the
+province's score.
 
 ## Hazard by hazard
 

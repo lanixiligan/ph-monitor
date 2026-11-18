@@ -10,6 +10,7 @@ import { test } from 'node:test';
 import { judgeFeed } from '../src/checker/checkFeed.ts';
 import {
   decideStream,
+  idsToCheck,
   judgeWithKey,
   judgeWithoutKey,
   pickVideo,
@@ -120,6 +121,30 @@ test('videos list: a real answer gives title, time, live state and embeddable', 
   assert.equal(live?.embeddable, true);
   assert.equal(videos?.find((video) => video.id === 'Yc3PuoXV2Es')?.live, 'upcoming');
   assert.equal(parseVideosList({ items: [{ id: 'x' }] }), null);
+});
+
+// ---- Which videos to ask about (with a key) ----
+
+const range = (prefix: string, count: number) => Array.from({ length: count }, (_, i) => `${prefix}${i}`);
+
+test('ids: live streams come first, then the newest uploads, 50 at most', () => {
+  const ids = idsToCheck(range('live', 50), range('up', 50), null);
+  assert.equal(ids.length, 50);
+  assert.equal(ids[0], 'live0');
+  assert.equal(ids.includes('live30'), true);
+  assert.equal(ids.includes('up0'), true);
+});
+
+test('ids: a channel with few live streams leaves the room to uploads', () => {
+  const ids = idsToCheck(range('live', 2), range('up', 50), null);
+  assert.deepEqual(ids.slice(0, 3), ['live0', 'live1', 'up0']);
+  assert.equal(ids.length, 50);
+});
+
+test('ids: no repeats, and the video shown last time is always asked about', () => {
+  const ids = idsToCheck(['a', 'b'], ['b', 'c'], 'old');
+  assert.deepEqual(ids, ['old', 'a', 'b', 'c']);
+  assert.equal(idsToCheck(range('live', 50), range('up', 50), 'old').includes('old'), true);
 });
 
 // ---- Picking the video (with a key) ----

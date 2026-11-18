@@ -54,7 +54,7 @@ Not verified yet, because nothing real was available to test with:
 | PHIVOLCS | Official PH bulletins | web pages only, no API; linked from the card, not scraped |
 | YouTube oEmbed `youtube.com/oembed?url=...` | Can a video be embedded | used only without a key; accepts video links, not channel links |
 | YouTube channel feed `youtube.com/feeds/videos.xml?channel_id=...` | A channel's newest videos | used only without a key; fails at random (404/500 for real channels) |
-| YouTube Data API | A channel's live stream or latest video | in use with the owner's key; 1-unit calls only, about 1,200 of 10,000 units a day |
+| YouTube Data API | A channel's live stream or latest video | in use with the owner's key; 1-unit calls only, about 1,900 (at most 7,500) of 10,000 units a day |
 | NDRRMC | Situation reports | blocks automated requests; skip |
 
 Each new source must get its credit line in the UI and README, like the existing ones.
@@ -101,8 +101,9 @@ Each new source must get its credit line in the UI and README, like the existing
    `not-embeddable`), last checked and last OK time.
    - News feeds, every hour: reachable, valid RSS, newest item age. A feed with nothing new for
      7 days is flagged.
-   - Streams, every 30 min, with a YouTube key: two 1-unit Data API calls per channel (newest
-     50 uploads, then those videos' details) find the live stream or the latest video. Never
+   - Streams, every 30 min (and on page load or Refresh, at most every 10 min), with a YouTube
+     key: three 1-unit Data API calls per channel (live streams list, newest uploads, then those
+     videos' details) find the live stream first, else the latest video. Never
      `search.list` (100 units). The key stays on the server.
    - Streams without a key: the channel feed plus oEmbed. That feed fails at random, so a failed
      check keeps the last status, and a link is marked dead only after a day of failures. Live
