@@ -18,8 +18,8 @@ roadmap** (making what exists more trustworthy, numbered on its own).
 | Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6); USGS impact fields on the card (PR #7) |
 | Product Phase 3: all kinds of news on the map | Idea only; needs the owner's answers first |
 
-**Next:** design the Project NOAH landslide and storm surge layer (approved 2026-11-18, see
-"Phase 6"): map layer and status card line, score unchanged.
+**Next:** build the NOAH hazard layer, storm surge first (design approved 2026-11-18, see
+"NOAH hazard layer: design" under "Phase 6").
 
 ## Phase 2 — disaster conditions, forecasts, news, Filipino (planned 2026-11-15, done)
 
@@ -301,6 +301,88 @@ could be tried with the replay later, as a separate decision). The ODbL terms ar
 credit on the credits page and in the README, a short ODbL notice for the shapes we send out,
 and the NOAH shapes kept in their own table, apart from the score tables. The "Not covered
 here" line changes only when the layer ships.
+
+#### NOAH hazard layer: design (approved 2026-11-18)
+
+Based on measuring sample files (Benguet, Siquijor, Leyte, Southern Leyte) in the test
+database. M = measured, E = estimated (±50%).
+
+**What the data is.**
+- Shapefiles, WGS 84, one zip per province.
+  - Landslide: `Landslide/LandslideHazards/<Province>.zip`, 82 files, 12.7 GB zipped.
+  - Storm surge: `Storm Surge/StormSurgeAdvisory{1..4}/<Province>.zip`, 67 coastal provinces
+    per level, 2.0 GB in all.
+- Each file holds three shapes, one per class (1 low, 2 medium, 3 high), each made of up to
+  200,000 pieces. The class field is `LH` for landslide (not `HAZ`, despite the metadata) and
+  `HAZ` for storm surge. Some files store it as text, some as a number, so parse it as a
+  number. The storm surge level is only in the folder name.
+- About 1% of pieces are broken shapes; `ST_MakeValid` fixes them all (M). Classes overlap a
+  little, so a spot takes the highest class. Storm surge levels mostly nest, but not exactly,
+  so all four are stored.
+- File names run words together (`MetroManila`), so the loader needs a name → PSGC list. The
+  Leyte, Samar and Cotabato zips also hold copies of their neighbours; skip duplicate `.shp`
+  names.
+- Storm surge levels, in NOAH's current wording (metadata of Aug 2025): SSA 1 up to 2 m,
+  SSA 2 up to 3 m, SSA 3 up to 4 m, SSA 4 more than 4 m. The mirror's old readme says
+  otherwise; use NOAH's wording.
+- Mountain provinces are mostly "high" landslide (most of Benguet), so the card will say
+  "high" for most clicks there. That is what the map says, not a mistake.
+
+**Size is the main problem.** Landslide is about 44 million pieces, about 20 GB in the
+database at full detail (E). Storm surge is about a tenth of that. Even simplified, landslide
+cannot be sent as one GeoJSON file the way provinces and towns are.
+
+**Design.**
+1. **Source:** the Hugging Face mirror `bettergovph/project-noah-hazard-maps`. Its files are
+   byte for byte the same as NOAH's Drive folder (M). It has a file list API and a SHA-256 per
+   file, so each download can be checked, and it is about twice as fast. Drive needs
+   undocumented page scraping. Credit stays "Project NOAH and its contributors".
+2. **Loader, `npm run load-hazards`:** one province zip at a time.
+   - Download into `data/hazards/`, check the hash, unzip with the `unzip` command (already
+     used by `replay.ts`), read the shapefile.
+   - Split into pieces, drop pieces under 1,000 m², simplify
+     (`ST_SimplifyPreserveTopology` 0.0002°, edges move about 20 m), make valid,
+     `ST_Subdivide(256)` so lookups stay fast.
+   - Replace that province's rows in one transaction, so a re-run is safe.
+   - The zip is deleted after loading.
+   - Storm surge loads in minutes; landslide takes about 2–3 hours (E).
+3. **Tables (own section in `schema.sql`):**
+   - `hazard_zones` (kind, scenario 1–4 or none, class 1–3, province PSGC, geom, GIST index).
+   - `hazard_coverage` (kind, province, source file, loaded at). Coverage tells "no data"
+     apart from "not in a zone". Unknown is never calm: a province with no file shows "no
+     hazard map here".
+   - Stored size about 0.25 GB for storm surge and about 2.5 GB for landslide (E). The disk
+     has 47 GB free.
+4. **Map: vector tiles from our own `/api`.** Route `GET /api/hazards/:kind/:z/:x/:y.mvt`,
+   built by PostGIS `ST_AsMVT`, with cache headers. MapLibre reads them as a `vector` source,
+   so the "only our `/api`" rule holds.
+   - Zones show from zoom 9 up; below that the legend says "zoom in to see zones".
+   - The map shows storm surge level 4 (the widest); the card covers all four levels.
+   - Zones are cool-toned stripes (a generalised `hatchImage` in `palette.ts`, new
+     `--hazard-*` variables in both themes), denser for higher classes, high drawn on top.
+     They are never warm colours, so the score colours stay readable underneath.
+   - Both tick boxes are off by default.
+5. **Status card:** a short "Hazard map" block right under the hazard rows, with the new tag
+   `tiers.hazardMap`. Each line is answered for the clicked spot:
+   - "Landslide: high", "not in a zone", or "no hazard map here".
+   - Storm surge for levels 1–4: the class for each level, or "not reached".
+   - The block notes that these are scenarios, not a forecast, and do not change the score.
+   - Comes from `/api/point` (`PointDetail.hazardZones`, new `server/src/hazardZones.ts`).
+6. **Credits and notices:** Project NOAH on the credits page, README, `docs/data-sources.md`.
+   An ODbL notice for the shapes we send, in the README licence section and in the map's
+   attribution line. Drop "landslides, storm surge" from "Not covered here" (en and fil),
+   METHODOLOGY.md and `docs/privacy-and-limits.md`, saying instead "fixed hazard map, not
+   live".
+7. **Order of work:** storm surge first, from start to finish (loader, tiles, map, card,
+   credits). Then measure tile speed, then load landslide with the same code. Most of the risk
+   is in landslide's size, and storm surge tests the whole pipeline at a tenth of the size.
+
+**Left out for now:** NOAH's debris flow / alluvial fan maps (2 national files), the mirror's
+ready-made PMTiles (they would load from outside our `/api`), and checking Drive for NOAH
+updates (later: compare file sizes with the mirror).
+
+**Owner's decisions (2026-11-18):** storm surge first, then landslide (7); read shapefiles
+with the npm `shapefile` package (one new server dependency); delete each zip after loading.
 
 ## Per-town map colours (approved 2026-11-17, done)
 
