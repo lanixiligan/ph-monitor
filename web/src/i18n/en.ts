@@ -270,6 +270,24 @@ export const en = {
     weatherChecked: 'Weather checked',
   },
 
+  // USGS's impact estimates under each earthquake on the status card. Shown
+  // only when USGS gave them; they never change the score.
+  quakeImpact: {
+    pager: "PAGER alert: {level}. USGS's estimate of possible deaths and damage.",
+    // PAGER levels, as words (never drawn in their colour).
+    levels: {
+      green: 'Green',
+      yellow: 'Yellow',
+      orange: 'Orange',
+      red: 'Red',
+    },
+    // USGS's scale, not the PHIVOLCS intensity scale readers know, so say so.
+    mmi: "USGS's estimated strongest shaking: {mmi} on the Modified Mercalli scale (not the PHIVOLCS intensity scale).",
+    // The tsunami line is split around the PHIVOLCS link: lead, link, end.
+    tsunamiLead: 'USGS shows tsunami information for this quake. For official tsunami warnings, check',
+    tsunamiEnd: '.',
+  },
+
   // The extra sections on the status card.
   conditions: {
     outlookTitle: 'Next 7 days',

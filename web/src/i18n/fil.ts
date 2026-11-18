@@ -263,6 +263,20 @@ export const fil: Strings = {
     weatherChecked: 'Huling sinuri ang panahon', // REVIEW
   },
 
+  // USGS's impact estimates under each earthquake on the status card.
+  quakeImpact: {
+    pager: 'PAGER alert: {level}. Tantiya ng USGS sa posibleng masasawi at pinsala.', // REVIEW: unsure about "masasawi"
+    levels: {
+      green: 'Berde', // REVIEW
+      yellow: 'Dilaw', // REVIEW
+      orange: 'Kahel', // REVIEW
+      red: 'Pula', // REVIEW
+    },
+    mmi: 'Tantiya ng USGS sa pinakamalakas na pagyanig: {mmi} sa Modified Mercalli scale (hindi ang intensity scale ng PHIVOLCS).', // REVIEW: unsure about "pagyanig"
+    tsunamiLead: 'May impormasyon ang USGS tungkol sa tsunami para sa lindol na ito. Para sa opisyal na babala sa tsunami, tingnan ang', // REVIEW
+    tsunamiEnd: '.', // REVIEW
+  },
+
   // The extra sections on the status card.
   conditions: {
     outlookTitle: 'Susunod na 7 araw', // REVIEW

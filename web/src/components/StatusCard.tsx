@@ -18,6 +18,7 @@ import { Fold } from './Fold.tsx';
 import { OfficialAlerts } from './OfficialAlerts.tsx';
 import { Disclaimer } from './Disclaimer.tsx';
 import { Ladder } from './Ladder.tsx';
+import { QuakeImpact } from './QuakeImpact.tsx';
 
 // How often an open card asks the server again.
 const REFRESH_MS = 5 * 60 * 1000;
@@ -263,6 +264,7 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
                   </>
                 )}
               </span>
+              <QuakeImpact quake={quake} />
             </li>
           ))}
         </ul>

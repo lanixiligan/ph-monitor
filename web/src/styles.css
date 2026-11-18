@@ -518,6 +518,16 @@ label.legend-row {
   font-size: 13px;
 }
 
+/* USGS's impact estimates under an earthquake (QuakeImpact.tsx): plain ink
+   lines, tight under the row, with no colour per level. */
+.quake-impact {
+  margin-top: 3px;
+}
+
+.quake-impact p {
+  margin: 0 0 2px;
+}
+
 /* A section of the card that starts closed (Fold.tsx). The title line looks
    like the other section titles; the browser draws the little arrow. */
 .fold {
