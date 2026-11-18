@@ -55,6 +55,15 @@ export const WEIGHTS = {
       { at: 200, score: 85 },
       { at: 300, score: 100 },
     ],
+    /**
+     * The "wet day" rule (Phase 6, chosen from the replay): a heavy hour below
+     * `belowMm` (red) reaches "High" only if the last 24 hours had at least
+     * `needsDayMm` (PAGASA's "heavy"); otherwise its score stops at `maxScore`,
+     * just under "High". null = the rule is off. An unknown 24-hour amount
+     * never counts as dry. See docs/replay-results.md for why 50 mm.
+     */
+    // `as number | null` tells TypeScript this may also hold null (rule off).
+    oneHourCap: { needsDayMm: 50 as number | null, belowMm: 30, maxScore: 59 },
     /** Names sent with the reasons, strongest first. */
     oneHourLevels: [
       { from: 30, name: 'red' },
@@ -228,8 +237,12 @@ export function quakeScore(quakes: QuakeInput[]): number {
 
 /** Rain score (0–100): the worse of the 1-hour and 24-hour amounts. */
 export function rainScore(weather: WeatherInput): number {
-  const oneHour = scoreFromSteps(WEIGHTS.rain.oneHourSteps, weather.rain1hMm ?? 0);
+  let oneHour = scoreFromSteps(WEIGHTS.rain.oneHourSteps, weather.rain1hMm ?? 0);
   const day = scoreFromSteps(WEIGHTS.rain.dayRainSteps, weather.rain24hMm ?? 0);
+  // The wet day rule, when it is on (see WEIGHTS.rain.oneHourCap).
+  const cap = WEIGHTS.rain.oneHourCap;
+  const dryDay = cap.needsDayMm !== null && weather.rain24hMm !== null && weather.rain24hMm < cap.needsDayMm;
+  if (dryDay && (weather.rain1hMm ?? 0) < cap.belowMm) oneHour = Math.min(oneHour, cap.maxScore);
   return Math.round(Math.max(oneHour, day));
 }
 

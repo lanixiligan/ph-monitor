@@ -53,6 +53,13 @@ straight lines between the listed points. The rain score is the higher of the tw
 | 30 mm (red) | 85 | | 200 mm | 85 |
 | 50 mm | 100 | | 300 mm | 100 |
 
+**The wet day rule.** One heavy hour below red (under 30 mm) reaches "High" only if the last
+24 hours had at least 50 mm (PAGASA's "heavy" rain); on a drier day its score stops at 59, just
+under "High". Red-level rain (30 mm or more in an hour) always counts in full, and an unknown
+24-hour amount never counts as a dry day. Why: in the historical replay, an ordinary week had
+30 "High" province-hours, all from a single downpour on an otherwise dry day; with this rule it
+had 4, and no past disaster reached "High" any later (`docs/replay-results.md`).
+
 **Heat** uses the heat index ("feels like" temperature), mapped along PAGASA's bands:
 
 | Heat index | PAGASA band | Score |

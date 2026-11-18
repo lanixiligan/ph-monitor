@@ -108,6 +108,47 @@ test('rain score uses the worse of the 1-hour and 24-hour amounts', () => {
   assert.equal(rainScore({ ...calmWeather, rain1hMm: 7.5, rain24hMm: 200 }), 85);
 });
 
+// The "wet day" rule for a heavy hour (Phase 6): on at 50 mm. The helper runs
+// one check with another setting (null = off), then puts the setting back.
+function withWetDayRule(needsDayMm: number | null, check: () => void) {
+  const before = WEIGHTS.rain.oneHourCap.needsDayMm;
+  WEIGHTS.rain.oneHourCap.needsDayMm = needsDayMm;
+  try {
+    check();
+  } finally {
+    WEIGHTS.rain.oneHourCap.needsDayMm = before;
+  }
+}
+
+test('wet day rule: on, at PAGASA\'s "heavy" 50 mm in 24 hours', () => {
+  assert.equal(WEIGHTS.rain.oneHourCap.needsDayMm, 50);
+});
+
+test('wet day rule: a heavy hour on a dry day stops just under "High"', () => {
+  assert.equal(rainScore({ ...calmWeather, rain1hMm: 15, rain24hMm: 15 }), 59);
+  assert.equal(rainScore({ ...calmWeather, rain1hMm: 24, rain24hMm: 49 }), 59);
+  // Below the cap nothing changes.
+  assert.equal(rainScore({ ...calmWeather, rain1hMm: 7.5, rain24hMm: 10 }), 40);
+});
+
+test('wet day rule: turned off, one heavy hour on a dry day is "High" (60)', () => {
+  withWetDayRule(null, () => {
+    assert.equal(rainScore({ ...calmWeather, rain1hMm: 15, rain24hMm: 15 }), 60);
+  });
+});
+
+test('wet day rule: on a wet day the heavy hour counts in full', () => {
+  assert.equal(rainScore({ ...calmWeather, rain1hMm: 15, rain24hMm: 50 }), 60);
+});
+
+test('wet day rule: red-level rain (30 mm in an hour) always counts in full', () => {
+  assert.equal(rainScore({ ...calmWeather, rain1hMm: 30, rain24hMm: 30 }), 85);
+});
+
+test('wet day rule: an unknown 24-hour amount is never read as a dry day', () => {
+  assert.equal(rainScore({ ...calmWeather, rain1hMm: 15, rain24hMm: null }), 60);
+});
+
 test('heat score follows the heat-index bands', () => {
   assert.equal(heatScore({ ...calmWeather, heatIndexC: 26 }), 0);
   assert.equal(heatScore({ ...calmWeather, heatIndexC: 33 }), 10);
