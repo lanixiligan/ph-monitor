@@ -5,7 +5,7 @@
 A Philippines real-time risk dashboard. Phase 1: a map of provinces coloured by a 0–100 "stress
 right now" score from earthquakes (USGS) and weather (Open-Meteo). Clicking the map shows a
 status card with a score worked out for that exact spot.
-Phase 2 (in progress, see `PLAN.md`): the server also collects disaster events (GDACS, EONET;
+Phase 2 (built; status of every phase in `PLAN.md`): the server also collects disaster events (GDACS, EONET;
 GDACS alert levels count in the score), storm tracks (JMA, JTWC), a 7-day outlook, disaster news
 and YouTube stream links. The page shows them as map layers, extra status card sections, a
 headlines panel and a live streams panel.

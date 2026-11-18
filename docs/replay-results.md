@@ -1,8 +1,9 @@
 # Historical replay results
 
 Would the score have reached "High" (60 or more) during past disasters, and how often does it
-reach "High" in an ordinary week? Run on 2026-11-18 with `npm run replay`, using the weights as
-they are. Nothing was tuned; these results are the input for Phase 6 of the reliability roadmap.
+reach "High" in an ordinary week? Run on 2026-11-18 with `npm run replay`. The tables use the
+score as it is now, with the "wet day" rule for heavy hours that Phase 6 added (see "The wet day
+rule" below for how it was chosen).
 
 > **Not an official warning service.** This is a check of our own unofficial score against
 > past events, not a record of any official warning.
@@ -20,9 +21,9 @@ province; its numbers are kept under "Compared with the first run" below.
 | Taal eruption, Jan 2020 | Yes, barely (peaks 61–65) | Late: 8 h (Batangas) to 16 h (Cavite) after the eruption began |
 | Typhoon Odette, Dec 2021 | Yes, all 6 provinces (peaks 87–100) | From 10 h before the first landfall (Surigao del Norte) to 7 h after it (Negros Oriental) |
 | Abra M7.0, Jul 2022 | Yes, all 4 provinces (peaks 98–100) | In the first hourly step after the quake |
-| Ordinary week, 6–12 Feb 2023 | 30 of 14,872 province-hours | In 13 provinces, every one from a single heavy hour of rain |
+| Ordinary week, 6–12 Feb 2023 | 4 of 14,872 province-hours (30 before the wet day rule) | In 2 provinces, each a heavy hour on a wet day |
 
-## What the replay shows (for Phase 6)
+## What the replay shows
 
 1. **The score follows a typhoon; it does not run ahead of it.** A red event only pushes a
    province to "High" once the storm centre is within about 100 km, so "High" arrives a few
@@ -32,12 +33,12 @@ province; its numbers are kept under "Compared with the first run" below.
 2. **An orange event alone can never reach "High".** Orange is worth 50 points at most. Taal
    reached "High" only because of the magnitude 4+ volcanic earthquakes that followed, hours
    after the eruption began, added on top of the event (strongest + 0.25 × the others).
-3. **One heavy hour of rain at one grid point is enough for "High", and the grid finds many
-   more of them.** All 30 ordinary-week readings were rain in one hour of 15–24 mm (15 mm
+3. **Before the wet day rule, one heavy hour of rain at one grid point was enough for "High",
+   and the grid finds many of them.** All 30 ordinary-week readings were rain in one hour of 15–24 mm (15 mm
    scores exactly 60). In none of them was the 24-hour rain enough on its own; at the ten
    highest peaks it was 18–50 mm, below or at the edge of "heavy" (50 mm). A reading lasts 2 hours, because the weather is
    fetched every 2 hours, so 30 province-hours are about 15 separate downpours. No earthquake
-   or event caused a "High" that week.
+   or event caused a "High" that week. The wet day rule (below) was added for this.
 4. **The disaster cases barely changed.** Every province still reached "High"; with the grid,
    Odette reached it a few hours earlier in some provinces (Surigao del Norte 10 h before
    landfall instead of 6, Bohol within the hour after instead of 5 h after).
@@ -96,27 +97,43 @@ Key time: the earthquake (Jul 27, 8:43 am).
 
 ### An ordinary week, 6 to 12 February 2023 (all provinces)
 
-88 provinces × 169 hours = 14,872 province-hours. "High" or above: 30 province-hours, in 13 provinces. In 30 of them the weather alone scored 60 or more.
+88 provinces × 169 hours = 14,872 province-hours. "High" or above: 4 province-hours, in 2 provinces. In 4 of them the weather alone scored 60 or more.
 
-Which rain was enough for "High": one hour only 30, 24 hours only 0, both 0.
+Which rain was enough for "High": one hour only 4, 24 hours only 0, both 0.
 
 The ten highest peaks of the week:
 
 | Province | Peak | Peak at | Town at the peak | Parts at the peak | Rain 1 h / 24 h (mm) | Hours at "High" |
 |---|---|---|---|---|---|---|
-| Surigao del Sur | 74 | Feb 9, 02:00 | City of Bislig | quake 0, weather 74, event 0 | 23.6 / 50.1 | 4 |
-| Northern Samar | 72 | Feb 10, 02:00 | Catubig | quake 0, weather 72, event 0 | 22.2 / 44.1 | 2 |
-| Davao Oriental | 67 | Feb 8, 20:00 | Baganga | quake 0, weather 67, event 0 | 19.1 / 38.6 | 4 |
-| Iloilo | 66 | Feb 10, 08:00 | Ajuy | quake 0, weather 66, event 0 | 18.6 / 26.4 | 2 |
-| Agusan del Norte | 65 | Feb 6, 18:00 | City of Cabadbaran | quake 0, weather 65, event 0 | 17.7 / 35 | 2 |
-| Bohol | 64 | Feb 10, 02:00 | President Carlos P. Garcia | quake 0, weather 64, event 0 | 17.2 / 29 | 2 |
-| Davao Occidental | 62 | Feb 10, 12:00 | Jose Abad Santos | quake 0, weather 62, event 0 | 16.4 / 18.4 | 2 |
-| Leyte | 62 | Feb 8, 22:00 | Abuyog | quake 0, weather 62, event 0 | 16 / 34.8 | 2 |
-| Southern Leyte | 62 | Feb 8, 22:00 | Silago | quake 0, weather 62, event 0 | 16 / 34.8 | 2 |
-| South Cotabato | 61 | Feb 9, 20:00 | Norala | quake 0, weather 61, event 0 | 15.4 / 44.1 | 2 |
+| Surigao del Sur | 74 | Feb 9, 02:00 | City of Bislig | quake 0, weather 74, event 0 | 23.6 / 50.1 | 2 |
+| Davao Oriental | 67 | Feb 9, 00:00 | Baganga | quake 0, weather 67, event 0 | 19.4 / 81.9 | 2 |
+| Agusan del Norte | 59 | Feb 6, 18:00 | City of Cabadbaran | quake 0, weather 59, event 0 | 17.7 / 35 | 0 |
+| Bohol | 59 | Feb 10, 02:00 | President Carlos P. Garcia | quake 0, weather 59, event 0 | 17.2 / 29 | 0 |
+| Cebu | 59 | Feb 10, 04:00 | Aloguinsan | quake 0, weather 59, event 0 | 15.1 / 20.3 | 0 |
+| Davao Occidental | 59 | Feb 10, 12:00 | Jose Abad Santos | quake 0, weather 59, event 0 | 16.4 / 18.4 | 0 |
+| Iloilo | 59 | Feb 10, 08:00 | Ajuy | quake 0, weather 59, event 0 | 18.6 / 26.4 | 0 |
+| Lanao del Sur | 59 | Feb 9, 14:00 | Balabagan | quake 0, weather 59, event 0 | 14.9 / 26.4 | 0 |
+| Leyte | 59 | Feb 8, 22:00 | Abuyog | quake 0, weather 59, event 0 | 16 / 34.8 | 0 |
+| Northern Samar | 59 | Feb 10, 02:00 | Catubig | quake 0, weather 59, event 0 | 22.2 / 44.1 | 0 |
 
 The week was picked as one with no typhoon and no damaging earthquake; change the dates in
 `server/scripts/replay.ts` to try another.
+
+## The wet day rule (Phase 6, 2026-11-18)
+
+The rule: a heavy hour below red (under 30 mm) reaches "High" only if the last 24 hours had at
+least a set amount; on a drier day it stops at 59. Red-level hours always count in full. Tried
+with `WET_DAY_MM=<mm> npm run replay` (and `WET_DAY_MM=off` for no rule):
+
+| Rule | Ordinary week "High" | Provinces | The four disasters |
+|---|---|---|---|
+| Off | 30 province-hours | 13 | All reach "High" |
+| 30 mm | 20 | 8 | No change |
+| **50 mm (chosen)** | **4** | **2** | **No change: the same peaks and the same first "High" times** |
+| 100 mm | 0 | 0 | The same first "High" times, but Yolanda's peaks drop a little (Cebu 89 → 86, Leyte 96 → 95) |
+
+50 mm is PAGASA's "heavy" rain over 24 hours, and the 24-hour score already starts there. The 4
+hours it keeps were heavy hours on wet days (Bislig 50 mm, Baganga 82 mm in 24 hours).
 
 ## Compared with the first run (one weather point per province, 2026-11-17)
 
@@ -126,7 +143,7 @@ The week was picked as one with no typhoon and no damaging earthquake; change th
 | Taal | All 3 "High", peaks 62–65 | All 3 "High", peaks 61–65 |
 | Odette | All 6 "High", peaks 85–100, first 6 h before landfall | All 6 "High", peaks 87–100, first 10 h before landfall |
 | Abra | All 4 "High", peak 100 | All 4 "High", peaks 98–100 |
-| Ordinary week | 7 province-hours in 6 provinces | 30 province-hours in 13 provinces |
+| Ordinary week | 7 province-hours in 6 provinces | 30 province-hours in 13 provinces (4 in 2 with the wet day rule) |
 
 ## How the replay differs from the live app
 

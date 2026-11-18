@@ -63,7 +63,7 @@ test('worst reading: missing values never beat real ones, and nothing gives null
 test('hazards: each hazard gets its own score', () => {
   const quake = { magnitude: 6, depthKm: 10, distanceKm: 0, hoursAgo: 0 };
   const event = { kind: 'typhoon' as const, alertLevel: 'orange' as const, distanceKm: 0, hoursSinceEnd: null };
-  assert.deepEqual(hazardScores([quake], { rain1hMm: 15, rain24hMm: 0, heatIndexC: 42 }, [event]), {
+  assert.deepEqual(hazardScores([quake], { rain1hMm: 15, rain24hMm: 50, heatIndexC: 42 }, [event]), {
     quake: 75,
     rain: 60,
     heat: 50,
