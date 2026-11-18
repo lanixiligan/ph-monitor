@@ -239,16 +239,10 @@ CREATE TABLE IF NOT EXISTS official_alerts (
 );
 CREATE INDEX IF NOT EXISTS official_alerts_expires_idx ON official_alerts (expires_at);
 
--- ---------- Phase 3 of the audit: more weather points ----------
+-- ---------- Phase 3 of the audit: more weather points (replaced) ----------
 
--- Extra weather sample points for big or island provinces (at most two each),
--- on top of provinces.weather_point. Filled by `npm run weather-points`.
-CREATE TABLE IF NOT EXISTS province_weather_points (
-  province_psgc BIGINT REFERENCES provinces,
-  n             SMALLINT NOT NULL,             -- 1 or 2
-  geom          geometry(Point, 4326) NOT NULL,
-  PRIMARY KEY (province_psgc, n)
-);
+-- The old extra points per province. The weather grid below replaced them.
+DROP TABLE IF EXISTS province_weather_points;
 
 -- ---------- Per-town map colours: the weather grid ----------
 

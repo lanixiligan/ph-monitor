@@ -367,7 +367,7 @@ grid, fetched every 2 hours.
 
 **Progress:** steps 1–6 done (2026-11-17). Also added: the picked spot's town gets a thick
 outline, the card shows the whole town's score next to the province's, and the province hover
-names its highest town. `province_weather_points` is no longer read; it can be dropped later.
+names its highest town. `province_weather_points` was dropped (2026-11-18).
 
 ## Amendments (2026-11-15, after step 1)
 
