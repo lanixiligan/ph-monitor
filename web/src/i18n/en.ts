@@ -322,6 +322,9 @@ export const en = {
     videoTitle: '{outlet} video',
     play: 'Play',
     stop: 'Stop',
+    refresh: 'Refresh',
+    refreshing: 'Checking…',
+    refreshLabel: 'Check the channels again for new live streams and videos',
   },
 
   // Where a piece of information comes from, shown as a small tag.

@@ -3,7 +3,8 @@
 // video ("Latest").
 //
 // With a YouTube key, per channel link:
-//   uploads list (1 unit) -> details of those videos (1 unit) -> pick one
+//   live streams list (1 unit) + uploads list (1 unit)
+//   -> details of up to 50 of those videos (1 unit) -> pick one (live first)
 // Without a key, per channel link:
 //   channel video feed -> oEmbed on the newest video
 //   (that feed fails at random, so a failure means "unknown", never "dead")
@@ -12,15 +13,17 @@
 // unknown answers is the link marked dead (see settleUnknown).
 //
 // YouTube quota, with a key (the free daily quota is 10,000 units):
-//   one channel link costs 2 units per check (two 1-unit calls).
-//   12 slots, main link only:            12 x 2 = 24 units per check
-//   worst case, the 1 backup link too:   13 x 2 = 26 units per check
-//   one check every 30 minutes = 48 checks a day:
-//   24 x 48 = 1,152 units a day; worst case 26 x 48 = 1,248 (about 12% of the quota).
+//   one channel link costs 3 units per check (three 1-unit calls).
+//   12 slots, main link only:            12 x 3 = 36 units per check
+//   worst case, the 1 backup link too:   13 x 3 = 39 units per check
+//   scheduled, every 30 minutes = 48 checks a day: 48 x 39 = 1,872 units.
+//   Refresh button and page loads: at most one check every 10 minutes
+//   (jobs/streamRefresh.ts) = 144 more a day: 144 x 39 = 5,616 units.
+//   Worst case 7,488 units a day (about 75% of the quota); usually far less.
 
 import type { SourceStatus } from '@ph-monitor/shared';
 import type { StreamLink, StreamSlotConfig } from '../sources.ts';
-import { fetchChannelFeed, fetchOembed, fetchUploads, fetchVideos, MAX_IDS } from './youtube.ts';
+import { fetchChannelFeed, fetchLiveStreams, fetchOembed, fetchUploads, fetchVideos, MAX_IDS } from './youtube.ts';
 import type { Answer, VideoInfo } from './youtube.ts';
 
 /** A link is given up on after this long without a single answer. */
@@ -184,16 +187,41 @@ function linkUrl(link: StreamLink): string {
     : `https://www.youtube.com/watch?v=${link.videoId}`;
 }
 
-// With a key: the channel's newest uploads, plus the video shown last time
-// (a long live stream soon drops out of a busy channel's newest 50 uploads).
+/** At most this many of the 50 ids come from the live streams list; the rest are uploads. */
+const LIVE_ID_SHARE = 35;
+
+/**
+ * Which videos to ask about, 50 at most (one videos.list call). Pure.
+ * First the video shown last time (so a long stream is never lost), then the
+ * channel's newest live streams (where an on-air stream is found), then its
+ * newest uploads (where the latest video is found if nothing is live).
+ * A channel with few live streams leaves their room to uploads.
+ */
+export function idsToCheck(liveIds: string[], uploadIds: string[], rememberedId: string | null): string[] {
+  const ids: string[] = rememberedId ? [rememberedId] : [];
+  const add = (id: string) => {
+    if (ids.length < MAX_IDS && !ids.includes(id)) ids.push(id);
+  };
+  liveIds.slice(0, LIVE_ID_SHARE).forEach(add);
+  uploadIds.forEach(add);
+  liveIds.slice(LIVE_ID_SHARE).forEach(add);
+  return ids;
+}
+
+// With a key: the channel's live streams and newest uploads, then their details.
 async function checkLinkWithKey(link: StreamLink, apiKey: string, rememberedId: string | null): Promise<LinkOutcome> {
   const url = linkUrl(link);
   let ids: string[];
   if ('channelId' in link) {
-    const uploads = await fetchUploads(link.channelId, apiKey);
+    // Both lists are asked for at the same time.
+    const [live, uploads] = await Promise.all([
+      fetchLiveStreams(link.channelId, apiKey),
+      fetchUploads(link.channelId, apiKey),
+    ]);
     if (uploads.kind !== 'ok') return judgeWithKey(url, uploads, rememberedId);
-    ids = uploads.value;
-    if (rememberedId && !ids.includes(rememberedId)) ids = [...ids.slice(0, MAX_IDS - 1), rememberedId];
+    // Without the live list we cannot tell "not live" from "missed it": unknown keeps the last status.
+    if (live.kind !== 'ok') return noVideo(url, 'unknown', `live streams list: ${live.kind === 'error' ? live.note : 'missing'}`);
+    ids = idsToCheck(live.value, uploads.value, rememberedId);
   } else {
     ids = [link.videoId];
   }

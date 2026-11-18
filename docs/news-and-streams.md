@@ -139,7 +139,8 @@ Each slot shows the channel's live stream when it is live ("LIVE"), otherwise it
 ## The link checker
 
 `npm run check:sources` checks everything and prints a table. The scheduler also runs it: feeds
-every hour, streams every 30 minutes. Results go in the `sources` table.
+every hour, streams every 30 minutes. Opening the page or pressing Refresh in the live streams
+panel checks the streams again too, at most once every 10 minutes. Results go in the `sources` table.
 
 **Feeds** (`checker/checkFeed.ts`): does the address answer, is it RSS or Atom, does it have
 items? If not, it is `dead`. A feed with nothing new for 7 days is `ok` but marked stale.
@@ -148,9 +149,9 @@ items? If not, it is `dead`. A feed with nothing new for 7 days is `ok` but mark
 
 | | With `YOUTUBE_API_KEY` | Without a key |
 |---|---|---|
-| How | Two YouTube Data API calls of 1 unit each: newest uploads, then video details | The channel's public video feed, then oEmbed on the newest video |
+| How | Three YouTube Data API calls of 1 unit each: the channel's live streams list and newest uploads, then video details. A live stream is shown first; if none is on air, the latest video | The channel's public video feed, then oEmbed on the newest video |
 | Knows if it is live | Yes | No: shown as "Latest (may be offline)" |
-| Cost | About 1,200 of the 10,000 free units a day | Free |
+| Cost | About 1,900 of the 10,000 free units a day, at most about 7,500 with many refreshes | Free |
 
 `search.list` (100 units a call) is never used, and no page is scraped. When a check gets no
 answer the slot keeps its last status; only after 24 hours without an answer is it marked dead.

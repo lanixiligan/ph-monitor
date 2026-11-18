@@ -82,6 +82,15 @@ export async function fetchStreams(): Promise<StreamSlot[]> {
   return (await getJson('/api/streams')) as StreamSlot[];
 }
 
+/** Asks the server to check the channels again now (it may say "too soon" and skip), then the slots. */
+export async function refreshStreams(): Promise<StreamSlot[]> {
+  const response = await fetch('/api/streams/refresh', { method: 'POST' });
+  if (!response.ok) {
+    throw new Error(`The server answered ${response.status} for /api/streams/refresh`);
+  }
+  return (await response.json()) as StreamSlot[];
+}
+
 export async function fetchBulletins(): Promise<BulletinLink[]> {
   return (await getJson('/api/bulletins')) as BulletinLink[];
 }

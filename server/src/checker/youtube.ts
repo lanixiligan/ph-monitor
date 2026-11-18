@@ -2,7 +2,7 @@
 //
 // With a YouTube key (YOUTUBE_API_KEY in .env), two Data API calls that cost
 // 1 quota unit each (search.list costs 100 and is never used):
-//   1. playlistItems.list: a channel's newest uploads
+//   1. playlistItems.list: a channel's newest uploads, and its newest live streams
 //   2. videos.list: title, upload time, live or not, embeddable or not
 // Without a key:
 //   3. Channel video feed: newest videos (fails at random, see below)
@@ -111,14 +111,30 @@ async function callApi(path: string, params: Record<string, string>, apiKey: str
  * its first two letters "UC" swapped for "UU".
  */
 export async function fetchUploads(channelId: string, apiKey: string): Promise<Answer<string[]>> {
+  return fetchPlaylist(`UU${channelId.slice(2)}`, apiKey);
+}
+
+/**
+ * A channel's newest live streams, on air or ended (up to 50 ids, newest first). 1 quota unit.
+ * Same idea with "UULV": a playlist of the channel's live streams only. A news
+ * channel uploads many clips a day, so a stream that went live this morning is
+ * often no longer among its newest 50 uploads, but it is near the top here.
+ * A channel that never streamed has no such playlist: that is an empty list.
+ */
+export async function fetchLiveStreams(channelId: string, apiKey: string): Promise<Answer<string[]>> {
+  const answer = await fetchPlaylist(`UULV${channelId.slice(2)}`, apiKey);
+  return answer.kind === 'missing' ? { kind: 'ok', value: [] } : answer;
+}
+
+async function fetchPlaylist(playlistId: string, apiKey: string): Promise<Answer<string[]>> {
   const answer = await callApi(
     'playlistItems',
-    { part: 'contentDetails', playlistId: `UU${channelId.slice(2)}`, maxResults: String(MAX_IDS) },
+    { part: 'contentDetails', playlistId, maxResults: String(MAX_IDS) },
     apiKey,
   );
   if (answer.kind !== 'ok') return answer;
   const ids = parsePlaylistItems(answer.value);
-  return ids === null ? { kind: 'error', note: 'uploads answer not understood' } : { kind: 'ok', value: ids };
+  return ids === null ? { kind: 'error', note: 'playlist answer not understood' } : { kind: 'ok', value: ids };
 }
 
 /** Details of up to 50 videos in one call. 1 quota unit. Missing videos are simply left out. */

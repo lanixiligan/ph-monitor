@@ -315,6 +315,9 @@ export const fil: Strings = {
     videoTitle: 'Video ng {outlet}', // REVIEW
     play: 'I-play', // REVIEW
     stop: 'Ihinto', // REVIEW
+    refresh: 'I-refresh', // REVIEW
+    refreshing: 'Sinusuri…', // REVIEW
+    refreshLabel: 'Suriin muli ang mga channel para sa bagong live stream at video', // REVIEW
   },
 
   // Kung saan galing ang impormasyon, ipinapakita bilang maliit na tatak.

@@ -36,7 +36,7 @@ The browser never calls USGS, Open-Meteo, GDACS or any news site. The server doe
 | Service | Free limit | What we use |
 |---|---|---|
 | Open-Meteo | about 10,000 calls a day | Weather job about 4,800 a day (about 200 points, hourly); outlook about 700 a day; plus clicked spots (reused for 30 minutes per 5 km cell) |
-| YouTube Data API | 10,000 units a day | About 1,200 units a day (only 1-unit calls) |
+| YouTube Data API | 10,000 units a day | About 1,900 units a day, at most about 7,500 (only 1-unit calls) |
 
 Open-Meteo's free tier is for non-commercial use. This project is non-commercial.
 

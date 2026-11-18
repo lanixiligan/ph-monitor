@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import type { StreamSlot } from '@ph-monitor/shared';
-import { fetchStreams } from '../api.ts';
+import { fetchStreams, refreshStreams } from '../api.ts';
 import { categoryLabel, formatTime } from '../format.ts';
 import { fill, useStrings } from '../i18n/index.ts';
 import type { Strings } from '../i18n/index.ts';
@@ -24,12 +24,16 @@ export function StreamsPanel() {
   const [failed, setFailed] = useState(false);
   // The id of the one slot that is playing, or null for none.
   const [playingId, setPlayingId] = useState<string | null>(null);
+  // True while the Refresh button waits for the server's fresh check.
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+    // On page load, ask for a fresh check of the channels (the server skips it if
+    // one ran in the last few minutes). After that, re-read the list every 5 minutes.
+    async function load(fresh: boolean) {
       try {
-        const result = await fetchStreams();
+        const result = fresh ? await refreshStreams() : await fetchStreams();
         if (!cancelled) {
           setSlots(result);
           setFailed(false);
@@ -38,13 +42,26 @@ export function StreamsPanel() {
         if (!cancelled) setFailed(true);
       }
     }
-    void load();
-    const timer = setInterval(() => void load(), REFRESH_MS);
+    void load(true);
+    const timer = setInterval(() => void load(false), REFRESH_MS);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
   }, []);
+
+  // Refresh: the server checks the channels again (at most every few minutes), then sends the slots.
+  async function refresh() {
+    setRefreshing(true);
+    try {
+      setSlots(await refreshStreams());
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   // The slot that is playing now, if any. `?? null` turns "not found" into null.
   const playing = slots?.find((slot) => slot.id === playingId) ?? null;
@@ -53,6 +70,15 @@ export function StreamsPanel() {
     <section className="panel panel-streams" aria-labelledby="streams-title">
       <div className="panel-head">
         <h2 id="streams-title">{t.streams.title}</h2>
+        <button
+          className="filter"
+          onClick={() => void refresh()}
+          disabled={refreshing}
+          aria-busy={refreshing}
+          title={t.streams.refreshLabel}
+        >
+          {refreshing ? t.streams.refreshing : t.streams.refresh}
+        </button>
       </div>
 
       {/* The player sits above the list and stays put while the list scrolls. */}

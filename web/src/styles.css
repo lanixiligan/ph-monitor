@@ -680,6 +680,13 @@ label.legend-row {
 .filter[aria-pressed='true'] {
   color: var(--on-ink);
   background: var(--ink);
+/* A button that is busy (e.g. Refresh while checking) looks quieter. */
+.filter:disabled {
+  color: var(--ink-soft);
+  border-color: var(--line);
+  cursor: progress;
+}
+
   border-color: var(--ink);
 }
 
