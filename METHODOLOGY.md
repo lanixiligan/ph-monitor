@@ -200,7 +200,7 @@ when the earthquake and weather feeds were last fetched **successfully**. If eit
 
 Every feed also has its own limit (`FEED_RULES` in `server/src/freshness.ts`): earthquakes and
 headlines 1 hour, weather 4.5 hours, disaster events and storm tracks 2 hours, the outlook 13
-hours. A banner at the top of the page names each feed past its limit. A weather run counts as
+hours, the heat map 25 hours. A banner at the top of the page names each feed past its limit. A weather run counts as
 a success only when at least 90% of weather points answered; each request is tried twice.
 
 A disaster event with no end date is dropped from the score and the map once its feed stops
@@ -229,6 +229,8 @@ A quiet day with no earthquakes is not stale: what counts is that the fetch work
   are not in the score.
 - **Storm tracks, the 7-day outlook and news do not change the score.** They are collected
   (JMA, JTWC, Open-Meteo, GloFAS, news feeds) for display only.
+- **The heat map never changes the score.** Its table (`heat_forecasts`) is read by no scoring
+  code; the score's heat signal still comes from the weather job above.
 - **Storm surge zones come from a fixed map, not a live feed.** Project NOAH's storm surge
   maps (2021 data) show where a surge of each advisory level (SSA 1 up to 2 m … SSA 4 more than
   4 m) would reach. They are scenarios, not a forecast, and are shown on the map and the status

@@ -11,7 +11,9 @@ that exact spot, with the reasons and the raw events behind it.
 **Status: work in progress.** The map and score use earthquakes, weather and disaster event
 alert levels. The page also shows disaster events and storm tracks on the map, a 7-day outlook
 and links to official bulletins on the status card, disaster headlines, and live streams or
-latest videos from news channels. The page can be read in English or Filipino (the Filipino
+latest videos from news channels. A "Heat map" button recolours the map by the heat index from
+a weather model you pick (ECMWF, DWD ICON or NOAA GFS); it is shown only and never changes the
+score. The page can be read in English or Filipino (the Filipino
 text is a draft under review). Expect rough edges, and scores that change as the formula is
 tuned.
 
@@ -34,9 +36,13 @@ npm run dev:server        # terminal 1: API + data fetching, http://localhost:30
 npm run dev:web           # terminal 2: the map, http://localhost:5173
 ```
 
+Re-running `npm run weather-points` later empties the stored weather readings (`point_readings`)
+and the heat map (`heat_forecasts`) until the next weather run and the next heat map run (at the
+next hourly tick) fill them again.
+
 The server fetches earthquakes, official alerts and news every 15 minutes; weather every 2 hours;
-disaster events, storm tracks and the stream check every 30 minutes; the feed check every hour; and the 7-day outlook every
-6 hours. At startup only the jobs that are due run, so a restart does not fetch fresh feeds again.
+disaster events, storm tracks and the stream check every 30 minutes; the feed check every hour; the 7-day outlook every
+6 hours; and the heat map every 12 hours. At startup only the jobs that are due run, so a restart does not fetch fresh feeds again.
 Weather for a clicked spot is fetched when you click, and reused for 30 minutes.
 
 Optional: put a free YouTube Data API key in `.env` as `YOUTUBE_API_KEY` so the stream check can
@@ -53,7 +59,7 @@ A link can open a spot directly: `http://localhost:5173/?lat=10.3157&lon=123.885
 | `npm run replay` | Replay past disasters through the score formula and print a results table (see `docs/replay-results.md`) |
 | `npm run typecheck` | Check all TypeScript |
 | `npm run ingest:earthquakes` / `ingest:weather` / `compute:scores` | Run one job by hand |
-| `npm run ingest:events` / `ingest:storms` / `ingest:forecast` / `ingest:news` | Run one of the newer jobs by hand |
+| `npm run ingest:events` / `ingest:storms` / `ingest:forecast` / `ingest:news` / `ingest:alerts` / `ingest:heatmap` | Run one of the newer jobs by hand |
 | `npm run check:sources` | Check every news feed and stream link and print a table |
 | `npm run sample-storm` (add `-- remove` to delete it) | Load a sample storm track, clearly labelled as not real |
 | `npm run build` | Build the web app into `web/dist` |
@@ -84,6 +90,9 @@ data flows through the app, and its limits.
 | Tropical storm warnings (backup) | [Joint Typhoon Warning Center (JTWC)](https://www.metoc.navy.mil/jtwc/jtwc.html), US Navy | Public domain |
 | 7-day outlook: rain and wind gusts (modelled) | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0; free tier is non-commercial only |
 | 7-day outlook: river flow (modelled) | [Open-Meteo Flood API](https://open-meteo.com/en/docs/flood-api), from GloFAS (Copernicus Emergency Management Service) | CC BY 4.0 |
+| Heat index map, ECMWF source (modelled; shown only, not in the score) | Based on data and products of the European Centre for Medium-Range Weather Forecasts ([ECMWF](https://www.ecmwf.int/)): IFS HRES [open data](https://www.ecmwf.int/en/forecasts/datasets/open-data), via [Open-Meteo](https://open-meteo.com/). Changed: we work out the heat index from its temperature and humidity | CC BY 4.0 |
+| Heat index map, ICON source (same) | Based on data from [Deutscher Wetterdienst](https://www.dwd.de/) (DWD), gridded data reproduced graphically: the ICON global model, via [Open-Meteo](https://open-meteo.com/) | CC BY 4.0 |
+| Heat index map, GFS source (same) | Global Forecast System of [NOAA](https://www.noaa.gov/)'s National Weather Service (NCEP), via [Open-Meteo](https://open-meteo.com/) | Public domain |
 | News headlines (headline, outlet, time and link only) | RSS feeds of the outlets listed in `server/src/sources.ts`, and [Google News](https://news.google.com/) search | Headlines belong to their outlets; each links to the original article |
 | Live streams and latest videos | [YouTube](https://www.youtube.com/) channels listed in `server/src/sources.ts` | Shown only in YouTube's own player |
 | Basemap: roads and place names (switch in `web/src/mapSettings.ts`) | [OpenFreeMap](https://openfreemap.org/), © OpenMapTiles, data © OpenStreetMap contributors | ODbL (OpenStreetMap data) |

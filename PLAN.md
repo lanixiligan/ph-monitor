@@ -17,6 +17,7 @@ roadmap** (making what exists more trustworthy, numbered on its own).
 | Per-town map colours and the 2-hour weather grid | Done (PRs #3, #4) |
 | Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6); USGS impact fields on the card (PR #7); NOAH storm surge zones on the map and card (built 2026-11-19, not committed yet) |
 | Product Phase 3: all kinds of news on the map | Idea only; needs the owner's answers first |
+| Product Phase 4: heat index map with switchable models | Design approved 2026-11-19 (see "Phase 4"). Step 1 (three models: ECMWF, DWD ICON, NOAA GFS) built 2026-11-19, not committed yet; the Agreement view is step 2 |
 
 **Next:** NOAH landslide zones (same code as storm surge). First speed up reading the large
 landslide files (see "Build notes" under "NOAH hazard layer: design").
@@ -214,6 +215,191 @@ To settle before designing:
 - Keyword rules or an AI model for topics?
 - How to stop person names being read as provinces.
 - How many markers the map can show before it becomes unreadable (how many days, grouping).
+
+## Phase 4 — heat index map (approved 2026-11-19)
+
+**Status:** step 1 (three models) built 2026-11-19, not committed yet. Step 2 (Agreement) waits
+until the owner has looked at the three models side by side.
+
+**What and why.** A map of the heat index ("feels like" temperature) over the whole country,
+coloured by PAGASA's bands, so a reader can see where it is dangerously hot right now. The
+reader can switch between weather models. Seeing several models side by side, and where they
+disagree, shows how far to trust the estimate. It is a display layer only. **It never
+changes the score**: no scoring code reads its table.
+
+**Goals.** A heat map button. Pressing it turns the heat map on and shows the sources to pick
+from: ECMWF, DWD ICON and NOAA GFS. While the heat map is on, the reader can switch sources at
+any time (owner's design). Then an "Agreement" view.
+**Non-goals.** A time slider (only the current hour is shown). Heat on the status card. Finer
+cells than the weather grid. Satellite land surface temperature (MODIS, Himawari): it measures
+how hot the ground is, not the air.
+**Anti-goals (a failure even if it works).** The score changes. The score's weather fetch
+breaks or gets slower. The page shows two warm scales at once. Missing data looks cool.
+
+### Facts (checked 2026-11-19 on open-meteo.com, with live calls)
+
+- Open-Meteo `/v1/forecast` with `models=` named explicitly, never the default blend.
+  - `ecmwf_ifs`: ECMWF IFS HRES, 9 km. Hourly to 90 h, a new run every 6 h. ECMWF open data, CC BY 4.0
+    since 2025-10-01.
+  - `ncep_gfs_global`: NOAA GFS, 0.11° (~13 km), hourly to 120 h, every 6 h.
+  - ICON: `icon_global` is marked "Discontinued 2026-11-30" (DWD moves to native grids). Use
+    `dwd_icon_global_native`, which works now. Check again before step 2.
+  - All three returned 48 of 48 hourly values for `temperature_2m` and `relative_humidity_2m`.
+- **How calls are counted** (pricing page and its cost calculator): one call per location,
+  times `max(1, variables × models / 10)` for spans up to 2 weeks. 2 variables × 3 models is
+  0.6, so **all three models in one request cost the same as one**: 1 call per point.
+- Free tier: 600 a minute, 5,000 an hour, 10,000 a day; non-commercial only.
+- The heat index uses our own `heatIndexC()` (PAGASA's formula), not Open-Meteo's
+  `apparent_temperature`.
+
+### Budget (owner's choice: option A)
+
+| Today | Points | Runs a day | Calls a day |
+|---|---|---|---|
+| Score weather (`ingestWeather`, every 2 h) | 599 | 12 | 7,188 |
+| Outlook + river flow | 88 × 2 | 4 | 704 |
+| **Heat map, all models in one request, every 12 h** | **599** | **2** | **1,198** |
+| Total | | | **9,090**, leaving ~910 for card clicks |
+
+Options not chosen: every 6 h (+2,396: over the limit); riding along on the score's
+weather fetch (+480, but it changes the request the score depends on); finer grids (0.15° is
+1,265 points, 0.1° is 2,731: too many at any rate). Downloading ECMWF/NOAA files directly has no
+call limit and keeps the full 9 km, but needs a GRIB reader: too much to build and maintain.
+
+Every 12 h is enough: each fetch holds 48 hours of forecast, so the current hour is always in
+it. The cost is a forecast up to 12 h older than the newest model run.
+
+### Approaches
+
+- **Chosen: its own job on the score's weather points, colouring towns.** It reads all 599
+  points in `weather_points`: the 0.25° land grid plus each province's point and the 29
+  small-island towns' points. That table is built from the province boundaries in PostGIS
+  by `pick-weather-points`, so no new grid script is needed. Each city and municipality takes
+  the hottest of its linked points (`place_weather_points`, the same links and the same
+  "worst point" rule the score uses). Every town is covered, and the map looks like the one
+  readers already know.
+- Not chosen:
+  - one square per grid point (482 points): small islands and some remote towns would get no
+    square, and so would look the same as places under 27 °C;
+  - a new, finer heat grid: it doesn't fit the budget;
+  - adding the models to `ingestWeather`: it puts the score at risk.
+
+### Owner's decisions (2026-11-19)
+
+- **Button and source picker.** A "Heat map" button on the map. Pressing it turns the heat map
+  on and opens a small panel that lists the sources. The panel stays open while the heat map is
+  on, so the reader can switch sources at any time; the map recolours straight away.
+- **All three sources from the first build** (ECMWF, ICON, GFS): they come in the same request,
+  so they cost nothing extra. Agreement comes second.
+- **Colours: warm bands that replace the score.** PAGASA-style yellow → orange → red → dark red.
+  While the heat map is on, the score colours are hidden, so two warm scales never show at once.
+  CLAUDE.md's colour rule gets a second exception (like `--live`).
+- **Colour each town**, not grid squares: all 599 points, 1,198 calls a day.
+- **Branch:** `heat-index-map`, started from `phase6-noah-hazard-maps` (PR #9).
+
+### Design
+
+**Server.**
+- `shared/src/heatModels.ts`: the list of models, one row each with the Open-Meteo name, a short
+  label, the grid size in km, and the credit. Holds ECMWF (`ecmwf_ifs`, 9 km), ICON
+  (`dwd_icon_global_native`, 13 km) and GFS (`ncep_gfs_global`, 13 km). ECMWF is the default.
+  Adding a model later means adding a row; nothing else in the code path changes.
+- `server/src/fetchers/openMeteoHeat.ts`:
+  - The request: `hourly=temperature_2m,relative_humidity_2m&models=<all>&forecast_hours=48&timeformat=unixtime`,
+    50 points per request, paced like the weather job.
+  - With several models the answer names each list `temperature_2m_<model>`. With one model the
+    names may have no suffix; the fetcher handles both.
+  - zod checks each location; a bad one is skipped and logged.
+- Table `heat_forecasts` in `schema.sql` (re-runnable): `model`, `point_id` (references
+  `weather_points`, `ON DELETE CASCADE`), `valid_at`, `temp_c`, `humidity_pct`,
+  `heat_index_c`, `fetched_at`. Primary key: (model, point_id, valid_at).
+  - **Only the newest run counts** (builder's call). Each run replaces a model's rows inside a
+    transaction: delete, then insert. A point that did not answer has no rows, so it shows as
+    "no data". It never falls back to an older run's value.
+  - A run where a model falls under 90% of points does not replace that model's rows: the
+    previous good run stays whole, and its age shows as "out of date" after 25 h. Runs are
+    never mixed. Last good run per model: table `heat_runs`.
+  - Rows more than 6 hours in the past are deleted.
+  - If `pick-weather-points` is re-run, the cascade empties the table, and the next run fills
+    it again.
+- Each model is judged separately: a model is "ok" in a run only if at least 90% of points
+  have values for it (`isFreshEnough`). A model that returns all nulls (ICON may be retired) is
+  marked "no data" while the others carry on. `fetch_runs` gets the row `open-meteo-heat` for
+  the run as a whole, and each model's `fetchedAt` comes from its own rows.
+- Job `ingestHeatMap`:
+  - In `due.ts`, every 720 minutes, source `open-meteo-heat`.
+  - Command `npm run ingest:heatmap`.
+  - Freshness: a new `heatMap` entry in `FEED_RULES`, stale after 25 h (two missed runs).
+  - A run counts as successful only if `isFreshEnough` (90% of points answered).
+- Route `GET /api/heatmap?model=ecmwf_ifs`. It returns:
+  - the model, `fetchedAt` (null = no data), `isStale`, and the hour shown (`validAt`);
+  - `places: [{ psgc, heatIndexC | null, band | null }]`: each town's hottest linked point;
+  - `provinces: [{ psgc, heatIndexC | null, band | null }]`: each province's hottest town, for
+    the zoomed-out map, as with the score.
+  The band name comes from `WEIGHTS.heat.bands` in `scoring.ts`, which is read only; the
+  formula itself stays untouched. The hour shown is the current hour from the newest stored run.
+  A town whose points all lack a value for that hour is null, never a guess. A town with some
+  points missing takes the hottest of the rest, the same rule as `worstReading` (builder's call).
+
+**Web.**
+- A "Heat map" button with the map buttons at the top right. It opens a panel:
+  - the sources as radio buttons, each with its model's grid size;
+  - a short note that the points are about 28 km apart whatever the model;
+  - the "Model estimate" tag and "updated … ago";
+  - the band key; a close button.
+  Closing the panel turns the heat map off.
+- The map colours the same shapes as the score: provinces when zoomed out, towns when zoomed
+  in, using the town and province shapes the map already loads.
+  - Each shape is coloured by its band.
+  - Below 27 °C a shape gets a light neutral ink fill, labelled "below 27 °C" in the key. It is
+    not a warm colour, and it is not left empty, so it can't be mixed up with a missing value.
+  - A null shape uses the existing striped "no data" look.
+- While the heat map is on, the score fill layers are hidden. The legend says so, and the
+  status card still opens on click.
+- **The number (builder's call):** while the heat map is on, the hover label shows the heat
+  index instead of the score, for example "Kiamba: 41 °C, extreme caution · ECMWF".
+  - The panel says the status card uses Open-Meteo's blended forecast, so its number can
+    differ from the chosen model.
+  - Step 2's agreement text goes in the same hover label.
+- Stale or missing data uses ink, `WarnIcon` and words, never a colour.
+- Colours: `--heat-caution`, `--heat-extreme-caution`, `--heat-danger`, `--heat-extreme-danger`
+  in `styles.css`, light and dark sets, read through `palette.ts`.
+- Every string is in `en.ts` and `fil.ts`. The band names reuse `t.heatBands`. Filipino lines are
+  drafts.
+
+**Credits and docs.**
+- Credits page and README: "ECMWF open data (CC BY 4.0) via Open-Meteo", plus DWD ICON and NOAA
+  GFS via Open-Meteo. Each uses its provider's credit wording, checked while building.
+- `docs/data-sources.md`, `how-it-works.md` and `privacy-and-limits.md` explain the limits:
+  - a 9 km model smooths out hills and cities, and can read low in hot city centres;
+  - the map samples it at points about 28 km apart, and a town shows its hottest point.
+
+**Tests.**
+- Pure functions first:
+  - picking the current hour from a stored run;
+  - reading both answer shapes (with and without model suffixes);
+  - the band of a value;
+  - each town's hottest point, and each province's hottest town.
+- A real Open-Meteo answer (one request, a few points) is saved in `server/test/fixtures/`.
+- Database tests:
+  - ingest into `heat_forecasts`, and a second run replaces the first;
+  - the route: current hour, a stale run, a point missing from the newest run is null, an
+    unknown model gives 400.
+
+### Build order
+
+1. **The three models**, built as above. The owner looks at them side by side before step 2.
+2. **Then an Agreement** choice in the panel. A pure, tested function takes one cell's values from every model and returns the
+   lowest, the highest, and whether they agree ("all agree: 40–42 °C" or "models disagree:
+   35–42 °C"). How far apart counts as "disagree", and the Agreement view's colours, are
+   settled with the owner at step 2.
+
+### Left to the builder
+
+- Exact file names in the web app, and how the panel is laid out at phone width.
+- How the 50-point requests are paced.
+- The wording of every string.
+- Unknown-model handling beyond returning a 400.
 
 ## Reliability roadmap (from the audit of 2026-11-16)
 

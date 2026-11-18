@@ -9,6 +9,8 @@ Phase 2 (built; status of every phase in `PLAN.md`): the server also collects di
 GDACS alert levels count in the score), storm tracks (JMA, JTWC), a 7-day outlook, disaster news
 and YouTube stream links. The page shows them as map layers, extra status card sections, a
 headlines panel and a live news panel (YouTube streams).
+Phase 4 (step 1 built): a heat map button recolours the map by the heat index from a chosen
+weather model (ECMWF, DWD ICON, NOAA GFS). Display only: it never changes the score.
 Non-commercial. Plan and decisions: `PLAN.md`. Score formula: `METHODOLOGY.md`.
 
 ## Stack
@@ -21,7 +23,8 @@ TypeScript is pinned to 5.9.3 on purpose (do not move to 7 without asking).
 ## Folder map
 
 ```
-shared/src/        types.ts (shared types), appInfo.ts (APP_NAME), newsTypes.ts (kinds of disaster)
+shared/src/        types.ts (shared types), appInfo.ts (APP_NAME), newsTypes.ts (kinds of disaster),
+                   heatModels.ts (the heat map's weather models)
 server/db/         schema.sql (all tables; re-runnable)
 server/scripts/    migrate.ts, load-provinces.ts, load-places.ts, run-job.ts,
                    check-sources.ts, load-sample-storm.ts, pick-weather-points.ts,
@@ -35,14 +38,18 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    placeSearch.ts (which place names match a typed text),
                    scoreHistory.ts (a history row only when a score changed),
                    hazardLoad.ts + hazardShapes.ts (NOAH file list, names, shape checks),
-                   hazardZones.ts (fixed hazard map answer for one spot)
+                   hazardZones.ts (fixed hazard map answer for one spot),
+                   heatMap.ts (heat map answer: each town's hottest point, per model)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
-                   jma, jtwc, openMeteoDaily, openMeteoFlood, rss, pagasa (official
-                   alerts), retry (one more try for a failed download)
+                   jma, jtwc, openMeteoDaily, openMeteoFlood, openMeteoHeat (three models
+                   for the heat map), rss, pagasa (official alerts), retry (one more try
+                   for a failed download)
   jobs/            ingestEarthquakes, ingestWeather (weather grid), ingestEvents, ingestStorms,
-                   ingestAlerts, ingestForecast, ingestNews, checkSources, computeScores
+                   ingestAlerts, ingestForecast, ingestNews, ingestHeatMap (every 12 h;
+                   never read by the score), checkSources, computeScores
                    (towns, then provinces = highest town), townInputs, scheduler,
-                   due (which jobs are due; every job's interval)
+                   due (which jobs are due; every job's interval), jobTries (when a
+                   job last started; spaces out heat map retries)
   news/            keyword filter and kinds of disaster, province and town tagging,
                    checkHeadline (both together), storm names, same-story merging
   checker/         link checks for feeds and YouTube streams
@@ -51,14 +58,17 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
   routes/          provinces.ts (map data), point.ts (score for one spot),
                    places.ts (place search, town shapes and scores),
                    conditions.ts (events, storms, news, streams, bulletins),
-                   hazards.ts (loaded hazard maps, hazard zone vector tiles)
+                   hazards.ts (loaded hazard maps, hazard zone vector tiles),
+                   heatmap.ts (heat index per town and province for one model)
 server/test/       one test file per area, real feed samples in fixtures/
   db/              database tests (testDb.ts seeds a small map; import it first)
 web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (time, number
                    and link helpers, "uploaded … ago"), useNow.ts (a clock for it), cardOrder.ts (what the status card shows where), mapOverlays.ts + stormGeo.ts (event markers and
                    storm tracks), hazardOverlay.ts + hazardLabels.ts (NOAH hazard zones),
+                   heatColors.ts (heat band colours for towns and provinces),
                    styles.css (all colours and layout), palette.ts (CSS
-                   colours for the map), components/
+                   colours for the map), components/ (HeatMapPanel.tsx: the heat map's
+                   source picker)
   i18n/            en.ts and fil.ts (every string the reader sees), language switch
   theme/           light/dark choice (sets <html data-theme>), theme switch
 data/              downloaded boundary files (git-ignored)
@@ -81,7 +91,9 @@ npm run measure:news     check the news rules against the hand-labelled headline
 npm run typecheck        tsc over all workspaces
 npm run ingest:earthquakes | ingest:weather | compute:scores   one job by hand
 npm run ingest:events | ingest:storms | ingest:forecast | ingest:news | ingest:alerts
-npm run weather-points   pick extra weather points for big provinces (after load-places)
+npm run ingest:heatmap   heat map for all three models (about 600 Open-Meteo calls)
+npm run weather-points   pick extra weather points for big provinces (after load-places);
+                         empties point_readings and heat_forecasts until the next runs
 npm run load-hazards -- stormSurge   load Project NOAH zones (or `landslide`); restart the server after
 npm run check:sources    check every feed and stream link, print a table
 npm run sample-storm     load a sample storm track (add `-- remove` to delete it)
@@ -104,7 +116,9 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   `web/src/styles.css`, with a light set and a dark set (`[data-theme='dark']`). Never write a
   hex colour anywhere else: the map reads the variables through `web/src/palette.ts`. The score
   scale (`web/src/scoreScale.ts`) is the only warm colour on the page; it has a light version
-  (darker = worse) and a dark version (brighter = worse). Errors and stale data use ink, the
+  (darker = worse) and a dark version (brighter = worse). Second exception (like `--live`):
+  the heat map's band colours (`--heat-*`), shown only while the score colours are hidden, so
+  two warm scales never show at once. Errors and stale data use ink, the
   `WarnIcon` and words, never red or amber. Two fonts, Barlow Condensed (titles, numbers) and Atkinson Hyperlegible (text), come
   from `@fontsource` npm packages and ship with the app; never load a font from a font site.
 - Layout: top bar, then three columns: on the left the spot panel with the legend under it
@@ -126,7 +140,8 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   change the score. Sections are tagged Official, Global assessment or Model estimate.
 - Data credits (USGS, Open-Meteo CC BY 4.0, NAMRIA/PSA via OCHA CC BY 3.0 IGO, OpenStreetMap,
   GDACS CC BY 4.0, NASA EONET, JMA, JTWC, GloFAS via Open-Meteo, PAGASA CC BY 4.0, Project NOAH ODbL,
-  the news outlets) must stay
+  ECMWF CC BY 4.0, DWD CC BY 4.0 and NOAA GFS public domain via Open-Meteo, the news outlets)
+  must stay
   visible in the UI and README. A new source gets its credit line in both.
 - The "not an official warning service" notice must stay on the page footer, the status card
   (`web/src/components/Disclaimer.tsx`), the README and METHODOLOGY.
