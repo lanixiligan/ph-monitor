@@ -298,3 +298,34 @@ ALTER TABLE place_scores ADD COLUMN IF NOT EXISTS hazards JSONB;
 -- The town whose score the province shows (its highest). NULL for a province
 -- with no towns loaded, which is scored as a whole instead.
 ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS top_place_psgc BIGINT;
+
+-- ---------- Hazard maps (Project NOAH, ODbL) ----------
+-- Fixed hazard zones from Project NOAH (UP NOAH Center): landslide and storm
+-- surge, each in classes 1 (low) to 3 (high). Shown on the map and the status
+-- card; never part of the score. Kept apart from the score tables, because the
+-- ODbL licence covers these shapes and whatever is made from them.
+-- surge_level: 1 to 4 for storm surge (the advisory level), 0 for landslide.
+-- Each row is one small piece (split and subdivided at load time), so lookups stay fast.
+CREATE TABLE IF NOT EXISTS hazard_zones (
+  id            BIGSERIAL PRIMARY KEY,
+  kind          TEXT NOT NULL CHECK (kind IN ('landslide', 'stormSurge')),
+  surge_level   SMALLINT NOT NULL CHECK (surge_level BETWEEN 0 AND 4),
+  hazard_class  SMALLINT NOT NULL CHECK (hazard_class BETWEEN 1 AND 3),
+  province_psgc BIGINT NOT NULL REFERENCES provinces ON DELETE CASCADE,
+  geom          geometry(Polygon, 4326) NOT NULL,
+  CHECK ((kind = 'landslide') = (surge_level = 0))
+);
+CREATE INDEX IF NOT EXISTS hazard_zones_geom_idx ON hazard_zones USING GIST (geom);
+CREATE INDEX IF NOT EXISTS hazard_zones_file_idx ON hazard_zones (kind, surge_level, province_psgc);
+
+-- Which province files are loaded. Tells "no map here" apart from "not in a zone".
+CREATE TABLE IF NOT EXISTS hazard_coverage (
+  kind          TEXT NOT NULL CHECK (kind IN ('landslide', 'stormSurge')),
+  surge_level   SMALLINT NOT NULL CHECK (surge_level BETWEEN 0 AND 4),
+  province_psgc BIGINT NOT NULL REFERENCES provinces ON DELETE CASCADE,
+  source_file   TEXT NOT NULL,  -- path inside the NOAH data set
+  sha256        TEXT NOT NULL,  -- hash of the downloaded zip
+  zone_count    INTEGER NOT NULL,
+  loaded_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (kind, surge_level, province_psgc)
+);
