@@ -15,10 +15,10 @@ roadmap** (making what exists more trustworthy, numbered on its own).
 | Product Phase 2: events, storms, outlook, news, streams, Filipino | Done (PR #1). Official bulletins only partly (no feed for wind signals or PHIVOLCS); AI summaries skipped |
 | Reliability phases 1–5 | Done (PR #2) |
 | Per-town map colours and the 2-hour weather grid | Done (PRs #3, #4) |
-| Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6) |
+| Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6); USGS impact fields on the card (PR #7) |
 | Product Phase 3: all kinds of news on the map | Idea only; needs the owner's answers first |
 
-**Next:** the rest of Phase 6 (see "Phase 6"): USGS impact fields on the card first.
+**Next:** the rest of Phase 6 (see "Phase 6"): check the licences of landslide and storm surge maps.
 
 ## Phase 2 — disaster conditions, forecasts, news, Filipino (planned 2026-11-15, done)
 
@@ -238,7 +238,7 @@ Its main job is acting on what the replay shows. Status, in order:
 | Replay re-run the way the live app scores (towns, the weather grid, a reading every 2 hours) | Done 2026-11-18 (PR #5). Every known disaster still reaches "High"; the ordinary week had 30 "High" province-hours (was 7), all from a single heavy hour of rain |
 | **Wet day rule** (owner's choice): a heavy hour under 30 mm reaches "High" only after 50 mm in 24 hours | Done 2026-11-18 (PR #6). The ordinary week drops from 30 "High" province-hours to 4; no known disaster changes. Other amounts can be tried with `WET_DAY_MM=<mm> npm run replay` |
 | **Headline number**: keep "strongest + 0.25 × each other", or use the worst single hazard | Kept for now, as recommended: Taal reached "High" only through it. The owner has not decided yet |
-| **USGS impact fields (1.10)**: PAGER `alert`, `mmi` (shaking intensity) and `tsunami` are saved in `raw` but not used. Show them on the card, or use them in the earthquake signal | **Next** |
+| **USGS impact fields (1.10)**: PAGER `alert`, `mmi` (shaking intensity) and `tsunami` are saved in `raw` but not used. Show them on the card, or use them in the earthquake signal | Done 2026-11-18 (PR #7). Shown on the card, tagged "Global assessment"; not in the score |
 | **Landslide and storm surge maps**: no live feed for either. Static hazard maps (for example government geohazard maps) could mark areas at risk, but only if their licence allows reuse with credit. If none does, keep the "not covered" line | To do: check the licences first |
 | **Man-made disasters in the headlines**: building fires and garbage, landfill or mine collapses. Left out on 2026-11-17 (owner's choice); a later "Man-made" group could bring them back | To do, if the owner wants it |
 

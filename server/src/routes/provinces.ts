@@ -14,6 +14,7 @@ import type {
 import { getConditions } from '../conditions.ts';
 import { pool } from '../db.ts';
 import { buildFreshness, getLastOk } from '../freshness.ts';
+import { readQuakeImpact } from '../quakeImpact.ts';
 import { WEIGHTS } from '../scoring/scoring.ts';
 
 export const provincesRouter = Router();
@@ -144,8 +145,10 @@ provincesRouter.get('/:psgc', async (req, res) => {
     occurred_at: Date;
     distance_km: number;
     url: string | null;
+    props: unknown; // the USGS record's properties, checked by readQuakeImpact
   }>(
-    `SELECT q.id, q.magnitude, q.depth_km, q.place, q.occurred_at, l.distance_km, q.url
+    `SELECT q.id, q.magnitude, q.depth_km, q.place, q.occurred_at, l.distance_km, q.url,
+            q.raw->'properties' AS props
      FROM earthquake_provinces l
      JOIN earthquakes q ON q.id = l.earthquake_id
      WHERE l.province_psgc = $1 AND q.occurred_at >= $2 AND q.magnitude >= $3
@@ -178,6 +181,8 @@ provincesRouter.get('/:psgc', async (req, res) => {
     occurredAt: row.occurred_at.toISOString(),
     distanceKm: row.distance_km,
     url: row.url,
+    // `...` copies in the fields readQuakeImpact returns (PAGER alert, mmi, tsunami link).
+    ...readQuakeImpact(row.props),
   }));
   if (weather) {
     events.push({

@@ -38,7 +38,21 @@ export type EarthquakeEvent = {
   /** Distance from the epicentre to this province's edge. 0 if it is inside. */
   distanceKm: number;
   url: string | null;
+  // USGS's own impact estimates (shown on the card only, never in the score).
+  // Each is null when USGS gave no value or the value failed the checks.
+  /** PAGER alert: USGS's estimate of possible deaths and damage. */
+  pagerAlert: PagerAlert | null;
+  /** Highest estimated shaking intensity (Modified Mercalli, about 1 to 10). */
+  mmi: number | null;
+  /**
+   * True when USGS shows a tsunami information link for this quake.
+   * It does NOT mean a tsunami happened or is coming.
+   */
+  tsunamiInfo: boolean;
 };
+
+/** USGS PAGER alert levels, from least to most severe. */
+export type PagerAlert = 'green' | 'yellow' | 'orange' | 'red';
 
 /** The weather at a province's sample point. Modelled data, not a station reading. */
 export type WeatherEvent = {

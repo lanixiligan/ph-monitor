@@ -29,6 +29,9 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
   so a strong quake just outside the country is not missed.
 - **What we keep:** id, magnitude, depth, place text, time, link, epicentre, and the original
   record. Each quake is linked to the provinces within its reach.
+- **Shown from the original record:** PAGER alert, strongest estimated shaking (MMI) and the
+  tsunami information flag, read and checked when the card asks (`quakeImpact.ts`). Shown only,
+  not scored.
 - **Licence:** public domain.
 - **Limits:** USGS is a global catalogue. Near the Philippines it reliably reports only about
   magnitude 4 and above, sometimes late. PHIVOLCS records many more.

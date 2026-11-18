@@ -38,6 +38,13 @@ treated as shallow (the cautious choice).
 **Province's earthquake score** = its strongest quake's points, plus 3 for each additional
 quake that scores at least 1 (at most +10), capped at 100.
 
+**USGS impact fields are shown, not scored.** When USGS gives them, the card shows each quake's
+PAGER alert (USGS's estimate of possible deaths and damage), its strongest estimated shaking
+(Modified Mercalli intensity) and whether USGS shows tsunami information for it. They are
+tagged "Global assessment" and do not change the score. The tsunami flag only means USGS
+links to tsunami information for a large ocean quake; for official tsunami warnings, check
+PHIVOLCS.
+
 ## Weather score
 
 Source: Open-Meteo. The weather score is the **higher** of a rain score and a heat score.
