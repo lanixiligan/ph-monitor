@@ -118,8 +118,8 @@ The lowest band is named for what we know ("nothing detected"); it is not an all
   (`highestTown`). So the number on the map always belongs to a real town, and the hover label
   names it. If any of its towns is missing a signal, the province is "at least N" too. A
   province with no towns loaded is scored as a whole, from its own inputs.
-- **The map** shows province colours when zoomed out and town colours from zoom 8 (they fade
-  in between 7.5 and 8.5).
+- **The map** colours every town by its own score at every zoom level, never by its
+  province's highest town. Province colours show only until the town shapes have loaded.
 - Town scores are replaced on every run and have no history; province history is kept as
   before.
 

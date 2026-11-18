@@ -82,7 +82,7 @@ export const fil: Strings = {
     stormForecast: 'Forecast ng bagyo', // REVIEW
     news: 'Lugar na nasa balita (mas malaki = mas maraming balita)', // REVIEW
     showLabel: 'Ipakita sa mapa', // REVIEW
-    towns: 'Mag-zoom in para makita ang bawat lungsod at bayan. Ipinapakita ng lalawigan/probinsya ang pinakamataas na score ng mga bayan nito.', // REVIEW
+    towns: 'May sariling kulay ang bawat lungsod at bayan ayon sa sarili nitong score. Mag-zoom in para makita ang mga hangganan.', // REVIEW
   },
 
   // The side panel before a spot is picked.
@@ -202,7 +202,7 @@ export const fil: Strings = {
 
   // Map popups and hover labels.
   map: {
-    label: 'Mapa ng Pilipinas, may kulay ayon sa score: ang mga lalawigan/probinsya, at ang mga lungsod at bayan kapag naka-zoom in. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+    label: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa score nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
     sampleNotice: 'Sample na datos, hindi totoong bagyo', // REVIEW
     noScoreYet: 'wala pang score', // REVIEW
     atLeast: 'hindi bababa sa {score}', // REVIEW

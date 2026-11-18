@@ -49,7 +49,7 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | Table | Holds |
 |---|---|
 | `provinces` | Province shapes and the weather sample point of each |
-| `places` | City and municipality shapes, to name a clicked spot and colour the zoomed-in map |
+| `places` | City and municipality shapes, to name a clicked spot and colour the map |
 | `earthquakes` | One row per USGS quake |
 | `earthquake_provinces` | Which provinces each quake reaches, with the distance |
 | `weather_points` | The ~600 weather points: a 0.25° grid, province points, far-off towns (`npm run weather-points`) |
@@ -82,8 +82,8 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/provinces/:psgc` | One province in detail |
 | `GET /api/point?lat=..&lon=..` | The clicked town's saved score (the card's main number) and the exact spot's score, worked out on demand |
 | `GET /api/places?q=..` | Place search: cities, municipalities and provinces by name, from our own database |
-| `GET /api/places/shapes` | Every town's shape (downloaded once, when the reader zooms in or picks a spot) |
-| `GET /api/places/scores` | Every town's latest score, for the zoomed-in map |
+| `GET /api/places/shapes` | Every town's shape (downloaded once, when the map first loads) |
+| `GET /api/places/scores` | Every town's latest score, for the map colours |
 | `GET /api/events` | Current disaster events, for map markers |
 | `GET /api/storms` | Active storms with their tracks |
 | `GET /api/news` | Latest headlines; optional `type` (a kind of disaster or `general`), `category`, `psgc`, `limit` (1–100, default 30) |
@@ -94,8 +94,8 @@ The web page talks only to these addresses on our own server (port 3001).
 
 ## What the reader sees
 
-- **Map:** provinces coloured by score (0–19 nothing detected, 20–39 low, 40–59 moderate, 60–79 high,
-  80–100 severe), and from zoom 8 each city and municipality, with event markers and storm
+- **Map:** every city and municipality coloured by its own score at every zoom level (0–19
+  nothing detected, 20–39 low, 40–59 moderate, 60–79 high, 80–100 severe), with event markers and storm
   tracks on top. A province or town with no score yet is striped grey. The picked spot's town
   gets a thick outline.
 - **Light or dark:** follows the device setting until the reader picks one in the top bar

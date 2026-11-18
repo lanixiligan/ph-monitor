@@ -85,7 +85,7 @@ export const en = {
     stormForecast: 'Storm forecast',
     news: 'Place named in the news (bigger = more headlines)',
     showLabel: 'Show on the map',
-    towns: 'Zoom in to see each city and municipality. A province shows its highest town.',
+    towns: 'Each city and municipality is coloured by its own score. Zoom in to see the borders.',
   },
 
   // The side panel before a spot is picked.
@@ -207,7 +207,7 @@ export const en = {
   // Map popups and hover labels.
   map: {
     // Read out by a screen reader when it reaches the map.
-    label: 'Map of the Philippines coloured by score: provinces, and cities and municipalities when zoomed in. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
+    label: 'Map of the Philippines with each city and municipality coloured by its score. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
     sampleNotice: 'Sample data, not a real storm',
     noScoreYet: 'no score yet',
     atLeast: 'at least {score}',
