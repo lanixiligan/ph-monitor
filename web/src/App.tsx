@@ -3,12 +3,13 @@
 // the map in the middle, and the live news and headlines on the right.
 // The bottom line holds the "not official" notice and a link to the credits page.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
-import type { FeedHealth, HazardLayerInfo, PlaceScores } from '@ph-monitor/shared';
-import { fetchHazards, fetchPlaceScores, fetchProvinces, fetchStatus } from './api.ts';
+import type { FeedHealth, HazardLayerInfo, HeatMapData, HeatModelId, PlaceScores } from '@ph-monitor/shared';
+import { fetchHazards, fetchHeatMap, fetchPlaceScores, fetchProvinces, fetchStatus } from './api.ts';
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
+import { HeatMapPanel } from './components/HeatMapPanel.tsx';
 import { Legend } from './components/Legend.tsx';
 import { NewsPanel } from './components/NewsPanel.tsx';
 import { PlaceSearch } from './components/PlaceSearch.tsx';
@@ -19,6 +20,7 @@ import { StatusCard } from './components/StatusCard.tsx';
 import type { PickedArea } from './components/StatusCard.tsx';
 import { StreamsPanel } from './components/StreamsPanel.tsx';
 import { WarnIcon } from './components/WarnIcon.tsx';
+import { heatForMap } from './heatColors.ts';
 import { fill, LanguageSwitch, lookup, useStrings } from './i18n/index.ts';
 import { DEFAULT_LAYERS } from './mapSettings.ts';
 import { ThemeSwitch } from './theme/index.ts';
@@ -70,6 +72,21 @@ export function App() {
   const [goTo, setGoTo] = useState<Spot | null>(null);
   // What went wrong with "use my location", if anything.
   const [locateProblem, setLocateProblem] = useState<'outside' | 'failed' | null>(null);
+  // The heat map's weather model. null = the heat map is off (the map shows the score).
+  const [heatModel, setHeatModel] = useState<HeatModelId | null>(null);
+  // The heat map answer for `heatModel`. null = off, or still loading.
+  const [heat, setHeat] = useState<HeatMapData | null>(null);
+  // true when the last heat map load failed.
+  const [heatFailed, setHeatFailed] = useState(false);
+
+  /** Turns the heat map on, switches its source, or (with null) turns it off. */
+  function chooseHeatModel(model: HeatModelId | null) {
+    if (model === heatModel) return;
+    setHeatModel(model);
+    // The answer held now is for another model: drop it.
+    setHeat(null);
+    setHeatFailed(false);
+  }
 
   /** A place picked by name (the search box or the ranking list): open it and fly the map there. */
   function pickPlace(picked: Spot) {
@@ -139,6 +156,38 @@ export function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // While the heat map is on: load the chosen model's answer now, then again every few minutes.
+  useEffect(() => {
+    if (heatModel === null) return;
+    const model = heatModel;
+    // Review Focus 4: the cleanup below sets this to false when the reader
+    // switches source or closes the panel, so an answer that arrives after
+    // that (a slow, older request) is dropped instead of painting the map.
+    let stillChosen = true;
+    async function load() {
+      try {
+        const answer = await fetchHeatMap(model);
+        if (!stillChosen) return;
+        setHeat(answer);
+        setHeatFailed(false);
+      } catch {
+        if (stillChosen) setHeatFailed(true);
+      }
+    }
+    void load();
+    const timer = setInterval(() => void load(), REFRESH_MS);
+    return () => {
+      stillChosen = false;
+      clearInterval(timer);
+    };
+  }, [heatModel]);
+
+  // What the map colours by: null = the score; stripes while the answer loads.
+  // heatForMap also ignores an answer whose model is not the one chosen now.
+  // `useMemo` keeps the same object between re-draws, so the map recolours
+  // only when the heat map really changes.
+  const heatOnMap = useMemo(() => heatForMap(heatModel, heat), [heatModel, heat]);
+
   // The names of the feeds that are out of date, in the reader's language.
   const staleFeeds = Array.isArray(feeds)
     ? feeds.filter((feed) => feed.isStale).map((feed) => lookup(t.feeds, feed.id))
@@ -195,29 +244,46 @@ export function App() {
                   : null
             }
           />
-          <ProvinceMap
-            data={provinces}
-            placeScores={placeScores}
-            spot={spot}
-            picked={spot === null ? null : picked}
-            // Picking a spot clears the headline outline and the old town outline.
-            onSelect={(chosen) => {
-              setSpot(chosen);
-              setPicked(null);
-              setFocus(null);
-            }}
-            layers={layers}
-            focus={focus}
-            goTo={goTo}
-            onLocateResult={setLocateProblem}
-            newsType={newsType}
-            hazards={hazards}
-            onZoom={setMapZoom}
-          />
+          {/* The map plus what floats over it (the heat map button and panel). */}
+          <div className="map-frame">
+            <ProvinceMap
+              data={provinces}
+              placeScores={placeScores}
+              heat={heatOnMap}
+              spot={spot}
+              picked={spot === null ? null : picked}
+              // Picking a spot clears the headline outline and the old town outline.
+              onSelect={(chosen) => {
+                setSpot(chosen);
+                setPicked(null);
+                setFocus(null);
+              }}
+              layers={layers}
+              focus={focus}
+              goTo={goTo}
+              onLocateResult={setLocateProblem}
+              newsType={newsType}
+              hazards={hazards}
+              onZoom={setMapZoom}
+            />
+            <HeatMapPanel
+              chosen={heatModel}
+              data={heat !== null && heat.model === heatModel ? heat : null}
+              failed={heatFailed}
+              onChoose={chooseHeatModel}
+            />
+          </div>
         </main>
 
         {/* Under the map on a small screen; bottom of the left column on a wide one. */}
-        <Legend layers={layers} onChange={setLayers} newsType={newsType} hazards={hazards} zoom={mapZoom} />
+        <Legend
+          layers={layers}
+          onChange={setLayers}
+          newsType={newsType}
+          hazards={hazards}
+          zoom={mapZoom}
+          heatOn={heatModel !== null}
+        />
 
         <div className="side side-spot">
           {spot !== null ? (

@@ -32,6 +32,17 @@ export const fil: Strings = {
     creditOutlook: 'Panahon sa susunod na 7 araw:', // REVIEW
     creditOutlookMid: '; daloy ng ilog mula sa', // REVIEW
     creditOutlookEnd: ', CC BY 4.0.', // REVIEW
+    creditHeatEcmwf: 'Mapa ng heat index, pinagmulang ECMWF: batay sa datos at produkto ng European Centre for Medium-Range Weather Forecasts (', // REVIEW
+    creditHeatEcmwfMid: '), IFS HRES', // REVIEW
+    creditHeatEcmwfData: 'open data', // REVIEW
+    creditHeatEcmwfVia: ', sa pamamagitan ng', // REVIEW
+    creditHeatEcmwfEnd: ', CC BY 4.0. Binago: kinukuwenta namin ang heat index mula sa temperatura at halumigmig nito.', // REVIEW: unsure about "kinukuwenta"
+    creditHeatIcon: 'Mapa ng heat index, pinagmulang ICON: batay sa datos mula sa Deutscher Wetterdienst (', // REVIEW
+    creditHeatIconMid: '), gridded data na ipinakita nang grapiko: ang ICON global model, sa pamamagitan ng', // REVIEW: unsure about "ipinakita nang grapiko"
+    creditHeatIconEnd: ', CC BY 4.0.', // REVIEW
+    creditHeatGfs: 'Mapa ng heat index, pinagmulang GFS: ang Global Forecast System ng National Weather Service (NCEP) ng', // REVIEW
+    creditHeatGfsMid: ', sa pamamagitan ng', // REVIEW
+    creditHeatGfsEnd: '. Public domain.', // REVIEW
     creditAlerts: 'Mga opisyal na babala: © PAGASA, CC BY 4.0, mula sa public alert feed nito.', // REVIEW
     creditNews: 'Mga headline ng balita: ang mga news outlet na nakasaad sa tabi ng bawat headline, ang ilan ay nakuha sa pamamagitan ng Google News.', // REVIEW
     creditVideo: 'Video:', // REVIEW
@@ -53,6 +64,7 @@ export const fil: Strings = {
     outlook: 'susunod na 7 araw', // REVIEW
     riverFlow: 'agos ng ilog', // REVIEW
     news: 'mga balita', // REVIEW
+    heatMap: 'mapa ng heat index', // REVIEW
   },
 
   // The language switch. The draft note is shown only when Filipino is chosen.
@@ -394,6 +406,45 @@ export const fil: Strings = {
     heat: 'Init', // REVIEW
     event: 'Mga bagyo at sakuna (GDACS)', // REVIEW
     unknown: 'hindi alam', // REVIEW
+  },
+
+  // The heat map: its button and panel (HeatMapPanel.tsx) and its hover labels.
+  heat: {
+    button: 'Mapa ng init', // REVIEW: unsure about "init" for heat index
+    title: 'Mapa ng heat index', // REVIEW
+    close: 'Isara ang mapa ng init', // REVIEW
+    source: 'Pinagmulan', // REVIEW
+    models: {
+      ecmwf_ifs: 'ECMWF', // REVIEW
+      dwd_icon_global_native: 'ICON (DWD)', // REVIEW
+      ncep_gfs_global: 'GFS (NOAA)', // REVIEW
+    },
+    km: 'modelong {km} km', // REVIEW
+    updated: 'Na-update {ago}', // REVIEW
+    loading: 'Naglo-load…', // REVIEW
+    loadError: 'Hindi ma-load ang mapa ng init ngayon.', // REVIEW
+    noData: 'Wala pang datos para sa pinagmulang ito.', // REVIEW
+    stale: 'Luma na ang forecast na ito.', // REVIEW
+    keyTitle: 'Heat index, ayon sa mga antas ng PAGASA', // REVIEW
+    below: 'Mas mababa sa 27 °C', // REVIEW
+    noValue: 'Walang halaga para sa oras na ito', // REVIEW: unsure about "halaga"
+    range: '{from}–{to} °C', // REVIEW
+    rangeTop: '{from}+ °C', // REVIEW
+    spacing: 'Mga 28 km ang layo ng mga punto sa bawat pinagmulan; ipinapakita ng bawat bayan ang pinakamainit nitong punto.', // REVIEW
+    cardDiffers: 'Gumagamit ang status card ng pinagsamang forecast ng Open-Meteo, kaya maaaring iba ang numero nito.', // REVIEW
+    credit: {
+      ecmwf_ifs: 'Datos: ECMWF (CC BY 4.0) sa pamamagitan ng', // REVIEW
+      dwd_icon_global_native: 'Datos: Deutscher Wetterdienst (CC BY 4.0) sa pamamagitan ng', // REVIEW
+      ncep_gfs_global: 'Datos: NOAA GFS (public domain) sa pamamagitan ng', // REVIEW
+    },
+    creditLink: 'Open-Meteo', // REVIEW
+    townLabel: '{town}, {province}: {heat} · {model}', // REVIEW
+    provinceLabel: '{province}: {heat} · {model}', // REVIEW
+    degrees: '{heat} °C', // REVIEW
+    degreesBand: '{heat} °C, {band}', // REVIEW
+    unknown: 'hindi alam', // REVIEW
+    scoresHidden: 'Nakatago ang mga kulay ng score habang bukas ang mapa ng init.', // REVIEW
+    mapLabel: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa heat index nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
   },
 
   // Small words used by the formatting helpers.

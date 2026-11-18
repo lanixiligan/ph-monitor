@@ -57,6 +57,26 @@ export function CreditsPage() {
             <a href="https://open-meteo.com/en/docs/flood-api">GloFAS via Open-Meteo</a>
             {t.app.creditOutlookEnd}
           </li>
+          {/* The heat map's three sources, one line each, in each provider's own credit wording. */}
+          <li>
+            {t.app.creditHeatEcmwf}
+            <a href="https://www.ecmwf.int/">ECMWF</a>
+            {t.app.creditHeatEcmwfMid}{' '}
+            <a href="https://www.ecmwf.int/en/forecasts/datasets/open-data">{t.app.creditHeatEcmwfData}</a>
+            {t.app.creditHeatEcmwfVia} <a href="https://open-meteo.com/">Open-Meteo</a>
+            {t.app.creditHeatEcmwfEnd}
+          </li>
+          <li>
+            {t.app.creditHeatIcon}
+            <a href="https://www.dwd.de/">DWD</a>
+            {t.app.creditHeatIconMid} <a href="https://open-meteo.com/">Open-Meteo</a>
+            {t.app.creditHeatIconEnd}
+          </li>
+          <li>
+            {t.app.creditHeatGfs} <a href="https://www.noaa.gov/">NOAA</a>
+            {t.app.creditHeatGfsMid} <a href="https://open-meteo.com/">Open-Meteo</a>
+            {t.app.creditHeatGfsEnd}
+          </li>
           <li>{t.app.creditAlerts}</li>
           <li>{t.app.creditNews}</li>
           <li>

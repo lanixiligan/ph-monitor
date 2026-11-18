@@ -23,13 +23,15 @@ type Props = {
   hazards: HazardLayerInfo[] | null;
   /** The map's zoom level now; below a map's HAZARD_MIN_ZOOM its zones are not drawn. */
   zoom: number;
+  /** true while the heat map is on: the score colours are hidden, and the legend says so. */
+  heatOn: boolean;
 };
 
 // The class names used in the swatches' CSS (styles.css): `surge-1` … `landslide-3`.
 // `Record<HazardMapKind, string>` = an object with one text for each kind of map.
 const SWATCH_PREFIX: Record<HazardMapKind, string> = { stormSurge: 'surge', landslide: 'landslide' };
 
-export function Legend({ layers, onChange, newsType, hazards, zoom }: Props) {
+export function Legend({ layers, onChange, newsType, hazards, zoom, heatOn }: Props) {
   // `t` holds all the words in the current language.
   const { t } = useStrings();
   const { theme } = useTheme();
@@ -73,6 +75,11 @@ export function Legend({ layers, onChange, newsType, hazards, zoom }: Props) {
             </li>
           ))}
         </ul>
+        {heatOn && (
+          <p className="legend-note" role="status">
+            {t.heat.scoresHidden}
+          </p>
+        )}
         <div className="legend-row legend-indent">
           <span className="swatch swatch-nodata" />
           {t.legend.noScore}

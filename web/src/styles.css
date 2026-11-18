@@ -1,5 +1,7 @@
 /* The look: a sea chart. Cool sea-and-ink colours everywhere, so the warm
    score scale (scoreScale.ts) is the only thing on the page that looks hot.
+   The one other warm scale, the heat map's bands (--heat-*), replaces it
+   while the heat map is on, so the two are never shown together.
    Titles and numbers are set in Barlow Condensed, the rest in Atkinson
    Hyperlegible. Both fonts ship with the app (see main.tsx). */
 
@@ -26,6 +28,15 @@
   --hazard-landslide-1: #8d86ad;
   --hazard-landslide-2: #5f5689;
   --hazard-landslide-3: #382f63;
+  /* The heat map (PAGASA heat index bands), the second warm scale. It is shown
+     only while the score colours are hidden, so two warm scales never meet.
+     Below 27 °C is a pale ink tint: not warm, and not empty (empty = no data).
+     Darker = hotter; every step stays apart at the map's 0.45–0.8 opacity. */
+  --heat-below: #b6c9d0;
+  --heat-caution: #f2bb10;
+  --heat-extreme-caution: #eb7d1f;
+  --heat-danger: #d42d1d;
+  --heat-extreme-danger: #730a24;
   --bar: #10313b; /* the top bar */
   --bar-text: #ffffff;
   --bar-soft: #c3d3d7; /* secondary text in the top bar */
@@ -56,6 +67,12 @@
   --hazard-landslide-1: #7f789f;
   --hazard-landslide-2: #aaa2cf;
   --hazard-landslide-3: #d8d2f2;
+  /* Brighter = hotter, like the dark score scale. */
+  --heat-below: #2a4752;
+  --heat-caution: #655010;
+  --heat-extreme-caution: #a24f15;
+  --heat-danger: #d33a26;
+  --heat-extreme-danger: #ff9480;
   --bar: #08161b;
   --bar-text: #e3ecee;
   --bar-soft: #9db2b8;
@@ -443,6 +460,178 @@ p {
 /* Set on the map when the storm tick box in the legend is off. */
 .hide-storm-labels .storm-label {
   display: none;
+}
+
+/* The map and what floats over it (the heat map button and panel). As tall
+   as the map on a small screen; fills the map column on a wide one. */
+.map-frame {
+  position: relative;
+}
+
+/* ---------- Heat map button and panel (HeatMapPanel.tsx) ----------
+   Top right, under MapLibre's zoom and locate buttons, which end 111px from
+   the top (10px gap, 60px zoom pair, 10px gap, 31px locate button). */
+.heat-control {
+  position: absolute;
+  /* Under the search box, so its list of matches drops over the panel. */
+  z-index: 1;
+  top: 121px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  /* Never wider or taller than the map: at least 16px from its left and
+     bottom edges, so a phone never scrolls sideways; the panel scrolls instead. */
+  max-width: calc(100% - 26px);
+  max-height: calc(100% - 137px);
+}
+
+.heat-button {
+  flex: none;
+  padding: 4px 10px;
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  color: var(--ink);
+  background: var(--paper);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* On: filled with ink, like a chosen filter. */
+.heat-button[aria-pressed='true'] {
+  color: var(--on-ink);
+  background: var(--ink);
+}
+
+.heat-panel {
+  /* min-height 0 lets it shrink to the space left and scroll. */
+  min-height: 0;
+  overflow-y: auto;
+  width: 260px;
+  max-width: 100%;
+  padding: 8px 10px 10px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.heat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.heat-head h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.heat-panel h3 {
+  margin: 10px 0 4px;
+  font-size: 15px;
+}
+
+.heat-sources {
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.heat-sources legend {
+  padding: 0;
+  font-weight: 700;
+}
+
+.heat-source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.heat-source input {
+  flex: none;
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+/* The grid size, at the end of the row. */
+.heat-source .muted {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.heat-status {
+  margin-top: 8px;
+}
+
+.heat-status p {
+  margin: 0 0 4px;
+}
+
+/* No data or out of date: ink, the icon and words (like .error). */
+.heat-warn {
+  font-weight: 700;
+}
+
+.heat-key {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.heat-key li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 1px 0;
+}
+
+/* The range in °C, at the end of the row. */
+.heat-key .muted {
+  margin-left: auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.heat-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+/* The key's swatches: the same colours as on the map (palette.ts). */
+.heat-below {
+  background: var(--heat-below);
+}
+
+.heat-caution {
+  background: var(--heat-caution);
+}
+
+.heat-extreme-caution {
+  background: var(--heat-extreme-caution);
+}
+
+.heat-danger {
+  background: var(--heat-danger);
+}
+
+.heat-extreme-danger {
+  background: var(--heat-extreme-danger);
+}
+
+/* A finger needs bigger targets than a mouse pointer. */
+@media (pointer: coarse) {
+  .heat-button,
+  .heat-source {
+    min-height: 44px;
+  }
 }
 
 /* ---------- Legend (Legend.tsx) ---------- */
@@ -1132,6 +1321,11 @@ footer {
     grid-area: map;
     position: relative;
     display: block;
+  }
+
+  .map-frame {
+    position: absolute;
+    inset: 0;
   }
 
   .map {

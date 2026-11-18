@@ -2,6 +2,8 @@
 // every zoom level (provinces only until the towns arrive). Hover shows the name and score; a click picks the
 // exact spot under the pointer, and the town it is in gets an outline. The
 // locate button (under the zoom buttons) picks the spot where the reader is.
+// While the heat map is on, the same shapes are coloured by heat index instead
+// (heatColors.ts), and the hover label shows the heat index and its model.
 //
 // MapLibre draws the map itself (outside React), so this component's job is
 // to create it once and then pass along changes: new data, new selection.
@@ -14,10 +16,11 @@ import type { StyleSpecification } from 'maplibre-gl';
 // address, which we then hand to MapLibre.
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useEffect, useRef, useState } from 'react';
-import type { HazardLayerInfo, PlaceScores } from '@ph-monitor/shared';
+import type { HazardLayerInfo, HeatMapData, PlaceScores } from '@ph-monitor/shared';
 import { fetchPlaceShapes } from '../api.ts';
 import type { PlaceCollection, ProvinceCollection, Spot } from '../api.ts';
 import { LANDSLIDE_LAYERS, SURGE_LAYERS, useHazardZones } from '../hazardOverlay.ts';
+import { heatText, withProvinceHeat, withTownHeat } from '../heatColors.ts';
 import { EVENT_LAYERS, OVERLAY_CLICK_LAYERS, STORM_LAYERS, useOverlays } from '../mapOverlays.ts';
 import { MAX_BOUNDS, PH_BOUNDS, SHOW_BASEMAP } from '../mapSettings.ts';
 import type { MapLayers } from '../mapSettings.ts';
@@ -127,6 +130,11 @@ type Props = {
   data: ProvinceCollection | null;
   /** Every town's score, shown when zoomed in. null = not loaded. */
   placeScores: PlaceScores | null;
+  /**
+   * The heat map. While it is set, the same shapes are coloured by heat
+   * index instead of the score (the score colours are hidden). null = off.
+   */
+  heat: HeatMapData | null;
   /** The spot the reader picked, marked with a dot. null = none. */
   spot: Spot | null;
   /** The town (or province) the picked spot is in, outlined. null = none. */
@@ -165,7 +173,7 @@ const MATCH_NONE: maplibregl.FilterSpecification = ['in', ['get', 'psgc'], ['lit
 const FADE_WITH_ZOOM: maplibregl.ExpressionSpecification = ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 0.45];
 
 export function ProvinceMap({
-  data, placeScores, spot, picked, onSelect, layers, focus, goTo, onLocateResult, newsType, hazards, onZoom,
+  data, placeScores, heat, spot, picked, onSelect, layers, focus, goTo, onLocateResult, newsType, hazards, onZoom,
 }: Props) {
   // A "ref" holds a value that survives re-renders without causing one.
   const containerRef = useRef<HTMLDivElement>(null);
@@ -181,6 +189,10 @@ export function ProvinceMap({
   spotRef.current = spot;
   const dataRef = useRef(data);
   dataRef.current = data;
+  // Read by the hover label, which the map keeps from its first draw.
+  const heatRef = useRef(heat);
+  heatRef.current = heat;
+  const heatOn = heat !== null;
   const { theme } = useTheme();
   // The small name-and-score label, kept so it can be removed when the spot is closed.
   const popupRef = useRef<maplibregl.Popup | null>(null);
@@ -207,9 +219,12 @@ export function ProvinceMap({
       .catch(() => (townsRequestedRef.current = false));
   };
   const requestTownsRef = useRef(requestTowns);
-  // True when there is something to show for the towns: shapes and scores.
+  // True when there is something to show for the towns: shapes, and scores
+  // or the heat map (a town the heat map has no value for is striped).
   const townsShown =
-    townShapes !== null && townShapes.features.length > 0 && placeScores !== null && placeScores.places.length > 0;
+    townShapes !== null &&
+    townShapes.features.length > 0 &&
+    (heatOn || (placeScores !== null && placeScores.places.length > 0));
 
   // Create the map when the component first appears, and again when the
   // theme changes (the basemap and every colour change with it).
@@ -469,8 +484,22 @@ export function ProvinceMap({
           const town = theMap.getLayer('town-fill')
             ? theMap.queryRenderedFeatures(event.point, { layers: ['town-fill'] })[0]?.properties
             : undefined;
+          const heatNow = heatRef.current;
           let text: string;
-          if (town && typeof town.score === 'number') {
+          if (heatNow) {
+            // The heat map is on: the heat index and its model, never the score.
+            const t = getI18n().t;
+            const heatOf = (props: Record<string, unknown>) =>
+              heatText(
+                typeof props.heatIndexC === 'number' ? props.heatIndexC : null,
+                typeof props.band === 'string' ? props.band : null,
+                t,
+              );
+            const model = t.heat.models[heatNow.model];
+            text = town
+              ? fill(t.heat.townLabel, { town: town.name, province: town.province_name, heat: heatOf(town), model })
+              : fill(t.heat.provinceLabel, { province: properties.name, heat: heatOf(properties), model });
+          } else if (town && typeof town.score === 'number') {
             text = fill(words.townLabel, { town: town.name, province: town.province_name, score: scoreOf(town) });
           } else if (typeof properties.top_place === 'string') {
             // A province shows its highest town's score, so say which town.
@@ -543,19 +572,22 @@ export function ProvinceMap({
     };
   }, [theme]);
 
-  // Whenever new data arrives (or the map becomes ready), hand it to the map.
+  // Whenever new data arrives (or the map becomes ready), hand it to the map:
+  // coloured by heat while the heat map is on, by score otherwise.
   useEffect(() => {
     if (!ready || !data) return;
     const source = mapRef.current?.getSource('provinces') as maplibregl.GeoJSONSource | undefined;
-    source?.setData(withColors(data, theme));
-  }, [ready, data, theme]);
+    source?.setData(heat ? withProvinceHeat(data, heat, readPalette()) : withColors(data, theme));
+  }, [ready, data, theme, heat]);
 
-  // Whenever the town shapes or scores change, hand them to the map.
+  // Whenever the town shapes, scores or heat values change, hand them to the map.
   useEffect(() => {
     if (!ready || !townShapes) return;
     const source = mapRef.current?.getSource('places') as maplibregl.GeoJSONSource | undefined;
-    source?.setData(withTownColors(townShapes, placeScores, theme));
-  }, [ready, townShapes, placeScores, theme]);
+    source?.setData(
+      heat ? withTownHeat(townShapes, heat, readPalette()) : withTownColors(townShapes, placeScores, theme),
+    );
+  }, [ready, townShapes, placeScores, theme, heat]);
 
   // Outline the picked spot's town, or its province when the town is unknown.
   useEffect(() => {
@@ -605,8 +637,8 @@ export function ProvinceMap({
     button?.setAttribute('title', t.search.locate);
     button?.setAttribute('aria-label', t.search.locate);
     // What a screen reader says when it reaches the map itself.
-    mapRef.current?.getCanvas().setAttribute('aria-label', t.map.label);
-  }, [ready, t]);
+    mapRef.current?.getCanvas().setAttribute('aria-label', heatOn ? t.heat.mapLabel : t.map.label);
+  }, [ready, t, heatOn]);
 
   // Show or hide layers when a legend tick box changes.
   useEffect(() => {
@@ -616,9 +648,11 @@ export function ProvinceMap({
     // click on land still picks a spot. Once the town colours are there, they
     // replace the province colours at every zoom, so each town shows its own
     // score, never its province's highest. The province colour stays only
-    // until the towns arrive.
-    const provinceOpacity = layers.scores && !townsShown ? fillOpacityRef.current : 0;
-    const townOpacity = layers.scores && townsShown ? fillOpacityRef.current : 0;
+    // until the towns arrive. The heat map uses the same layers, so they are
+    // on while it is, whatever the score tick box says.
+    const colorsOn = layers.scores || heatOn;
+    const provinceOpacity = colorsOn && !townsShown ? fillOpacityRef.current : 0;
+    const townOpacity = colorsOn && townsShown ? fillOpacityRef.current : 0;
     for (const id of ['province-fill', 'province-nodata', 'province-incomplete']) {
       if (map.getLayer(id)) map.setPaintProperty(id, 'fill-opacity', provinceOpacity);
     }
@@ -637,7 +671,7 @@ export function ProvinceMap({
     show(LANDSLIDE_LAYERS, layers.landslide);
     // Storm names are HTML labels, not map layers; CSS hides them.
     containerRef.current?.classList.toggle('hide-storm-labels', !layers.storms);
-  }, [ready, layers, townsShown]);
+  }, [ready, layers, townsShown, heatOn]);
 
   // Whenever the picked spot changes, move the dot (or remove it).
   useEffect(() => {
