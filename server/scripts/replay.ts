@@ -22,6 +22,10 @@
 //   - Every feed is treated as working (nothing is "unknown").
 //   - Scores are worked out once an hour, on the hour; the weather is "fetched"
 //     on the live job's schedule (every 2 hours, from midnight UTC).
+//
+// To try another "wet day" amount for heavy hours (WEIGHTS.rain.oneHourCap),
+// or the rule turned off, for one run: WET_DAY_MM=100 npm run replay
+//                                      WET_DAY_MM=off npm run replay
 
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -455,6 +459,21 @@ function printOrdinaryWeek(replay: ReplayCase, results: ProvinceResult[]): void 
 
 try {
   await mkdir(cacheDir, { recursive: true });
+  // Another wet day amount, or the rule off, for this run only. It changes nothing saved.
+  const wetDayMm = process.env.WET_DAY_MM;
+  if (wetDayMm === 'off') {
+    WEIGHTS.rain.oneHourCap.needsDayMm = null;
+  } else if (wetDayMm) {
+    const mm = Number(wetDayMm);
+    if (!Number.isFinite(mm) || mm <= 0) throw new Error(`WET_DAY_MM must be a number of mm or "off", not "${wetDayMm}".`);
+    WEIGHTS.rain.oneHourCap.needsDayMm = mm;
+  }
+  const rule = WEIGHTS.rain.oneHourCap.needsDayMm;
+  console.log(
+    rule === null
+      ? '> Wet day rule OFF: one heavy hour is enough for "High".\n'
+      : `> Wet day rule ON: a heavy hour (under 30 mm) reaches "High" only after ${rule} mm in 24 hours.\n`,
+  );
   // The map, read once. `AS "provincePsgc"` keeps the capital letter (SQL lowercases names).
   const provinces = await pool.query<Province>('SELECT psgc, name FROM provinces ORDER BY name');
   const towns = await pool.query<Town>('SELECT psgc, name, province_psgc AS "provincePsgc" FROM places ORDER BY psgc');
