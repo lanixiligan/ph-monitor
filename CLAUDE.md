@@ -51,7 +51,7 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
 server/test/       one test file per area, real feed samples in fixtures/
   db/              database tests (testDb.ts seeds a small map; import it first)
 web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (time, number
-                   and link helpers), cardOrder.ts (what the status card shows where), mapOverlays.ts + stormGeo.ts (event markers and
+                   and link helpers, "uploaded … ago"), useNow.ts (a clock for it), cardOrder.ts (what the status card shows where), mapOverlays.ts + stormGeo.ts (event markers and
                    storm tracks), styles.css (all colours and layout), palette.ts (CSS
                    colours for the map), components/
   i18n/            en.ts and fil.ts (every string the reader sees), language switch

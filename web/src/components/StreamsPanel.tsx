@@ -4,8 +4,10 @@
 import { useEffect, useState } from 'react';
 import type { StreamSlot } from '@ph-monitor/shared';
 import { fetchStreams, refreshStreams } from '../api.ts';
-import { categoryLabel, formatTime } from '../format.ts';
+import { categoryLabel } from '../format.ts';
 import { fill, useStrings } from '../i18n/index.ts';
+import { useNow } from '../useNow.ts';
+import { UploadedTime } from './UploadedTime.tsx';
 import type { Strings } from '../i18n/index.ts';
 import { WarnIcon } from './WarnIcon.tsx';
 
@@ -20,6 +22,8 @@ function liveLabel(isLive: boolean | null, t: Strings): string {
 
 export function StreamsPanel() {
   const { t } = useStrings();
+  // Ticks every 10 seconds so "Uploaded … ago" stays right.
+  const now = useNow();
   const [slots, setSlots] = useState<StreamSlot[] | null>(null);
   const [failed, setFailed] = useState(false);
   // The id of the one slot that is playing, or null for none.
@@ -116,11 +120,8 @@ export function StreamsPanel() {
                     {liveLabel(slot.isLive, t)}
                   </span>
                   {slot.title && <div className="stream-title">{slot.title}</div>}
-                  <div className="muted">
-                    {categoryLabel(slot.category)}
-                    {slot.publishedAt &&
-                      `, ${fill(t.streams.uploaded, { time: formatTime(slot.publishedAt) })}`}
-                  </div>
+                  <div className="muted">{categoryLabel(slot.category)}</div>
+                  {slot.publishedAt && <UploadedTime iso={slot.publishedAt} now={now} />}
                 </div>
                 {playingId === slot.id ? (
                   <button className="filter" aria-pressed="true" onClick={() => setPlayingId(null)}>

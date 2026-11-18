@@ -2,7 +2,8 @@
 // Words and date style follow the language chosen now (see i18n/).
 
 import { NEWS_TYPES } from '@ph-monitor/shared';
-import { getI18n, localeFor, lookup } from './i18n/index.ts';
+import { fill, getI18n, localeFor, lookup } from './i18n/index.ts';
+import type { Strings } from './i18n/index.ts';
 
 /** "2026-11-15T03:00:00Z" becomes "Nov 15, 2026, 11:00 AM" in the reader's time zone. */
 export function formatTime(iso: string | null): string {
@@ -10,6 +11,34 @@ export function formatTime(iso: string | null): string {
   const { t, lang } = getI18n();
   if (iso === null) return t.format.never;
   return new Date(iso).toLocaleString(localeFor(lang), { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+/**
+ * "Uploaded 12 minutes ago": how long ago `iso` was, counted from `nowMs`.
+ * Under 5 seconds (or a time slightly in the future, when a clock is off) is
+ * "just now". `t` is the language's strings; it defaults to the current one.
+ */
+export function uploadedAgo(iso: string, nowMs: number, t: Strings = getI18n().t): string {
+  const seconds = Math.floor((nowMs - Date.parse(iso)) / 1000);
+  if (Number.isNaN(seconds)) return '';
+  const a = t.format.ago;
+  // Pick the biggest unit that fits, then "1 minute" or "2 minutes".
+  const ago =
+    seconds < 5
+      ? a.justNow
+      : seconds < 60
+        ? countText(seconds, a.second, a.seconds)
+        : seconds < 3600
+          ? countText(Math.floor(seconds / 60), a.minute, a.minutes)
+          : seconds < 86400
+            ? countText(Math.floor(seconds / 3600), a.hour, a.hours)
+            : countText(Math.floor(seconds / 86400), a.day, a.days);
+  return fill(t.format.uploaded, { ago });
+}
+
+/** "{n} minute ago" for 1, "{n} minutes ago" for any other number. */
+function countText(n: number, one: string, many: string): string {
+  return fill(n === 1 ? one : many, { n });
 }
 
 /** A number with its unit, or a dash when the value is missing. */

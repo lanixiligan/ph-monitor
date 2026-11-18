@@ -98,6 +98,23 @@ p {
   color: var(--ink-soft);
 }
 
+/* "Uploaded 4 hours ago · Nov 18, 2:26 PM": its own row under a headline or stream. */
+.uploaded {
+  margin-top: 2px;
+  font-size: 0.875em;
+  color: var(--ink-soft);
+}
+
+/* The "how long ago" half reads first, in the main text colour. */
+.uploaded-ago {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.uploaded-at {
+  white-space: nowrap;
+}
+
 /* ---------- Page layout ----------
    Small screen (the default here): one long page that scrolls.
    Wide screen (see the media queries at the bottom): the page is exactly one

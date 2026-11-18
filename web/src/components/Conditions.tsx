@@ -16,7 +16,9 @@ import {
   safeUrl,
 } from '../format.ts';
 import { fill, lookup, useStrings } from '../i18n/index.ts';
+import { useNow } from '../useNow.ts';
 import { Fold } from './Fold.tsx';
+import { UploadedTime } from './UploadedTime.tsx';
 
 // Props lists what the parent hands to this component. `{ conditions }` below
 // pulls that one value out of the props object.
@@ -101,6 +103,8 @@ export function NearHere({ conditions }: Props) {
  */
 export function ConditionsSections({ conditions }: Props) {
   const { t } = useStrings();
+  // Ticks every 10 seconds so "Uploaded … ago" stays right.
+  const now = useNow();
   const c = t.conditions;
   const { outlook, news } = conditions;
   // `!isTopEvent(event)` = every event the top block left out.
@@ -142,9 +146,8 @@ export function ConditionsSections({ conditions }: Props) {
                   {item.title}
                 </a>
                 <br />
-                <span className="muted">
-                  {item.outlet}, {formatTime(item.publishedAt)}
-                </span>
+                <span className="muted">{item.outlet}</span>
+                <UploadedTime iso={item.publishedAt} now={now} />
               </li>
             ))}
           </ul>

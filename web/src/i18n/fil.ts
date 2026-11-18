@@ -311,7 +311,6 @@ export const fil: Strings = {
     live: 'LIVE', // REVIEW
     latest: 'Pinakabago', // REVIEW
     latestMaybeOffline: 'Pinakabago (maaaring offline)', // REVIEW
-    uploaded: 'Na-upload noong {time}', // REVIEW
     videoTitle: 'Video ng {outlet}', // REVIEW
     play: 'I-play', // REVIEW
     stop: 'Ihinto', // REVIEW
@@ -350,5 +349,17 @@ export const fil: Strings = {
   format: {
     never: 'hindi pa', // REVIEW: unsure about "hindi pa"
     lessThanOneKm: 'wala pang 1 km', // REVIEW
+    uploaded: 'Na-upload {ago}', // REVIEW
+    ago: {
+      justNow: 'ngayon lang', // REVIEW
+      second: '{n} segundo ang nakalipas', // REVIEW
+      seconds: '{n} segundo ang nakalipas', // REVIEW
+      minute: '{n} minuto ang nakalipas', // REVIEW
+      minutes: '{n} minuto ang nakalipas', // REVIEW
+      hour: '{n} oras ang nakalipas', // REVIEW
+      hours: '{n} oras ang nakalipas', // REVIEW
+      day: '{n} araw ang nakalipas', // REVIEW
+      days: '{n} araw ang nakalipas', // REVIEW
+    },
   },
 };

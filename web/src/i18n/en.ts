@@ -318,7 +318,6 @@ export const en = {
     live: 'LIVE',
     latest: 'Latest',
     latestMaybeOffline: 'Latest (may be offline)',
-    uploaded: 'Uploaded {time}',
     videoTitle: '{outlet} video',
     play: 'Play',
     stop: 'Stop',
@@ -357,6 +356,19 @@ export const en = {
   format: {
     never: 'never',
     lessThanOneKm: 'less than 1 km',
+    // "Uploaded 12 minutes ago", on its own row under a headline or stream.
+    uploaded: 'Uploaded {ago}',
+    ago: {
+      justNow: 'just now',
+      second: '{n} second ago',
+      seconds: '{n} seconds ago',
+      minute: '{n} minute ago',
+      minutes: '{n} minutes ago',
+      hour: '{n} hour ago',
+      hours: '{n} hours ago',
+      day: '{n} day ago',
+      days: '{n} days ago',
+    },
   },
 };
 
