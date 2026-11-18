@@ -15,6 +15,8 @@
   --line: #b6c6ca; /* borders */
   --line-soft: #dae3e5; /* dividers inside a panel */
   --news: #1f6f8b; /* headline dots on the map and their buttons */
+  --live: #c62828; /* the LIVE badge on a stream (only this; never for errors) */
+  --on-live: #ffffff; /* text on the LIVE badge */
   --no-data: #b3bec1; /* provinces with no score yet (hatched on the map) */
   --bar: #10313b; /* the top bar */
   --bar-text: #ffffff;
@@ -36,6 +38,8 @@
   --line: #35505a;
   --line-soft: #223a43;
   --news: #5cb3cf;
+  --live: #e53935;
+  --on-live: #ffffff;
   --no-data: #2b3d44;
   --bar: #08161b;
   --bar-text: #e3ecee;
@@ -676,10 +680,6 @@ label.legend-row {
   border-color: var(--ink);
 }
 
-/* The chosen filter is filled with ink. */
-.filter[aria-pressed='true'] {
-  color: var(--on-ink);
-  background: var(--ink);
 /* A button that is busy (e.g. Refresh while checking) looks quieter. */
 .filter:disabled {
   color: var(--ink-soft);
@@ -687,6 +687,10 @@ label.legend-row {
   cursor: progress;
 }
 
+/* The chosen filter is filled with ink. */
+.filter[aria-pressed='true'] {
+  color: var(--on-ink);
+  background: var(--ink);
   border-color: var(--ink);
 }
 
@@ -918,11 +922,23 @@ label.legend-row {
   white-space: nowrap;
 }
 
+/* LIVE: red, with a small white dot before the word. */
 .tag-live {
-  color: var(--on-ink);
-  background: var(--ink);
-  border-color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--on-live);
+  background: var(--live);
+  border-color: var(--live);
   font-weight: 700;
+}
+
+.tag-live::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* ---------- Footer ---------- */
