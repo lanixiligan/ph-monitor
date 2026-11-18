@@ -1,18 +1,32 @@
 # PH Monitor — plan
 
-> **Phase 2 below is the current plan (built; Filipino text awaits review; see "Progress").**
-> Reliability work from the audit has its own phases: see "Reliability roadmap".
 > Everything from "Amendments" down is the historical Phase 1 plan, kept for reference; it has
 > not been kept up to date. Where it differs, [README.md](README.md),
 > [METHODOLOGY.md](METHODOLOGY.md) and the code are correct.
 
-## Phase 2 — disaster conditions, forecasts, news, Filipino (planned 2026-11-15)
+## Where things stand (updated 2026-11-18)
+
+There are two sets of phases: **product phases** (what the app does) and the **reliability
+roadmap** (making what exists more trustworthy, numbered on its own).
+
+| Work | Status |
+|---|---|
+| Product Phase 1: province map, score, status card | Done |
+| Product Phase 2: events, storms, outlook, news, streams, Filipino | Done (PR #1). Official bulletins only partly (no feed for wind signals or PHIVOLCS); AI summaries skipped |
+| Reliability phases 1–5 | Done (PR #2) |
+| Per-town map colours and the 2-hour weather grid | Done (PRs #3, #4) |
+| Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6) |
+| Product Phase 3: all kinds of news on the map | Idea only; needs the owner's answers first |
+
+**Next:** the rest of Phase 6 (see "Phase 6"): USGS impact fields on the card first.
+
+## Phase 2 — disaster conditions, forecasts, news, Filipino (planned 2026-11-15, done)
 
 Goal: keep the province map and score, and add what is happening now, what is coming, and what
 the news says, focused only on disasters. This replaces Phase 1's "out of scope" line for news
 and typhoon tracks.
 
-### Progress (updated 2026-11-16, branch `phase-2`)
+### Progress (done; merged 2026-11-16 in PR #1)
 
 | Step | Status |
 |---|---|
@@ -24,10 +38,8 @@ and typhoon tracks.
 | 6. Live streams panel | Done (`/api/streams`, panel; a video loads from youtube-nocookie.com only after Play) |
 | 7. Link checker | Done |
 | 8. Official PH bulletins | Partly done: PAGASA's public alert feed (flood advisories, cyclone alerts) is shown above the score. Wind signals, rainfall warnings and PHIVOLCS alert levels have no feed; plain links stay on the card |
-| 9. Filipino option | Built as a draft. Every string in `web/src/i18n/fil.ts` is marked `// REVIEW` and waits for the owner's review |
-| 10. AI summaries | Skipped |
-
-Next: the owner reviews the Filipino text and the page; then the open questions below.
+| 9. Filipino option | Done. The owner read all the Filipino lines on 2026-11-17 and changed three; every line keeps its `// REVIEW` mark, as asked. New lines are drafts until read |
+| 10. AI summaries | Skipped (owner's choice) |
 
 Not verified yet, because nothing real was available to test with:
 - JMA storm parsing has never run on a real storm (none was active). The format was read from
@@ -61,23 +73,23 @@ Each new source must get its credit line in the UI and README, like the existing
 
 ### Steps (each ends with something to run and see)
 
-1. **Disaster events** (server done; map and card to do): GDACS + EONET fetchers (zod schemas, tests first) → new `events` table
+1. **Disaster events**: GDACS + EONET fetchers (zod schemas, tests first) → new `events` table
    (kind, alert level, time, geometry, source, link) → markers on the map, listed on the status
    card. Check: a recent GDACS PH event (e.g. a Kanlaon eruption) shows on the map.
-2. **Events in the score** (done): GDACS alert level near a province adds to its score, in
+2. **Events in the score**: GDACS alert level near a province adds to its score, in
    `scoring.ts`, with METHODOLOGY.md updated. Check: `npm test`, and a province beside an Orange
    event scores higher. As built: Green/Orange/Red give 10/50/80 points within 100/200/300 km;
    only typhoons, floods, volcanoes and wildfires count (quakes are already scored from USGS);
    the score is the strongest signal plus 25% of each of the other two.
-3. **Typhoon tracks** (server done; map layer to do): JMA (main) + JTWC (backup) → `storms` and `storm_track_points` tables →
+3. **Typhoon tracks**: JMA (main) + JTWC (backup) → `storms` and `storm_track_points` tables →
    past and forecast track drawn on the map; provinces near the forecast track get a "coming"
    flag. Check: with no storm the layer is empty; a saved sample storm draws correctly
    (`npm run sample-storm`, and `npm run sample-storm -- remove` to delete it).
-4. **Outlook ("next 7 days")** (server done; card row to do): Open-Meteo daily rain + gusts, and flood discharge, per province
+4. **Outlook ("next 7 days")**: Open-Meteo daily rain + gusts, and flood discharge, per province
    → shown on the status card as a short day-by-day row. The "now" score stays separate from the
    outlook. Check: card numbers match open-meteo.com for the same spot. As built: fetched every
    6 hours, about 704 Open-Meteo calls a day (about 4,900 with the weather job, of 10,000).
-5. **News panel** (server done; panel to do): fetch the RSS feeds every 15 min → keep only disaster headlines (keyword list
+5. **News panel**: fetch the RSS feeds every 15 min → keep only disaster headlines (keyword list
    in English and Filipino, e.g. bagyo, baha, lindol, pagputok, landslide, storm surge) → merge
    the same story from several outlets → tag a province when the headline names one → `news`
    table. Each outlet has a category (see "Outlet categories" below), and the panel can filter by
@@ -86,7 +98,7 @@ Each new source must get its credit line in the UI and README, like the existing
    shows today's PH disaster headlines with no duplicates, and the category filter works.
    Known limits: some duplicates are missed, and repeated stories about one long-running event
    merge into one row within 48 hours.
-6. **Live streams panel** (data ready; panel to do): a short list of PH YouTube channels,
+6. **Live streams panel**: a short list of PH YouTube channels,
    grouped by the same outlet categories. Each slot shows the channel's live stream when it is
    live ("LIVE"), otherwise its latest video ("Latest"), with the title and upload time.
    12 slots passed the check: PAGASA, Civil Defense PH, PTV, GMA News, ABS-CBN News (backup:
@@ -94,9 +106,8 @@ Each new source must get its credit line in the UI and README, like the existing
    DZMM (the channels found were not the real ones), News5 (not found), SunStar (dormant). Shown in YouTube's own player through `youtube-nocookie.com`, which only
    loads YouTube when the viewer presses play. YouTube embeds only; no re-streaming of raw TV
    feeds (`.m3u8`). Each slot can list backup links, tried in order. This is the one exception to
-   "the web app talks only to our own `/api`" besides the basemap; CLAUDE.md is updated to say
-   so when this is built. Check: a live slot plays, and a slot whose links are all dead is hidden.
-7. **Link checker** (done; for news feeds and live streams): a `sources` table holds every feed
+   "the web app talks only to our own `/api`" besides the basemap (CLAUDE.md says so). Check: a live slot plays, and a slot whose links are all dead is hidden.
+7. **Link checker** (for news feeds and live streams): a `sources` table holds every feed
    and stream link with its outlet, category, status (`ok`, `dead`, `not-live`,
    `not-embeddable`), last checked and last OK time.
    - News feeds, every hour: reachable, valid RSS, newest item age. A feed with nothing new for
@@ -108,22 +119,21 @@ Each new source must get its credit line in the UI and README, like the existing
    - Streams without a key: the channel feed plus oEmbed. That feed fails at random, so a failed
      check keeps the last status, and a link is marked dead only after a day of failures. Live
      status is then unknown and the slot shows "may be offline".
-   - Known limit: on a channel that uploads very often, a live stream that started hours before
-     the server did can be missed (it is no longer among the newest 50 uploads). A known video
-     ID can be pinned in `sources.ts` for such a case.
+   - A busy channel's live stream is found through its live-streams list, so it is no longer
+     missed when it drops out of the newest 50 uploads (fixed 2026-11-18, PR #4). A known video
+     ID can still be pinned in `sources.ts`.
    - `npm run check:sources` runs it by hand and prints a table of what is broken and why.
    - The UI hides dead links and never shows a stream as live unless the check said so.
    - Link lists live in one file (`server/src/sources.ts`) so a dead link is fixed in one place.
    Check: put a fake link in the list, run the checker, see it marked `dead` and hidden.
-8. **Official PH bulletins (skipped for now)**: PAGASA wind signal numbers and rainfall
-   warnings, PHIVOLCS volcano alert levels. These are the official PH warnings the global feeds
-   do not carry, but there is no API, so we would have to scrape web pages. Do this only after
-   checking their terms of use, and keep it isolated so a page change cannot break the rest.
-   Instead, the status card gets plain links to the PAGASA and PHIVOLCS bulletin pages.
-9. **Filipino option** (to do): an English / Filipino switch in the page header, remembered in the
+8. **Official PH bulletins (partly)**: PAGASA's public alert feed (CAP, CC BY 4.0) is in use and
+   shown above the score. PAGASA wind signal numbers and rainfall warnings, and PHIVOLCS volcano
+   alert levels, have no feed; scraping their pages was declined (owner, 2026-11-16), so the
+   status card has plain links to the PAGASA and PHIVOLCS bulletin pages instead.
+9. **Filipino option**: an English / Filipino switch in the page header, remembered in the
    browser. Details below. Check: switching changes every label, the legend, the disclaimer, the
    card and the outlet category names, with no English left over.
-10. **AI summaries (skipped for now)**: a short "what is happening" brief from the news and
+10. **AI summaries (skipped)**: a short "what is happening" brief from the news and
     events, only if a local model (Ollama) or an API key is set up. Off by default.
 
 ### Outlet categories
@@ -168,8 +178,7 @@ under `online` until they are added to the list.
 ### Open questions for the owner
 
 - Confirm that the "Civil Defense PH" YouTube channel is the real one (it is small).
-- Pin video IDs for long-running live streams on busy channels, or accept the known limit?
-- The Filipino labels are drafts until the owner has reviewed them (step 9).
+- New Filipino lines added since the review (2026-11-17) are drafts until the owner reads them.
 - All kinds of news on the map: see "Phase 3 idea" below.
 
 ## Phase 3 idea — all kinds of news on the map (proposed 2026-11-16, not designed yet)
@@ -213,49 +222,44 @@ refer to the audit report.
 
 | Phase | Goal | Status |
 |---|---|---|
-| 1 | Data integrity: unknown is never calm, `/api/status` and banner, close dropped events, retries, wording | Built, not committed |
-| 2 | Official warnings: PAGASA alert feed, three-tier labels, official block at the top of the card | Built, not committed |
-| 3 | Geography and hazards: storm distance to the track line, JTWC fallback, extra weather points, "not covered" list, per-hazard levels | Built, not committed |
-| 4 | Stability: jobs run only when due (1.11), score history with part-scores (1.12), database tests in CI, historical replay (results: `docs/replay-results.md`) | Built, not committed. Deployment basics (1.13) skipped for now: no plan to go online soon |
-| 5 | Experience: place search and "use my location" (1.17), card order (1.18), keyboard and touch (1.19), Filipino review, news fixes (1.14, 1.15) | Built, not committed. 5.4: headlines sorted into nine kinds of disaster (owner's choice). 5.5: owner read all 230 Filipino lines on 2026-11-17 and changed three ("lalawigan/probinsya" everywhere, "Ayon sa uri ng banta"); every line still has its `// REVIEW` mark, as asked |
-| 6 | Later: see below | Replay re-run with towns and the weather grid; wet day rule for heavy rain added (2026-11-18) |
+| 1 | Data integrity: unknown is never calm, `/api/status` and banner, close dropped events, retries, wording | Done (PR #2) |
+| 2 | Official warnings: PAGASA alert feed, three-tier labels, official block at the top of the card | Done (PR #2) |
+| 3 | Geography and hazards: storm distance to the track line, JTWC fallback, extra weather points, "not covered" list, per-hazard levels | Done (PR #2). The extra weather points were later replaced by the weather grid (PR #3) |
+| 4 | Stability: jobs run only when due (1.11), score history with part-scores (1.12), database tests in CI, historical replay (results: `docs/replay-results.md`) | Done (PR #2). Deployment basics (1.13) skipped for now: no plan to go online soon |
+| 5 | Experience: place search and "use my location" (1.17), card order (1.18), keyboard and touch (1.19), Filipino review, news fixes (1.14, 1.15) | Done (PR #2). 5.4: headlines sorted into nine kinds of disaster (owner's choice). 5.5: owner read all 230 Filipino lines on 2026-11-17 and changed three ("lalawigan/probinsya" everywhere, "Ayon sa uri ng banta"); every line still has its `// REVIEW` mark, as asked |
+| 6 | Tune the score from the replay, then the extras below | In progress (see "Phase 6") |
 
-### Phase 6 — later
+### Phase 6
 
-Starts only after Phase 4's historical replay has run, because its main job is acting on what
-the replay shows.
+Its main job is acting on what the replay shows. Status, in order:
 
-Replay re-run on 2026-11-18, scoring towns on the weather grid like the live app: every known
-disaster still reaches "High", and the ordinary week has 30 "High" province-hours (was 7), all
-from a single heavy hour of rain (`docs/replay-results.md`).
+| Item | Status |
+|---|---|
+| Replay re-run the way the live app scores (towns, the weather grid, a reading every 2 hours) | Done 2026-11-18 (PR #5). Every known disaster still reaches "High"; the ordinary week had 30 "High" province-hours (was 7), all from a single heavy hour of rain |
+| **Wet day rule** (owner's choice): a heavy hour under 30 mm reaches "High" only after 50 mm in 24 hours | Done 2026-11-18 (PR #6). The ordinary week drops from 30 "High" province-hours to 4; no known disaster changes. Other amounts can be tried with `WET_DAY_MM=<mm> npm run replay` |
+| **Headline number**: keep "strongest + 0.25 × each other", or use the worst single hazard | Kept for now, as recommended: Taal reached "High" only through it. The owner has not decided yet |
+| **USGS impact fields (1.10)**: PAGER `alert`, `mmi` (shaking intensity) and `tsunami` are saved in `raw` but not used. Show them on the card, or use them in the earthquake signal | **Next** |
+| **Landslide and storm surge maps**: no live feed for either. Static hazard maps (for example government geohazard maps) could mark areas at risk, but only if their licence allows reuse with credit. If none does, keep the "not covered" line | To do: check the licences first |
+| **Man-made disasters in the headlines**: building fires and garbage, landfill or mine collapses. Left out on 2026-11-17 (owner's choice); a later "Man-made" group could bring them back | To do, if the owner wants it |
 
-Done (2026-11-18, owner's choice): the **wet day rule**. A heavy hour under 30 mm reaches "High"
-only after 50 mm in 24 hours. The ordinary week drops from 30 "High" province-hours to 4, and no
-known disaster changes. The headline rule stays "strongest + 0.25 × each other" for now: Taal
-reached "High" only through it.
-
-- **Tune the weights from replay results.** Change `WEIGHTS` in `scoring.ts` only where the
-  replay shows a clear miss: a known disaster that never reached "High" at the right time, or
-  an ordinary week with false "High" readings. Tests first; update METHODOLOGY.md.
-- **Headline number.** Decide whether the total stays "strongest + 0.25 × each other" or
-  becomes the worst single hazard. Today rain 39 plus earthquakes 6 gives 41 ("Moderate")
-  when no single hazard is above "Low". Owner's call; the replay helps decide.
-- **USGS impact fields (1.10).** USGS's PAGER `alert`, `mmi` (shaking intensity) and
-  `tsunami` are already saved in `raw` but not used. Use them in the earthquake signal, or
-  at least show them on the card.
-- **Landslide and storm surge maps.** There is no live feed for either. Static hazard maps
-  (for example government geohazard maps) could mark areas at risk, but only if their licence
-  allows reuse with credit. Check the licence first; if none allows it, keep the "not
-  covered" line on the card.
-- **Man-made disasters in the headlines.** Step 5.4 sorts headlines into nine natural types
-  (the owner's list plus extreme heat). Building fires and garbage, landfill or mine
-  collapses are disasters too, but man-made; the owner chose to leave them out for now
-  (2026-11-17). A later "Man-made" group could bring them back.
+Rule for any further tuning: change `WEIGHTS` in `scoring.ts` only where the replay shows a clear
+miss (a known disaster that never reached "High" at the right time, or false "High" readings in
+an ordinary week). Tests first; update METHODOLOGY.md.
 
 Small leftovers with no phase: a repeated identical headline is dropped for 14 days (1.16),
 and a few outdated comments (1.20).
 
-## Per-town map colours (approved 2026-11-17, being built)
+## Per-town map colours (approved 2026-11-17, done)
+
+Built and merged 2026-11-18 (PRs #3 and #4). Changes made after this design, which win where the
+text below differs:
+- **Towns are coloured at every zoom level** (PR #4), not only from zoom 8, so a town never shows
+  its province's highest town. Province colours show only until the town shapes have loaded,
+  and the shapes are downloaded when the map first loads.
+- **The card's main number is the town's score**, the same one that colours the town on the
+  map, hazard by hazard (`place_scores.hazards`). The exact spot's own score is a smaller line.
+- `province_weather_points` was dropped; the grid replaced it.
+
 
 **Problem.** The map colours whole provinces, using the worst of up to 3 weather points. The
 card scores the exact spot. Clicking Kiamba gives 12 on the card, while the map under it says
@@ -298,8 +302,8 @@ waits about 10 seconds between its 12 requests, which spreads one run over about
 - Measured: 29 small-island towns are more than 30 km from any point. They are in Batanes,
   Sulu, Tawi-Tawi, the Palawan islands, Calayan and similar places; Kalayaan is about 430 km
   away. Each gets a point of its own (599 in all).
-- Provinces take the worst of the points inside them. That replaces `province_weather_points`
-  and `npm run weather-points`, which were built in audit Phase 3 and are not committed yet.
+- Provinces take the worst of the points inside them. That replaced `province_weather_points`
+  and the old `npm run weather-points` from audit Phase 3.
 
 ### Database
 
