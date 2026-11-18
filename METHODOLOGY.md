@@ -229,4 +229,8 @@ A quiet day with no earthquakes is not stale: what counts is that the fetch work
   are not in the score.
 - **Storm tracks, the 7-day outlook and news do not change the score.** They are collected
   (JMA, JTWC, Open-Meteo, GloFAS, news feeds) for display only.
-- **Landslides** are not covered.
+- **Storm surge zones come from a fixed map, not a live feed.** Project NOAH's storm surge
+  maps (2021 data) show where a surge of each advisory level (SSA 1 up to 2 m … SSA 4 more than
+  4 m) would reach. They are scenarios, not a forecast, and are shown on the map and the status
+  card only: they do not change the score.
+- **Landslides** are not covered yet (the landslide hazard map is not loaded).

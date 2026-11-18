@@ -24,6 +24,12 @@ export const en = {
     creditWeather: 'Weather (modelled):',
     creditWeatherEnd: ', CC BY 4.0.',
     creditBoundaries: 'Boundaries: NAMRIA and PSA via OCHA, CC BY 3.0 IGO, from',
+    // Hazard maps line: lead, "Project NOAH" link, middle, licence link.
+    creditHazards: 'Hazard maps:',
+    creditHazardsMid:
+      'and its contributors (UP NOAH Center); landslide maps by UP NIGS, storm surge maps by PAGASA with UP NIGS. Licence:',
+    creditHazardsOdbl:
+      'The hazard zone shapes our map serves are simplified from Project NOAH data and are available under the ODbL 1.0.',
     creditEvents: 'Disaster events:',
     creditEventsMid: ', © European Union, CC BY 4.0, and',
     creditStorms: 'Storm tracks:',
@@ -87,6 +93,12 @@ export const en = {
     showLabel: 'Show on the map',
     towns: 'Each city and municipality is coloured by its own score. Zoom in to see the borders.',
     heading: 'Map legend',
+    // The fixed hazard maps (Project NOAH). The map shows the widest storm surge scenario.
+    landslide: 'Landslide zones',
+    stormSurge: 'Storm surge zones: SSA 4 scenario (more than 4 m)',
+    zoomIn: 'Zoom in to see zones',
+    hazardNote: 'Fixed maps from Project NOAH, not a forecast. They do not change the score.',
+    hazardClasses: { 1: 'Low', 2: 'Medium', 3: 'High' },
   },
 
   // The side panel before a spot is picked.
@@ -228,6 +240,8 @@ export const en = {
     popupPressure: 'Pressure: {value}',
     popupNewsTitle: '{province}: {count} in the news',
     popupNewsMore: 'and {count} more in the headlines panel',
+    // The map's credit line while a hazard layer is drawn.
+    hazardAttribution: 'Hazard maps © Project NOAH and its contributors, ODbL',
   },
 
   // The status card.
@@ -242,7 +256,7 @@ export const en = {
     bandInTown: '{band} across {town}',
     hazardsTitle: 'By hazard',
     notCovered:
-      'Not covered here: landslides, storm surge, tsunami, PAGASA wind signals and rainfall warnings, PHIVOLCS volcano alert levels. Use the official links below.',
+      'Not covered here: landslides, tsunami, PAGASA wind signals and rainfall warnings, PHIVOLCS volcano alert levels. Use the official links below.',
     incomplete: 'Some data is missing, so the real score may be higher.',
     nearTitle: 'Storms and disaster events near here',
     exactSpot: 'At the exact spot you picked: {score}, {band}',
@@ -350,6 +364,27 @@ export const en = {
     official: 'Official · {agency}',
     global: 'Global assessment',
     model: 'Model estimate',
+    hazardMap: 'Fixed map · Project NOAH',
+  },
+
+  // The "Hazard map" block on the status card (HazardZones.tsx).
+  hazardMap: {
+    title: 'Hazard map',
+    landslide: 'Landslide',
+    stormSurge: 'Storm surge',
+    classes: { 1: 'low', 2: 'medium', 3: 'high' },
+    notInZone: 'not in a zone',
+    notReached: 'not reached',
+    // Unknown, never "safe": no map is loaded for this province.
+    noMap: 'no hazard map here',
+    // Storm surge advisory levels, in Project NOAH's wording.
+    levels: {
+      1: 'SSA 1 (up to 2 m)',
+      2: 'SSA 2 (up to 3 m)',
+      3: 'SSA 3 (up to 4 m)',
+      4: 'SSA 4 (more than 4 m)',
+    },
+    note: 'Scenarios from fixed maps, not a forecast: each storm surge level shows where a surge that high would reach. They do not change the score.',
   },
 
   // Official alerts (the text of an alert itself is the agency's, never ours).

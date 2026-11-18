@@ -66,6 +66,8 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `news` | Disaster headlines, one row per story |
 | `sources` | What the link checker found for each feed and stream |
 | `fetch_runs` | When each feed last succeeded |
+| `hazard_zones` | Project NOAH hazard zones (landslide, storm surge levels 1–4), class 1–3, in small pieces; kept apart from the score tables (ODbL) |
+| `hazard_coverage` | Which province's hazard file is loaded for each map, so "no hazard map here" is told apart from "not in a zone" |
 
 `fetch_runs` is how the app tells "no earthquakes lately" apart from "the earthquake fetch has
 been failing". A banner on the page names every feed that is past its own limit, and a score
@@ -91,20 +93,27 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/bulletins` | Links to official PAGASA and PHIVOLCS pages |
 | `GET /api/alerts` | Official alerts in effect (PAGASA) |
 | `GET /api/status` | When each feed last succeeded, and which are out of date |
+| `GET /api/hazards` | Which fixed hazard maps are loaded (kind, storm surge level, provinces, when), for the legend |
+| `GET /api/hazards/tiles/:layer/:z/:x/:y.mvt` | Hazard zones as vector tiles (`landslide` or `surge1`…`surge4`), storm surge from zoom 4, landslide from zoom 9; empty below that |
 
 ## What the reader sees
 
 - **Map:** every city and municipality coloured by its own score at every zoom level (0–19
   nothing detected, 20–39 low, 40–59 moderate, 60–79 high, 80–100 severe), with event markers and storm
   tracks on top. A province or town with no score yet is striped grey. The picked spot's town
-  gets a thick outline.
+  gets a thick outline. The fixed hazard maps (Project NOAH: landslide, and storm surge at its
+  widest level, SSA 4) can be switched on in the legend; they show as cool-toned stripes from
+  zoom 9, denser for a higher class. Storm surge also shows further out, as coloured zone
+  outlines along the coast; landslide starts at zoom 9.
 - **Light or dark:** follows the device setting until the reader picks one in the top bar
   (remembered in the browser). The dark theme uses a dark basemap and a score scale where
   brighter means more stress.
 - **Status card:** opens on a click. The town's score (the same as its map colour) with its
   reasons, the exact spot's own score, the province's score,
   the 7-day outlook, nearby events (within 300 km), storms forecast to pass within 300 km,
-  headlines naming the province, and official bulletin links.
+  headlines naming the province, and official bulletin links. A "Hazard map" block under the
+  hazard rows says what the fixed NOAH maps show for the spot (landslide class, and storm
+  surge level by level); it never changes the score.
 - **Headlines panel** and **live news panel** (streams): see [news-and-streams.md](news-and-streams.md).
 - **Language:** English or Filipino. Every string is in `web/src/i18n/en.ts` and `fil.ts`. The
   server sends score reasons as message keys plus numbers, and the page writes the sentence.

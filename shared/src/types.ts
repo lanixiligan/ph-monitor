@@ -286,6 +286,46 @@ export type PointDetail = {
   freshness: Freshness;
   /** Phase 2: outlook, nearby events, storms and news. Not part of the score. */
   conditions: Conditions;
+  /** Fixed hazard maps (Project NOAH) for this spot. Not part of the score. */
+  hazardZones: HazardZones;
+};
+
+// ---------- Hazard maps (Project NOAH, ODbL) ----------
+
+/** A hazard map class: 1 low, 2 medium, 3 high. */
+export type HazardClass = 1 | 2 | 3;
+
+/** Storm surge advisory (SSA) level: 1 up to 2 m, 2 up to 3 m, 3 up to 4 m, 4 more than 4 m. */
+export type SurgeLevel = 1 | 2 | 3 | 4;
+
+/** The two fixed hazard maps. */
+export type HazardMapKind = 'landslide' | 'stormSurge';
+
+/** One storm surge level at a spot. `hazardClass` null: that surge does not reach the spot. */
+export type SurgeAtSpot = { level: SurgeLevel; hazardClass: HazardClass | null };
+
+/**
+ * What the fixed hazard maps say about one spot. A null map means no map is
+ * loaded for the spot's province: unknown, never "safe".
+ */
+export type HazardZones = {
+  /** `hazardClass` null: the spot is outside every landslide zone. */
+  landslide: { hazardClass: HazardClass | null } | null;
+  /** One entry per loaded surge level (1 to 4), in order. */
+  stormSurge: SurgeAtSpot[] | null;
+};
+
+/**
+ * One loaded hazard map layer, for the legend. Returned as a list by GET /api/hazards.
+ * `surgeLevel` is null for landslide.
+ */
+export type HazardLayerInfo = {
+  kind: HazardMapKind;
+  surgeLevel: SurgeLevel | null;
+  /** How many provinces have this map loaded. */
+  provinces: number;
+  /** When the newest province file was loaded (ISO time). */
+  loadedAt: string;
 };
 
 // ---------- Phase 2 ----------

@@ -5,6 +5,7 @@ import type { FeatureCollection, Geometry } from 'geojson';
 import type {
   BulletinLink,
   DisasterEvent,
+  HazardLayerInfo,
   NewsItem,
   OfficialAlert,
   PlaceMatch,
@@ -103,4 +104,9 @@ export async function fetchStatus(): Promise<StatusReport> {
 /** Official alerts in effect anywhere in the country. May come back empty. */
 export async function fetchAlerts(): Promise<OfficialAlert[]> {
   return (await getJson('/api/alerts')) as OfficialAlert[];
+}
+
+/** Which fixed hazard maps (Project NOAH) are loaded, for the legend and the map. May come back empty. */
+export async function fetchHazards(): Promise<HazardLayerInfo[]> {
+  return (await getJson('/api/hazards')) as HazardLayerInfo[];
 }

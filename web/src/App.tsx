@@ -5,8 +5,8 @@
 
 import { useEffect, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
-import type { FeedHealth, PlaceScores } from '@ph-monitor/shared';
-import { fetchPlaceScores, fetchProvinces, fetchStatus } from './api.ts';
+import type { FeedHealth, HazardLayerInfo, PlaceScores } from '@ph-monitor/shared';
+import { fetchHazards, fetchPlaceScores, fetchProvinces, fetchStatus } from './api.ts';
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
 import { Legend } from './components/Legend.tsx';
@@ -20,7 +20,7 @@ import type { PickedArea } from './components/StatusCard.tsx';
 import { StreamsPanel } from './components/StreamsPanel.tsx';
 import { WarnIcon } from './components/WarnIcon.tsx';
 import { fill, LanguageSwitch, lookup, useStrings } from './i18n/index.ts';
-import { ALL_LAYERS_ON } from './mapSettings.ts';
+import { DEFAULT_LAYERS } from './mapSettings.ts';
 import { ThemeSwitch } from './theme/index.ts';
 
 // How often the map asks the server for new scores.
@@ -54,8 +54,12 @@ export function App() {
   // How each feed is doing. null = not loaded yet; 'failed' = the check itself failed.
   const [feeds, setFeeds] = useState<FeedHealth[] | 'failed' | null>(null);
   const [spot, setSpot] = useState<Spot | null>(spotFromAddress);
-  // Which map layers the legend's tick boxes have switched on.
-  const [layers, setLayers] = useState(ALL_LAYERS_ON);
+  // Which map layers the legend's tick boxes have switched on (the hazard maps start off).
+  const [layers, setLayers] = useState(DEFAULT_LAYERS);
+  // The fixed hazard maps the server has loaded. null = not known yet.
+  const [hazards, setHazards] = useState<HazardLayerInfo[] | null>(null);
+  // The map's zoom level, for the legend's "zoom in to see zones".
+  const [mapZoom, setMapZoom] = useState(0);
   // The headline filter (a kind of disaster, 'general' or 'all'), shared by the panel and the map dots.
   const [newsType, setNewsType] = useState('all');
   // Provinces picked from a headline, outlined on the map. A new object on
@@ -100,6 +104,14 @@ export function App() {
     }
     window.history.replaceState(null, '', address);
   }, [spot]);
+
+  // The hazard maps change only when they are loaded again by hand, so ask once.
+  // A failure means no hazard tick boxes, nothing worse.
+  useEffect(() => {
+    fetchHazards()
+      .then(setHazards)
+      .catch(() => setHazards([]));
+  }, []);
 
   // Load the provinces now, then again every few minutes.
   useEffect(() => {
@@ -199,11 +211,13 @@ export function App() {
             goTo={goTo}
             onLocateResult={setLocateProblem}
             newsType={newsType}
+            hazards={hazards}
+            onZoom={setMapZoom}
           />
         </main>
 
         {/* Under the map on a small screen; bottom of the left column on a wide one. */}
-        <Legend layers={layers} onChange={setLayers} newsType={newsType} />
+        <Legend layers={layers} onChange={setLayers} newsType={newsType} hazards={hazards} zoom={mapZoom} />
 
         <div className="side side-spot">
           {spot !== null ? (

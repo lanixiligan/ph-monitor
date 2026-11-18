@@ -217,3 +217,34 @@ export async function addNews(title: string, publishedAt: Date, provincePsgcs: n
     [title, publishedAt, provincePsgcs, types],
   );
 }
+
+/** Adds one hazard map piece: a square from `west`/`south` to `east`/`north`, the way the hazard loader stores it. */
+export async function addHazardZone(zone: {
+  kind: 'landslide' | 'stormSurge';
+  surgeLevel: number; // 0 for landslide, 1 to 4 for storm surge
+  hazardClass: number;
+  provincePsgc: number;
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+}): Promise<void> {
+  await pool.query(
+    `INSERT INTO hazard_zones (kind, surge_level, hazard_class, province_psgc, geom)
+     VALUES ($1, $2, $3, $4, ST_MakeEnvelope($5, $6, $7, $8, 4326))`,
+    [zone.kind, zone.surgeLevel, zone.hazardClass, zone.provincePsgc, zone.west, zone.south, zone.east, zone.north],
+  );
+}
+
+/** Marks one province's hazard map file as loaded (for one kind and surge level). */
+export async function addHazardCoverage(coverage: {
+  kind: 'landslide' | 'stormSurge';
+  surgeLevel: number;
+  provincePsgc: number;
+}): Promise<void> {
+  await pool.query(
+    `INSERT INTO hazard_coverage (kind, surge_level, province_psgc, source_file, sha256, zone_count)
+     VALUES ($1, $2, $3, 'test.zip', 'test-hash', 1)`,
+    [coverage.kind, coverage.surgeLevel, coverage.provincePsgc],
+  );
+}

@@ -8,6 +8,7 @@ import { config } from './config.ts';
 import { pool } from './db.ts';
 import { startScheduler } from './jobs/scheduler.ts';
 import { conditionsRouter } from './routes/conditions.ts';
+import { hazardsRouter } from './routes/hazards.ts';
 import { placesRouter } from './routes/places.ts';
 import { pointRouter } from './routes/point.ts';
 import { provincesRouter } from './routes/provinces.ts';
@@ -23,6 +24,8 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/provinces', provincesRouter);
 app.use('/api/point', pointRouter);
 app.use('/api/places', placesRouter);
+// Fixed hazard maps (Project NOAH): the loaded layers and the map tiles
+app.use('/api/hazards', hazardsRouter);
 // Phase 2: /api/events, /api/storms, /api/news, /api/streams, /api/bulletins
 app.use('/api', conditionsRouter);
 

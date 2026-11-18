@@ -10,6 +10,7 @@
     "migrate": "tsx scripts/migrate.ts",
     "load-provinces": "tsx scripts/load-provinces.ts",
     "load-places": "tsx scripts/load-places.ts",
+    "load-hazards": "tsx scripts/load-hazards.ts",
     "ingest:earthquakes": "tsx scripts/run-job.ts earthquakes",
     "ingest:weather": "tsx scripts/run-job.ts weather",
     "compute:scores": "tsx scripts/run-job.ts scores",
@@ -31,6 +32,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^24.19.2",
     "@types/pg": "^8.23.1",
+    "@types/shapefile": "^0.6.4",
     "tsx": "^4.23.15"
   },
   "dependencies": {
@@ -38,6 +40,7 @@
     "fast-xml-parser": "^5.12.1",
     "node-cron": "^4.6.0",
     "pg": "^8.23.1",
+    "shapefile": "^0.6.6",
     "zod": "^4.6.7"
   }
 }

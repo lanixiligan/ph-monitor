@@ -37,6 +37,12 @@ export function CreditsPage() {
             <a href="https://github.com/faeldon/philippines-json-maps">philippines-json-maps</a>.
           </li>
           <li>
+            {t.app.creditHazards} <a href="https://noah.up.edu.ph/">Project NOAH</a> {t.app.creditHazardsMid}{' '}
+            <a href="https://opendatacommons.org/licenses/odbl/1-0/">ODbL 1.0</a>.
+            <br />
+            {t.app.creditHazardsOdbl}
+          </li>
+          <li>
             {t.app.creditEvents} <a href="https://www.gdacs.org/">GDACS</a>
             {t.app.creditEventsMid} <a href="https://eonet.gsfc.nasa.gov/">NASA EONET</a>.
           </li>

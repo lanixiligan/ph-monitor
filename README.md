@@ -87,7 +87,11 @@ data flows through the app, and its limits.
 | News headlines (headline, outlet, time and link only) | RSS feeds of the outlets listed in `server/src/sources.ts`, and [Google News](https://news.google.com/) search | Headlines belong to their outlets; each links to the original article |
 | Live streams and latest videos | [YouTube](https://www.youtube.com/) channels listed in `server/src/sources.ts` | Shown only in YouTube's own player |
 | Basemap: roads and place names (switch in `web/src/mapSettings.ts`) | [OpenFreeMap](https://openfreemap.org/), © OpenMapTiles, data © OpenStreetMap contributors | ODbL (OpenStreetMap data) |
+| Landslide and storm surge hazard maps (fixed maps, simplified; shown only, not in the score) | [Project NOAH](https://noah.up.edu.ph/) and its contributors (UP NOAH Center); landslide maps by UP NIGS, storm surge maps by PAGASA with UP NIGS. Downloaded from the Hugging Face mirror `bettergovph/project-noah-hazard-maps` | [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) |
 
 ## Licence
 
 The code is under the [MIT licence](LICENSE). The data keeps its own licences, listed above.
+
+The hazard zone shapes our map serves are simplified from Project NOAH data and are available
+under the [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
