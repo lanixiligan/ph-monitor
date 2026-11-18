@@ -632,7 +632,7 @@ label.legend-row {
   background: var(--news);
 }
 
-/* ---------- Panels (spot, live streams, headlines) ----------
+/* ---------- Panels (spot, live news, headlines) ----------
    Every panel is a head (its title) and a body. */
 .panel {
   background: var(--paper);
@@ -908,7 +908,7 @@ label.legend-row {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Live streams ---------- */
+/* ---------- Live news (streams) ---------- */
 .player {
   background: var(--bar);
 }

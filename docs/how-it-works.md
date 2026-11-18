@@ -105,7 +105,7 @@ The web page talks only to these addresses on our own server (port 3001).
   reasons, the exact spot's own score, the province's score,
   the 7-day outlook, nearby events (within 300 km), storms forecast to pass within 300 km,
   headlines naming the province, and official bulletin links.
-- **Headlines panel** and **live streams panel:** see [news-and-streams.md](news-and-streams.md).
+- **Headlines panel** and **live news panel** (streams): see [news-and-streams.md](news-and-streams.md).
 - **Language:** English or Filipino. Every string is in `web/src/i18n/en.ts` and `fil.ts`. The
   server sends score reasons as message keys plus numbers, and the page writes the sentence.
   The Filipino text is a draft until the owner reviews it.

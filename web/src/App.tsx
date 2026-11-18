@@ -1,5 +1,5 @@
 // The whole page: a top bar, the map with its legend on the left, and on the
-// right the panel for the clicked spot, the live streams and the headlines.
+// right the panel for the clicked spot, the live news and the headlines.
 // The bottom line holds the "not official" notice and a link to the credits page.
 
 import { useEffect, useState } from 'react';

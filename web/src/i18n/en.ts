@@ -11,7 +11,7 @@ export const en = {
     intro:
       'Stress right now from earthquakes, weather and disaster events. Search for a place or click anywhere on land.',
     jumpHeadlines: 'Headlines',
-    jumpStreams: 'Live streams',
+    jumpStreams: 'Live news',
     loadError: 'Could not load the scores. Is the server running?',
     // {feeds} is a list of names from `feeds` below.
     staleBanner: 'Out of date: {feeds}. What you see for these may be old or missing.',
@@ -309,9 +309,9 @@ export const en = {
     showOnMap: 'Show {places} on the map',
   },
 
-  // The live streams panel.
+  // The live news panel (YouTube streams and latest videos).
   streams: {
-    title: 'Live streams',
+    title: 'Live news',
     note: "Video: YouTube, from each outlet's own channel. A stream is not an official warning.",
     failed: 'Could not load the streams right now.',
     none: 'No streams are available right now.',
