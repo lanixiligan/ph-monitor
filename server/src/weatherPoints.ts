@@ -13,6 +13,23 @@ export const MIN_LAND_SHARE = 0.25;
 /** A town further than this from every point gets a point of its own. */
 export const OWN_POINT_KM = 30;
 
+/**
+ * How `npm run weather-points` empties the old points before building new ones.
+ * RESTART IDENTITY numbers new points from 1 again. CASCADE also empties the
+ * tables that point at weather_points: point_readings (the weather job refills
+ * it within about 3 hours) and heat_forecasts (see CLEAR_HEAT_RUNS_SQL).
+ */
+export const CLEAR_WEATHER_POINTS_SQL = 'TRUNCATE place_weather_points, weather_points RESTART IDENTITY CASCADE';
+
+/**
+ * Run right after CLEAR_WEATHER_POINTS_SQL: the heat map's rows are gone, so its
+ * run records go too. The panel then says "no data yet" (not "updated 1 hour
+ * ago"), and the heat job is due at the next hourly tick instead of up to 12
+ * hours later. (Several statements in one text: allowed when it has no $1 values.)
+ */
+export const CLEAR_HEAT_RUNS_SQL =
+  "DELETE FROM heat_runs; DELETE FROM fetch_runs WHERE source = 'open-meteo-heat'; DELETE FROM job_tries WHERE job = 'heatMap'";
+
 /** Which points a town reads its weather from. */
 export type TownPoints = { use: 'inside' | 'nearest' | 'own'; ids: number[] };
 
