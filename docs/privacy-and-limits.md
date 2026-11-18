@@ -9,6 +9,7 @@ The web page talks only to our own `/api`, with two exceptions:
 2. **A video** loads from `youtube-nocookie.com`, and only after the reader clicks Play.
 
 The browser never calls USGS, Open-Meteo, GDACS or any news site. The server does that.
+The hazard map tiles (Project NOAH zones) come from our own `/api` too.
 
 ## Search and "use my location"
 
@@ -49,7 +50,10 @@ Open-Meteo's free tier is for non-commercial use. This project is non-commercial
 - **GDACS alert levels are global estimates** for aid agencies. PAGASA wind signals and
   PHIVOLCS volcano alert levels are not in the score.
 - **Storm tracks, the outlook and news never change the score.**
-- **Landslides** are not covered.
+- **Storm surge zones come from a fixed map** (Project NOAH, 2021 data): scenarios for each
+  surge level, not live and not a forecast. They are shown on the map and the card, never in
+  the score.
+- **Landslides** are not covered yet: the landslide hazard map is not loaded.
 - **Headlines are picked by keyword**, so a few will be off-topic or tagged to the wrong province.
 - **The Filipino text is a draft.**
 

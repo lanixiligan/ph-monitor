@@ -19,6 +19,7 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 | 7-day outlook: rain and gusts | Open-Meteo | every 6 hours | No, shown only |
 | 7-day outlook: river flow | Open-Meteo Flood API (GloFAS) | every 6 hours | No, shown only |
 | Boundaries | NAMRIA and PSA via OCHA | once, by hand | Used to measure distances |
+| Landslide and storm surge hazard maps | Project NOAH | once, by hand | No, shown only |
 | Basemap tiles | OpenFreeMap | by the browser | No |
 
 ## Earthquakes: USGS
@@ -119,6 +120,48 @@ Events from both sources are removed 30 days after they end. The page shows an e
   with its official PSGC code.
 - **Licence:** boundaries CC BY 3.0 IGO; the repository is MIT.
 - **Code:** `server/scripts/boundaryFiles.ts`, `load-provinces.ts`, `load-places.ts`.
+
+## Hazard maps: Project NOAH
+
+- **What it is:** Project NOAH's fixed hazard maps (UP NOAH Center): landslide zones by UP
+  NIGS, and storm surge zones by PAGASA with UP NIGS. Each zone is class 1 (low), 2 (medium)
+  or 3 (high). The province files are dated November 2021.
+- **Address:** downloaded once, by hand (`npm run load-hazards`), from the Hugging Face mirror
+  `bettergovph/project-noah-hazard-maps`. Its files are byte for byte the same as NOAH's own
+  download folder (linked from [noah.up.edu.ph](https://noah.up.edu.ph/)), and each download
+  is checked against the mirror's SHA-256 hash. One zip per province; each is deleted after
+  loading.
+- **Storm surge levels**, in NOAH's wording: SSA 1 up to 2 m, SSA 2 up to 3 m, SSA 3 up to
+  4 m, SSA 4 more than 4 m. These are **scenarios** ("if a surge this high comes"), **not a
+  forecast**. The map draws SSA 4, the widest; the status card lists all four.
+- **What we keep:** the zones of each province, simplified: pieces under 1,000 m² are dropped
+  and edges move about 20 m. A list of which province files are loaded tells "no hazard map
+  here" apart from "not in a zone".
+- **Shown:** as striped map layers, storm surge from zoom 4 (the whole country) and landslide
+  from zoom 9 (tick boxes in the legend, off at first), and
+  as a "Hazard map" block on the status card. Never part of the score.
+- **Licence:** Open Data Commons Open Database License
+  ([ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/)). Credit "Project NOAH and its
+  contributors". The simplified shapes our API sends out are offered under the same licence.
+- **Papers to cite** (listed in NOAH's storm surge readme):
+  - Lapidez et al. (2015), Identification of storm surge vulnerable areas in the Philippines
+    through the simulation of Typhoon Haiyan-induced storm surge levels over historical storm
+    tracks. *Natural Hazards and Earth System Sciences* 15, 1473–1481,
+    doi:10.5194/nhess-15-1473-2015.
+  - Lagmay and Kerle (2015), Typhoons: Storm-surge models helped for Hagupit. *Nature* 519, 414,
+    doi:10.1038/519414b.
+  - Tablazon et al. (2015), Probabilistic storm surge inundation maps for Metro Manila based on
+    Philippine public storm warning signals. *Natural Hazards and Earth System Sciences* 15,
+    557–570, doi:10.5194/nhess-15-557-2015.
+  - Lagmay et al. (2015), Devastating storm surges of Typhoon Haiyan. *International Journal of
+    Disaster Risk Reduction* 11, 1–12.
+- **Limits:** fixed maps, not live. Mountain provinces are mostly "high" landslide (most of
+  Benguet, for example), so the card says "high" for most spots there: that is what the map
+  says. A province with no file loaded shows "no hazard map here", never "safe".
+- **Code:** `server/scripts/load-hazards.ts`, `server/src/hazardLoad.ts` (file list, name
+  matching), `server/src/hazardShapes.ts` (reading and checking the shapes),
+  `server/src/hazardZones.ts`, `server/src/routes/hazards.ts`, `web/src/hazardOverlay.ts`,
+  `web/src/components/HazardZones.tsx`.
 
 ## Basemap: OpenFreeMap
 

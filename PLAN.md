@@ -15,11 +15,11 @@ roadmap** (making what exists more trustworthy, numbered on its own).
 | Product Phase 2: events, storms, outlook, news, streams, Filipino | Done (PR #1). Official bulletins only partly (no feed for wind signals or PHIVOLCS); AI summaries skipped |
 | Reliability phases 1–5 | Done (PR #2) |
 | Per-town map colours and the 2-hour weather grid | Done (PRs #3, #4) |
-| Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6); USGS impact fields on the card (PR #7) |
+| Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6); USGS impact fields on the card (PR #7); NOAH storm surge zones on the map and card (built 2026-11-19, not committed yet) |
 | Product Phase 3: all kinds of news on the map | Idea only; needs the owner's answers first |
 
-**Next:** build the NOAH hazard layer, storm surge first (design approved 2026-11-18, see
-"NOAH hazard layer: design" under "Phase 6").
+**Next:** NOAH landslide zones (same code as storm surge). First speed up reading the large
+landslide files (see "Build notes" under "NOAH hazard layer: design").
 
 ## Phase 2 — disaster conditions, forecasts, news, Filipino (planned 2026-11-15, done)
 
@@ -240,7 +240,7 @@ Its main job is acting on what the replay shows. Status, in order:
 | **Wet day rule** (owner's choice): a heavy hour under 30 mm reaches "High" only after 50 mm in 24 hours | Done 2026-11-18 (PR #6). The ordinary week drops from 30 "High" province-hours to 4; no known disaster changes. Other amounts can be tried with `WET_DAY_MM=<mm> npm run replay` |
 | **Headline number**: keep "strongest + 0.25 × each other", or use the worst single hazard | Kept for now, as recommended: Taal reached "High" only through it. The owner has not decided yet |
 | **USGS impact fields (1.10)**: PAGER `alert`, `mmi` (shaking intensity) and `tsunami` are saved in `raw` but not used. Show them on the card, or use them in the earthquake signal | Done 2026-11-18 (PR #7). Shown on the card, tagged "Global assessment"; not in the score |
-| **Landslide and storm surge maps**: no live feed for either. Static hazard maps (for example government geohazard maps) could mark areas at risk, but only if their licence allows reuse with credit. If none does, keep the "not covered" line | Licences checked 2026-11-18 (see below): Project NOAH's maps are usable under ODbL. Owner's choice (2026-11-18): show them as a map layer and a status card line, score unchanged; ODbL accepted. To do: design and build |
+| **Landslide and storm surge maps**: no live feed for either. Static hazard maps (for example government geohazard maps) could mark areas at risk, but only if their licence allows reuse with credit. If none does, keep the "not covered" line | Licences checked 2026-11-18 (see below): Project NOAH's maps are usable under ODbL. Owner's choice (2026-11-18): show them as a map layer and a status card line, score unchanged; ODbL accepted. Storm surge built 2026-11-19 (all 4 levels, 72 provinces). To do: landslide |
 | **Man-made disasters in the headlines**: building fires and garbage, landfill or mine collapses. Left out on 2026-11-17 (owner's choice); a later "Man-made" group could bring them back | To do, if the owner wants it |
 
 Rule for any further tuning: change `WEIGHTS` in `scoring.ts` only where the replay shows a clear
@@ -353,10 +353,14 @@ cannot be sent as one GeoJSON file the way provinces and towns are.
      hazard map here".
    - Stored size about 0.25 GB for storm surge and about 2.5 GB for landslide (E). The disk
      has 47 GB free.
-4. **Map: vector tiles from our own `/api`.** Route `GET /api/hazards/:kind/:z/:x/:y.mvt`,
+4. **Map: vector tiles from our own `/api`.** Route `GET /api/hazards/tiles/:layer/:z/:x/:y.mvt`
+   (layer `landslide` or `surge1`…`surge4`),
    built by PostGIS `ST_AsMVT`, with cache headers. MapLibre reads them as a `vector` source,
    so the "only our `/api`" rule holds.
-   - Zones show from zoom 9 up; below that the legend says "zoom in to see zones".
+   - Storm surge zones show from zoom 4 (the whole country), landslide from zoom 9; below
+     that the legend says "zoom in to see zones". Below zoom 9 a surge zone is thinner than a
+     pixel, so the map draws zone outlines in the class colour instead of stripes, and the
+     server keeps pieces down to a quarter pixel there (tiles measured under 120 KB, 300 ms).
    - The map shows storm surge level 4 (the widest); the card covers all four levels.
    - Zones are cool-toned stripes (a generalised `hatchImage` in `palette.ts`, new
      `--hazard-*` variables in both themes), denser for higher classes, high drawn on top.
@@ -383,6 +387,25 @@ updates (later: compare file sizes with the mirror).
 
 **Owner's decisions (2026-11-18):** storm surge first, then landslide (7); read shapefiles
 with the npm `shapefile` package (one new server dependency); delete each zip after loading.
+
+**Build notes (storm surge, 2026-11-19).**
+- Loaded: 268 files, all 4 levels, 69 provinces with zones (72 with coverage, counting NCR
+  districts, Davao de Oro, Maguindanao del Sur and City of Isabela). 667,000 zone pieces,
+  253 MB with indexes. The full load took 24 minutes; a re-run is safe.
+- Name overrides live in `NAME_OVERRIDES` (`server/src/hazardLoad.ts`): `MetroManila` → the
+  four NCR districts, `CompostelaValley` → Davao de Oro, `Maguindanao` → del Norte and del Sur,
+  `Basilan` → Basilan and City of Isabela. `Cotabato.zip` for storm surge is the same file as
+  `SouthCotabato.zip`, and Cotabato has no coast, so it has no coverage.
+- A file with a missing or bad class is refused whole, so a gap never reads as "not in a zone".
+- Tiles: zoom 9 tiles over Leyte, Manila and Cebu take under 50 ms. Pieces under one screen
+  pixel are left out, and the rest simplified to half a pixel. The server keeps 2,000 tiles in
+  memory: **restart it after loading new hazard files.**
+- `--try <folder>` runs the whole pipeline on local files and rolls back (used for landslide
+  samples: Benguet 24,275 zones in 4 minutes).
+- **Landslide is slow to read:** the `shapefile` package matches holes to outer rings slowly
+  (Benguet's 64 MB took about 4 minutes before the database did any work), so 12.7 GB could take
+  well over the 2–3 hours estimated. Faster ring matching of our own is the next decision.
+- The card tag reads "Fixed map · Project NOAH" (the section title already says "Hazard map").
 
 ## Per-town map colours (approved 2026-11-17, done)
 

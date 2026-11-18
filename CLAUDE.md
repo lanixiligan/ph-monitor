@@ -25,6 +25,7 @@ shared/src/        types.ts (shared types), appInfo.ts (APP_NAME), newsTypes.ts 
 server/db/         schema.sql (all tables; re-runnable)
 server/scripts/    migrate.ts, load-provinces.ts, load-places.ts, run-job.ts,
                    check-sources.ts, load-sample-storm.ts, pick-weather-points.ts,
+                   load-hazards.ts (Project NOAH hazard zones),
                    replay.ts (historical replay; downloads archives into data/replay/)
 server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    pointWeather.ts (on-demand weather for one spot),
@@ -32,7 +33,9 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    sources.ts (every news feed and stream link, outlet categories),
                    conditions.ts (outlook, nearby events, storms, news, official alerts),
                    placeSearch.ts (which place names match a typed text),
-                   scoreHistory.ts (a history row only when a score changed)
+                   scoreHistory.ts (a history row only when a score changed),
+                   hazardLoad.ts + hazardShapes.ts (NOAH file list, names, shape checks),
+                   hazardZones.ts (fixed hazard map answer for one spot)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
                    jma, jtwc, openMeteoDaily, openMeteoFlood, rss, pagasa (official
                    alerts), retry (one more try for a failed download)
@@ -47,12 +50,14 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
   replay/          replay.ts (archived records → score inputs for a past hour)
   routes/          provinces.ts (map data), point.ts (score for one spot),
                    places.ts (place search, town shapes and scores),
-                   conditions.ts (events, storms, news, streams, bulletins)
+                   conditions.ts (events, storms, news, streams, bulletins),
+                   hazards.ts (loaded hazard maps, hazard zone vector tiles)
 server/test/       one test file per area, real feed samples in fixtures/
   db/              database tests (testDb.ts seeds a small map; import it first)
 web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (time, number
                    and link helpers, "uploaded … ago"), useNow.ts (a clock for it), cardOrder.ts (what the status card shows where), mapOverlays.ts + stormGeo.ts (event markers and
-                   storm tracks), styles.css (all colours and layout), palette.ts (CSS
+                   storm tracks), hazardOverlay.ts + hazardLabels.ts (NOAH hazard zones),
+                   styles.css (all colours and layout), palette.ts (CSS
                    colours for the map), components/
   i18n/            en.ts and fil.ts (every string the reader sees), language switch
   theme/           light/dark choice (sets <html data-theme>), theme switch
@@ -77,6 +82,7 @@ npm run typecheck        tsc over all workspaces
 npm run ingest:earthquakes | ingest:weather | compute:scores   one job by hand
 npm run ingest:events | ingest:storms | ingest:forecast | ingest:news | ingest:alerts
 npm run weather-points   pick extra weather points for big provinces (after load-places)
+npm run load-hazards -- stormSurge   load Project NOAH zones (or `landslide`); restart the server after
 npm run check:sources    check every feed and stream link, print a table
 npm run sample-storm     load a sample storm track (add `-- remove` to delete it)
 ```
@@ -119,8 +125,8 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
 - Official alerts (PAGASA) are shown above the score in the agency's own words and never
   change the score. Sections are tagged Official, Global assessment or Model estimate.
 - Data credits (USGS, Open-Meteo CC BY 4.0, NAMRIA/PSA via OCHA CC BY 3.0 IGO, OpenStreetMap,
-  GDACS CC BY 4.0, NASA EONET, JMA, JTWC, GloFAS via Open-Meteo, PAGASA CC BY 4.0, the news
-  outlets) must stay
+  GDACS CC BY 4.0, NASA EONET, JMA, JTWC, GloFAS via Open-Meteo, PAGASA CC BY 4.0, Project NOAH ODbL,
+  the news outlets) must stay
   visible in the UI and README. A new source gets its credit line in both.
 - The "not an official warning service" notice must stay on the page footer, the status card
   (`web/src/components/Disclaimer.tsx`), the README and METHODOLOGY.
