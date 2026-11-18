@@ -453,6 +453,27 @@ label.legend-row {
   cursor: pointer;
 }
 
+/* The legend's title: a button that folds the rest away. */
+.legend-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.legend-toggle[aria-expanded='true'] {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
 .legend input {
   flex: none;
   width: 15px;
@@ -1007,7 +1028,7 @@ footer {
   color: var(--ink);
 }
 
-/* ---------- Wide screen: one screen tall, map on the left ---------- */
+/* ---------- Wide screen: one screen tall, three columns ---------- */
 @media (min-width: 900px) {
   .app {
     /* dvh = percent of the screen's height that is really visible. */
@@ -1019,15 +1040,22 @@ footer {
     display: none;
   }
 
-  /* Two columns: the map takes what is left, the side column is 400px. */
+  /* Spot panel | map | feeds. The names place each column, whatever its
+     order in the page (the map comes first there, for small screens). */
   .workspace {
     flex: 1;
     min-height: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 400px;
+    grid-template-columns: 300px minmax(0, 1fr) 300px;
+    /* Two rows: the legend sits under the spot panel, as tall as it needs. */
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'spot map feeds'
+      'legend map feeds';
   }
 
   .map-area {
+    grid-area: map;
     position: relative;
     display: block;
   }
@@ -1044,7 +1072,8 @@ footer {
     z-index: 2;
     left: 12px;
     top: 12px;
-    width: 356px;
+    /* Leaves room for the zoom buttons when the map is narrow. */
+    width: min(356px, calc(100% - 68px));
     padding: 8px;
     border: 1px solid var(--ink);
   }
@@ -1055,63 +1084,33 @@ footer {
     top: 100%;
   }
 
-  /* The legend floats over the bottom-left corner of the map. */
+  /* The legend closes off the bottom of the left column. */
   .legend {
-    position: absolute;
-    left: 12px;
-    bottom: 12px;
-    width: 356px;
-    border: 1px solid var(--ink);
-    border-top-width: 3px;
-  }
-
-  /* The side column scrolls as one; each panel's title stays in view. */
-  .side {
+    grid-area: legend;
+    max-height: 50dvh;
     overflow-y: auto;
-    border-left: 1px solid var(--ink);
-    background: var(--paper);
+    border-right: 1px solid var(--ink);
   }
 
-  .side .panel:first-child {
-    border-top: 0;
-  }
-
-  .side-feeds .panel:first-child {
-    border-top: 1px solid var(--line);
-  }
-
-  .panel-head {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background: var(--paper);
-  }
-}
-
-/* ---------- Very wide screen: two side columns, each panel scrolls ---------- */
-@media (min-width: 1360px) {
-  .workspace {
-    grid-template-columns: minmax(0, 1fr) 780px;
-  }
-
+  /* Each side column scrolls on its own. */
   .side {
-    display: grid;
-    grid-template-columns: 380px 400px;
-    overflow: hidden;
-  }
-
-  .side-spot,
-  .side-feeds {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    background: var(--paper);
+  }
+
+  .side-spot {
+    grid-area: spot;
+    border-right: 1px solid var(--ink);
   }
 
   .side-feeds {
-    border-left: 1px solid var(--line);
+    grid-area: feeds;
+    border-left: 1px solid var(--ink);
   }
 
-  .side-feeds .panel:first-child {
+  .side .panel:first-child {
     border-top: 0;
   }
 
@@ -1137,13 +1136,16 @@ footer {
     flex: none;
   }
 
-  .panel-head {
-    position: static;
-  }
-
   .panel-body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+  }
+}
+
+/* ---------- Very wide screen: roomier side columns ---------- */
+@media (min-width: 1360px) {
+  .workspace {
+    grid-template-columns: 380px minmax(0, 1fr) 400px;
   }
 }

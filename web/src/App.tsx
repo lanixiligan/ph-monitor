@@ -1,5 +1,6 @@
-// The whole page: a top bar, the map with its legend on the left, and on the
-// right the panel for the clicked spot, the live news and the headlines.
+// The whole page: a top bar, then three columns: on the left the panel for
+// the clicked spot with the map legend under it (the legend can fold away),
+// the map in the middle, and the live news and headlines on the right.
 // The bottom line holds the "not official" notice and a link to the credits page.
 
 import { useEffect, useState } from 'react';
@@ -168,6 +169,8 @@ export function App() {
         </div>
       )}
 
+      {/* The columns are placed by CSS (grid areas), so on a small screen the
+          map still comes first. */}
       <div className="workspace">
         <main className="map-area">
           <PlaceSearch
@@ -197,21 +200,22 @@ export function App() {
             onLocateResult={setLocateProblem}
             newsType={newsType}
           />
-          <Legend layers={layers} onChange={setLayers} newsType={newsType} />
         </main>
 
-        <div className="side">
-          <div className="side-spot">
-            {spot !== null ? (
-              <StatusCard spot={spot} onClose={() => setSpot(null)} onArea={setPicked} />
-            ) : (
-              <SpotHint provinces={provinces} onPick={pickPlace} />
-            )}
-          </div>
-          <div className="side-feeds">
-            <StreamsPanel />
-            <NewsPanel provinces={provinces} onShowOnMap={showOnMap} newsType={newsType} onNewsTypeChange={setNewsType} />
-          </div>
+        {/* Under the map on a small screen; bottom of the left column on a wide one. */}
+        <Legend layers={layers} onChange={setLayers} newsType={newsType} />
+
+        <div className="side side-spot">
+          {spot !== null ? (
+            <StatusCard spot={spot} onClose={() => setSpot(null)} onArea={setPicked} />
+          ) : (
+            <SpotHint provinces={provinces} onPick={pickPlace} />
+          )}
+        </div>
+
+        <div className="side side-feeds">
+          <StreamsPanel />
+          <NewsPanel provinces={provinces} onShowOnMap={showOnMap} newsType={newsType} onNewsTypeChange={setNewsType} />
         </div>
       </div>
 

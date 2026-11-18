@@ -86,6 +86,7 @@ export const en = {
     news: 'Place named in the news (bigger = more headlines)',
     showLabel: 'Show on the map',
     towns: 'Each city and municipality is coloured by its own score. Zoom in to see the borders.',
+    heading: 'Map legend',
   },
 
   // The side panel before a spot is picked.

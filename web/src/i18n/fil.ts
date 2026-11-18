@@ -83,6 +83,7 @@ export const fil: Strings = {
     news: 'Lugar na nasa balita (mas malaki = mas maraming balita)', // REVIEW
     showLabel: 'Ipakita sa mapa', // REVIEW
     towns: 'May sariling kulay ang bawat lungsod at bayan ayon sa sarili nitong score. Mag-zoom in para makita ang mga hangganan.', // REVIEW
+    heading: 'Palatandaan ng mapa', // REVIEW
   },
 
   // The side panel before a spot is picked.

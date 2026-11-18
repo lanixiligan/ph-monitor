@@ -101,9 +101,10 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   (darker = worse) and a dark version (brighter = worse). Errors and stale data use ink, the
   `WarnIcon` and words, never red or amber. Two fonts, Barlow Condensed (titles, numbers) and Atkinson Hyperlegible (text), come
   from `@fontsource` npm packages and ship with the app; never load a font from a font site.
-- Layout: top bar, map on the left with the place search (top left), the zoom and locate
-  buttons (top right) and the legend (its tick boxes switch map layers), panels
-  on the right (spot, live news, headlines), and along the bottom the notice plus a link to the
+- Layout: top bar, then three columns: on the left the spot panel with the legend under it
+  (its tick boxes switch map layers; its title folds it away), the map in the middle with
+  the place search (top left) and the zoom and locate buttons (top right), and live news
+  plus headlines on the right. Along the bottom the notice plus a link to the
   credits page (`/credits`, `web/src/components/CreditsPage.tsx`). Under 900px wide it
   is one scrolling page.
 - The web app talks only to our own `/api`, with two exceptions: the basemap tiles come straight
