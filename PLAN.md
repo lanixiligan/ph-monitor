@@ -18,7 +18,8 @@ roadmap** (making what exists more trustworthy, numbered on its own).
 | Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6); USGS impact fields on the card (PR #7) |
 | Product Phase 3: all kinds of news on the map | Idea only; needs the owner's answers first |
 
-**Next:** the rest of Phase 6 (see "Phase 6"): check the licences of landslide and storm surge maps.
+**Next:** design the Project NOAH landslide and storm surge layer (approved 2026-11-18, see
+"Phase 6"): map layer and status card line, score unchanged.
 
 ## Phase 2 — disaster conditions, forecasts, news, Filipino (planned 2026-11-15, done)
 
@@ -239,7 +240,7 @@ Its main job is acting on what the replay shows. Status, in order:
 | **Wet day rule** (owner's choice): a heavy hour under 30 mm reaches "High" only after 50 mm in 24 hours | Done 2026-11-18 (PR #6). The ordinary week drops from 30 "High" province-hours to 4; no known disaster changes. Other amounts can be tried with `WET_DAY_MM=<mm> npm run replay` |
 | **Headline number**: keep "strongest + 0.25 × each other", or use the worst single hazard | Kept for now, as recommended: Taal reached "High" only through it. The owner has not decided yet |
 | **USGS impact fields (1.10)**: PAGER `alert`, `mmi` (shaking intensity) and `tsunami` are saved in `raw` but not used. Show them on the card, or use them in the earthquake signal | Done 2026-11-18 (PR #7). Shown on the card, tagged "Global assessment"; not in the score |
-| **Landslide and storm surge maps**: no live feed for either. Static hazard maps (for example government geohazard maps) could mark areas at risk, but only if their licence allows reuse with credit. If none does, keep the "not covered" line | To do: check the licences first |
+| **Landslide and storm surge maps**: no live feed for either. Static hazard maps (for example government geohazard maps) could mark areas at risk, but only if their licence allows reuse with credit. If none does, keep the "not covered" line | Licences checked 2026-11-18 (see below): Project NOAH's maps are usable under ODbL. Owner's choice (2026-11-18): show them as a map layer and a status card line, score unchanged; ODbL accepted. To do: design and build |
 | **Man-made disasters in the headlines**: building fires and garbage, landfill or mine collapses. Left out on 2026-11-17 (owner's choice); a later "Man-made" group could bring them back | To do, if the owner wants it |
 
 Rule for any further tuning: change `WEIGHTS` in `scoring.ts` only where the replay shows a clear
@@ -248,6 +249,58 @@ an ordinary week). Tests first; update METHODOLOGY.md.
 
 Small leftovers with no phase: a repeated identical headline is dropped for 14 days (1.16),
 and a few outdated comments (1.20).
+
+#### Landslide and storm surge maps: licence check (2026-11-18)
+
+Research only; nothing was downloaded into the repo. Every quote below was read on the page
+named, on 2026-11-18. "NC" = non-commercial use allowed.
+
+**The law.** RA 8293 Sec. 176.1 (read on lawphil.net, an unofficial copy; the Official Gazette
+page refused the request): "No copyright shall subsist in any work of the Government of the
+Philippines. However, prior approval of the government agency or office wherein the work is
+created shall be necessary for exploitation of such work for profit." RA 10372 (2013) does not
+change Sec. 176. This points to free non-profit use of government works, but it is not a
+licence: an agency's own terms of use still apply, and 176.3 keeps copyright in outside
+material the government republishes (for example co-produced project maps).
+
+| Source (owner, where) | Licence: quote and where | NC / credit / changes / redistribute | Format, coverage, date | Access | Verdict |
+|---|---|---|---|---|---|
+| **Project NOAH landslide and storm surge hazard maps** (UP NOAH Center; landslide by UP NIGS, storm surge by PAGASA with NIGS). "Downloads" button on noah.up.edu.ph → Google Drive folder `1ALE4-E9c-4AGjm1fqiPprWHrLUskeY9o` | `NOAH_License.pdf` in that folder: "open data licensed under the Open Data Commons Open Database License (ODC-ODbL)… You are free to download, copy, transmit, redistribute, and adapt our data provided that Project NOAH and its contributors are always properly attributed… If you alter or build upon our data, you may only distribute the result under the same license (ODC-ODbL)." The metadata files say the same | Yes / "Project NOAH and its contributors", and the readmes ask to cite their journal papers / yes / yes, but only under ODbL | Shapefile per province, WGS 84, field `HAZ` 1–3 (low, medium, high). Landslide: 82 province files from 1 m LiDAR / 5 m IfSAR. Storm surge: 4 scenario levels (SSA 1–4) for all coastal provinces. Province files dated Nov 2021. Large (Batanes landslide alone is 11.9 MB) | Free, no sign-up. A copy with the identical licence file is on Hugging Face (`bettergovph/project-noah-hazard-maps`) | **Usable** (owner-stated open licence, vector, whole country) |
+| MGB 1:10,000 rain-induced landslide susceptibility (DENR MGB). ArcGIS service on `controlmap.mgb.gov.ph`, `GDI_Detailed_Rain_induced_Landslide_Susceptibility` | No licence. Service fields only: copyright "Lands Geological Survey Division Mines and Geosciences Bureau", licenseInfo "Boundaries are approximate". mgb.gov.ph itself blocked automated reads | Not stated | Vector polygons (GeoJSON query), whole country, 1,705,748 polygons, 1:10,000. No date given | Free, no key | **Unclear: ask MGB** |
+| NAMRIA Geoportal (`geoportal.gov.ph`): MGB 1:10k landslide and READY 1:50k storm surge layers | Download form (in `geoportal.gov.ph/js/map.js`): "I shall not reproduce, sell or use the requested data for any purpose other than that/those stated above." It asks for name, email, agency and purpose | Download: no redistribution | WMS images; the vector service (WFS) needs a login | Download needs personal details | **Not usable** (download terms forbid reproducing); WMS images unclear |
+| NAMRIA Downloads and GeoRiskPH `ulap-hazards` READY maps (MGB 2012, PAGASA) | No licence text; licence fields empty | Not stated | PNG images and image-only map services, 27 provinces, 1:50,000 | Free | **Not usable** (images only, no licence) |
+| HazardHunterPH (PHIVOLCS; shows MGB landslide and PAGASA storm surge) | `hazardhunter.georisk.gov.ph/terms-of-use`: "All intellectual property rights are reserved… You must not: Republish material… Redistribute content from HazardHunterPH (unless content is specifically made for redistribution)." | No redistribution | Map services behind an app token | Token | **Not usable** |
+| PAGASA storm surge pages | No map download and no licence text. The CC BY 4.0 line covers the public alert feed only | Not stated | Explainer pages only | — | **Unclear: ask PAGASA** |
+| HDX (`data.humdata.org`): UNDRR GAR15 storm surge; WFP 2014 landslide index; others | GAR15: "available for free for non commercial purposes…" (nothing on changes or redistribution). WFP: tagged ODbL by WFP, but the data comes from MGB. Others: faults only, one 2014 storm forecast, or tables | GAR15 NC only; WFP not from the owner | GAR15: coastal points, 2015. WFP: one class per province. No real hazard zones | Free | **Unclear / not usable** (coarse, or not the owner's licence) |
+| NASA Global Landslide Susceptibility Map (NASA GSFC), `gpm.nasa.gov/applications/landslides` | No licence of its own. NASA's data policy (`earthdata.nasa.gov/…/data-use-guidance`): "Unless the content is marked with a use restriction or license, data provided from a NASA-led mission are licensed as Creative Commons Zero (CC0)." and "NASA should be acknowledged as the source of the material." | Yes / credit NASA / yes / yes | GeoTIFF, about 1 km, worldwide, 5 classes, revised Feb 2023 | Free | **Usable**, but coarse (1 km) |
+| NASA LHASA v2 landslide nowcast, `portal.nccs.nasa.gov/datashare/landslides/nrt/` | No licence on the folder; NASA policy as above. The AWS registry lists the archive as "Creative Commons BY 4.0" | Yes / credit NASA / yes / yes | Daily GeoTIFF of landslide probability, about 1 km, 138 MB, readable in parts. README: "NASA provides these data on a best-effort basis, typically twice each day, but with frequent server downtime." Newest file arrived about a day late | Free, no key | **Usable**; could be a best-effort live feed later |
+| WRI Aqueduct Floods, coastal (`datasets.wri.org/datasets/aqueduct-floods-hazard-maps`) | Dataset record: "Creative Commons Attribution" (no version given) | Yes / credit WRI / yes / yes | GeoTIFF flood depth, 1 km, worldwide, 2020. Storm surge plus tide, ignores sea walls | Free | **Usable**, but coarse and global |
+| Deltares Global Flood Maps (Microsoft Planetary Computer) | `CDLA-Permissive-1.0`: "If You Publish Data You Receive, You must preserve all credit or attribution to the Data Provider(s)" | Yes / credit Deltares / yes, mark the changes / yes | NetCDF flood depth, 90 m or 1 km, worldwide, 2021. Storm surge plus tide; includes a Haiyan 2013 footprint | Free (anonymous token) | **Usable**, but global and from a simple model |
+| JRC LISCOAST, COAST-RP, Copernicus GTSM | CC BY 4.0 (JRC: "Reuse is allowed provided appropriate credit is given and any changes are indicated.") | Yes | Water levels at coastal points, not flooded areas. Copernicus needs sign-up | Free (Copernicus: sign-up) | **Not usable as a map** |
+
+Not covered above: NASA's landslide catalogue (past events only; its terms page did not load),
+ThinkHazard (one CC BY level per province, no shapes), UP DREAM/LiPAD (flood only; site
+did not load), and two World Bank catalogue entries (pages could not be read, so dropped).
+
+**Recommendation.** Use **Project NOAH's** maps for both hazards: they are the only source
+that is national, detailed (1 m–5 m elevation data), in vector form, and under a licence the
+owner wrote down. Three conditions come with it:
+- Credit "Project NOAH and its contributors" (plus the cited papers) on the credits page and
+  in the README.
+- ODbL share-alike: the simplified shapes the API sends out must also be offered under ODbL,
+  with a notice saying so (our reading, not legal advice).
+- The storm surge maps are scenarios ("if the surge reaches SSA level N"), not a forecast.
+
+The global maps (NASA, WRI, Deltares) are a fallback only: open, but about 1 km and
+worldwide. NASA LHASA could become a best-effort live landslide feed; that is a separate
+decision.
+
+**Owner's decisions (2026-11-18).** Show the NOAH landslide and storm surge maps as a map layer
+and a line on the status card; they do not change the score (a "zone + heavy rain" score rule
+could be tried with the replay later, as a separate decision). The ODbL terms are accepted:
+credit on the credits page and in the README, a short ODbL notice for the shapes we send out,
+and the NOAH shapes kept in their own table, apart from the score tables. The "Not covered
+here" line changes only when the layer ships.
 
 ## Per-town map colours (approved 2026-11-17, done)
 
