@@ -1,0 +1,1 @@
+`three-models.json`: a REAL Open-Meteo answer (CC BY 4.0) for Manila (14.6, 121.0) and Cebu (10.3, 123.9), fetched 2026-11-18 17:18 UTC with `hourly=temperature_2m,relative_humidity_2m&models=ecmwf_ifs,dwd_icon_global_native,ncep_gfs_global&forecast_hours=48&timeformat=unixtime`.

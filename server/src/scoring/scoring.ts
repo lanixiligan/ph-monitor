@@ -355,6 +355,11 @@ function nameFor(levels: { from: number; name: string }[], value: number): strin
   return null;
 }
 
+/** PAGASA's band name for a heat index (null below 27 °C). Read only, for the heat map. */
+export function heatBandOf(heatIndexC: number): string | null {
+  return nameFor(WEIGHTS.heat.bands, heatIndexC);
+}
+
 /** What is being scored: a whole province, or one exact spot. */
 export type ScoreTarget = 'province' | 'point';
 

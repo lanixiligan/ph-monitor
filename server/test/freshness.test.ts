@@ -10,7 +10,10 @@ const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60 * 
 
 // Every feed fetched 5 minutes ago. Tests change one thing at a time.
 function allFresh(): Map<string, Date> {
-  const names = ['usgs', 'open-meteo', 'pagasa', 'gdacs', 'eonet', 'jma', 'jtwc', 'open-meteo-daily', 'open-meteo-flood', 'news'];
+  const names = [
+    'usgs', 'open-meteo', 'pagasa', 'gdacs', 'eonet', 'jma', 'jtwc', 'open-meteo-daily', 'open-meteo-flood', 'news',
+    'open-meteo-heat',
+  ];
   return new Map(names.map((name) => [name, minutesAgo(5)]));
 }
 
@@ -25,7 +28,7 @@ test('every feed is listed, and none is stale when all were just fetched', () =>
   const health = buildFeedHealth(allFresh(), now);
   assert.deepEqual(
     health.map((entry) => entry.id),
-    ['earthquakes', 'weather', 'officialAlerts', 'events', 'naturalEvents', 'storms', 'outlook', 'riverFlow', 'news'],
+    ['earthquakes', 'weather', 'officialAlerts', 'events', 'naturalEvents', 'storms', 'outlook', 'riverFlow', 'heatMap', 'news'],
   );
   assert.ok(health.every((entry) => !entry.isStale));
 });
@@ -57,6 +60,16 @@ test('storm tracks are fresh while either JMA or JTWC is', () => {
   assert.equal(feed(buildFeedHealth(lastOk, now), 'storms').isStale, false);
   lastOk.set('jma', minutesAgo(600));
   assert.equal(feed(buildFeedHealth(lastOk, now), 'storms').isStale, true);
+});
+
+test('the heat map is stale after 25 hours (two missed 12-hour runs) and never touches a score signal', () => {
+  const lastOk = allFresh();
+  lastOk.set('open-meteo-heat', minutesAgo(24 * 60));
+  assert.equal(feed(buildFeedHealth(lastOk, now), 'heatMap').isStale, false);
+  lastOk.set('open-meteo-heat', minutesAgo(25 * 60 + 1));
+  const health = buildFeedHealth(lastOk, now);
+  assert.equal(feed(health, 'heatMap').isStale, true);
+  assert.deepEqual(staleSignals(health), []);
 });
 
 test('a stale earthquake or event feed makes that score signal unknown', () => {

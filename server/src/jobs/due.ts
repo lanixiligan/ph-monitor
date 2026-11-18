@@ -15,7 +15,18 @@ export type JobName =
   | 'storms'
   | 'streamCheck'
   | 'feedCheck'
-  | 'outlook';
+  | 'outlook'
+  | 'heatMap';
+
+/**
+ * The heat map runs every 12 hours. The rule says 11.5: a run is stamped when it
+ * ends, several minutes after the :00 tick (it waits for the other extras and
+ * takes about 4 minutes), so with a full 12 the next 12-hour tick would find it
+ * not quite due and it would slip to every 13 hours. Slow jobs only start on
+ * :00 ticks, so 11.5 still means one run every 12 hours, two a day.
+ * The scheduler also uses this to space out tries after a failure.
+ */
+export const HEAT_MAP_EVERY_MINUTES = 12 * 60 - 30;
 
 type JobRule = {
   job: JobName;
@@ -31,6 +42,8 @@ type JobRule = {
  * Weather runs every 2 hours: one run asks for about 600 points, so the day's
  * total stays near 7,200 of Open-Meteo's 10,000 calls (see PLAN.md).
  * The outlook costs about 176 Open-Meteo calls a run, so it runs rarely.
+ * The heat map asks for the same ~600 points (all its models in one request)
+ * every 12 hours: about 1,198 calls a day. Day total: about 9,090.
  */
 export const JOB_RULES: JobRule[] = [
   { job: 'earthquakes', everyMinutes: 15, sources: ['usgs'], needs: 'all' },
@@ -43,6 +56,7 @@ export const JOB_RULES: JobRule[] = [
   { job: 'streamCheck', everyMinutes: 30, sources: ['check:stream'], needs: 'all' },
   { job: 'feedCheck', everyMinutes: 60, sources: ['check:feed'], needs: 'all' },
   { job: 'outlook', everyMinutes: 6 * 60, sources: ['open-meteo-daily'], needs: 'all' },
+  { job: 'heatMap', everyMinutes: HEAT_MAP_EVERY_MINUTES, sources: ['open-meteo-heat'], needs: 'all' },
 ];
 
 const MINUTE_MS = 60 * 1000;

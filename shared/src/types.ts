@@ -160,7 +160,8 @@ export type FeedId =
   | 'storms'
   | 'outlook'
   | 'riverFlow'
-  | 'news';
+  | 'news'
+  | 'heatMap';
 
 /** How one feed is doing. */
 export type FeedHealth = {
@@ -503,4 +504,27 @@ export type BulletinLink = {
   agency: string;
   label: string;
   url: string;
+};
+
+// --- Heat map (display only; it never changes the score) ---
+
+/** The weather models the heat map can show (Open-Meteo names). */
+export type HeatModelId = 'ecmwf_ifs' | 'dwd_icon_global_native' | 'ncep_gfs_global';
+
+/** PAGASA's heat index bands (27 °C and up). */
+export type HeatBandName = 'caution' | 'extreme caution' | 'danger' | 'extreme danger';
+
+/** One town's or province's heat index for the hour shown. null = unknown. */
+export type HeatValue = { psgc: number; heatIndexC: number | null; band: HeatBandName | null };
+
+/** Returned by GET /api/heatmap?model= */
+export type HeatMapData = {
+  model: HeatModelId;
+  /** The newest good run for this model; null = none yet. */
+  fetchedAt: string | null;
+  isStale: boolean;
+  /** The hour shown (the current hour, ISO); null when nothing is stored for it. */
+  validAt: string | null;
+  places: HeatValue[];
+  provinces: HeatValue[];
 };
