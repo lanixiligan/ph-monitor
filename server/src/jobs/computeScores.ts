@@ -169,10 +169,10 @@ export async function computeScores(): Promise<void> {
     if (townScores.length > 0) {
       await client.query(
         `INSERT INTO place_scores
-           (place_psgc, score, quake_score, weather_score, event_score, unknown_signals, reasons, computed_at)
-         SELECT psgc, score, quake, weather, event, string_to_array(unknown, ','), reasons::jsonb, $8
-         FROM unnest($1::bigint[], $2::int[], $3::int[], $4::int[], $5::int[], $6::text[], $7::text[])
-           AS t(psgc, score, quake, weather, event, unknown, reasons)`,
+           (place_psgc, score, quake_score, weather_score, event_score, unknown_signals, reasons, hazards, computed_at)
+         SELECT psgc, score, quake, weather, event, string_to_array(unknown, ','), reasons::jsonb, hazards::jsonb, $9
+         FROM unnest($1::bigint[], $2::int[], $3::int[], $4::int[], $5::int[], $6::text[], $7::text[], $8::text[])
+           AS t(psgc, score, quake, weather, event, unknown, reasons, hazards)`,
         [
           townScores.map((town) => town.psgc),
           townScores.map((town) => town.area.score),
@@ -182,6 +182,7 @@ export async function computeScores(): Promise<void> {
           // A list of lists can't go through unnest, so each list travels as "quake,weather".
           townScores.map((town) => town.area.unknown.join(',')),
           townScores.map((town) => JSON.stringify(town.area.reasons)),
+          townScores.map((town) => JSON.stringify(town.area.hazards)),
           now,
         ],
       );

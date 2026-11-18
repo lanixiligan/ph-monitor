@@ -108,7 +108,13 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
     );
   }
 
-  const { place, placeScore, province, provinceScore, score, events, freshness } = detail;
+  const { place, placeScore, province, provinceScore, events, freshness } = detail;
+  // The main number is the town's, the same one that colours it on the map, so
+  // the card always agrees with the colour clicked. Without a town score (no
+  // town here, or before the first score run) it is the exact spot's.
+  const town = place && placeScore ? { name: place.name, score: placeScore } : null;
+  const score = town ? town.score : detail.score;
+  const spotScore = detail.score;
   const band = bandFor(score.score);
   // Some signal could not be checked: the score is a lower limit.
   const incomplete = score.unknownSignals.length > 0;
@@ -165,7 +171,9 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
           <strong>
             {incomplete
               ? scoreText(score.score, true)
-              : fill(t.card.bandAtSpot, { band: bandLabel(band) })}
+              : town
+                ? fill(t.card.bandInTown, { band: bandLabel(band), town: town.name })
+                : fill(t.card.bandAtSpot, { band: bandLabel(band) })}
           </strong>{' '}
           <Ladder score={score.score} />
         </span>
@@ -191,13 +199,12 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
           <WarnIcon /> {t.card.incomplete}
         </p>
       )}
-      {/* The whole town's and province's numbers, as the map shows them. */}
-      {place && placeScore && (
+      {/* The exact spot's own number, when the main number is the town's. */}
+      {town && (
         <p className="muted card-area">
-          {fill(t.card.wholeTown, {
-            town: place.name,
-            score: scoreText(placeScore.score, placeScore.incomplete),
-            band: bandLabel(bandFor(placeScore.score)).toLowerCase(),
+          {fill(t.card.exactSpot, {
+            score: scoreText(spotScore.score, spotScore.unknownSignals.length > 0),
+            band: bandLabel(bandFor(spotScore.score)).toLowerCase(),
           })}
         </p>
       )}
@@ -210,7 +217,11 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
           })}
         </p>
       )}
-      {(placeScore !== null || provinceScore !== null) && <p className="muted">{t.card.areaNote}</p>}
+      {town ? (
+        <p className="muted">{t.card.townNote}</p>
+      ) : (
+        provinceScore !== null && <p className="muted">{t.card.areaNote}</p>
+      )}
 
       <h3>{t.card.why}</h3>
       <ul>

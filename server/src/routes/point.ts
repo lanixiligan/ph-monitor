@@ -6,7 +6,9 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import type { DisasterKind, HazardEvent, PointDetail } from '@ph-monitor/shared';
+import type {
+  DisasterKind, HazardEvent, PointDetail, PointScore, ScoreReason, SignalName,
+} from '@ph-monitor/shared';
 import { getConditions, OPEN_EVENT_FRESH_SQL } from '../conditions.ts';
 import { pool } from '../db.ts';
 import { buildFreshness, getFeedHealth, getLastOk, staleSignals } from '../freshness.ts';
@@ -82,14 +84,38 @@ pointRouter.get('/', async (req, res) => {
   );
   const place = placeResult.rows[0];
 
-  // The whole town's score, as the map shows it (none before the first score run).
+  // The whole town's score, the very row the map colours (none before the first
+  // score run; rows saved before per-hazard scores were kept are skipped).
   const placeScoreResult = place
-    ? await pool.query<{ score: number; unknown_signals: string[] }>(
-        'SELECT score, unknown_signals FROM place_scores WHERE place_psgc = $1',
+    ? await pool.query<{
+        score: number;
+        quake_score: number;
+        weather_score: number;
+        event_score: number;
+        unknown_signals: SignalName[];
+        reasons: ScoreReason[];
+        hazards: PointScore['hazards'] | null;
+        computed_at: Date;
+      }>(
+        `SELECT score, quake_score, weather_score, event_score, unknown_signals, reasons, hazards, computed_at
+         FROM place_scores WHERE place_psgc = $1`,
         [place.psgc],
       )
     : null;
-  const placeScore = placeScoreResult?.rows[0];
+  const placeRow = placeScoreResult?.rows[0];
+  const placeScore: PointScore | null =
+    placeRow && placeRow.hazards
+      ? {
+          score: placeRow.score,
+          quakeScore: placeRow.quake_score,
+          weatherScore: placeRow.weather_score,
+          eventScore: placeRow.event_score,
+          hazards: placeRow.hazards,
+          unknownSignals: placeRow.unknown_signals,
+          reasons: placeRow.reasons,
+          computedAt: placeRow.computed_at.toISOString(),
+        }
+      : null;
 
   // Recent quakes near the point, with the distance from the point itself.
   // The database narrows it down to the largest possible radius; the exact
@@ -212,9 +238,7 @@ pointRouter.get('/', async (req, res) => {
       regionPsgc: province.region_psgc,
       geoLevel: province.geo_level,
     },
-    placeScore: placeScore
-      ? { score: placeScore.score, incomplete: placeScore.unknown_signals.length > 0 }
-      : null,
+    placeScore,
     provinceScore: province.province_score,
     score: {
       score,

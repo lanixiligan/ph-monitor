@@ -291,6 +291,10 @@ CREATE TABLE IF NOT EXISTS place_scores (
   computed_at     TIMESTAMPTZ NOT NULL
 );
 
+-- One score per hazard (quake, rain, heat, event), so the status card can show
+-- the town exactly as the map colours it. NULL in rows saved before this column.
+ALTER TABLE place_scores ADD COLUMN IF NOT EXISTS hazards JSONB;
+
 -- The town whose score the province shows (its highest). NULL for a province
 -- with no towns loaded, which is scored as a whole instead.
 ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS top_place_psgc BIGINT;

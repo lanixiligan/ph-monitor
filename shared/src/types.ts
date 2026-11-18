@@ -225,7 +225,7 @@ export type PlaceScores = {
   places: PlaceScoreEntry[];
 };
 
-/** A score worked out on demand for one exact spot. */
+/** A score with its parts: for one exact spot, or for a whole town. */
 export type PointScore = {
   score: number;
   quakeScore: number;
@@ -258,10 +258,14 @@ export type PointDetail = {
   /** The city or municipality the spot is in, if known. */
   place: Place | null;
   province: Province;
-  /** The whole town's score, as on the map. null until the first score run, or with no town. */
-  placeScore: { score: number; incomplete: boolean } | null;
+  /**
+   * The whole town's score, exactly as the map colours it: the card's main
+   * number. null until the first score run, or with no town.
+   */
+  placeScore: PointScore | null;
   /** The whole province's score (its highest town), for comparison. null until the first score run. */
   provinceScore: number | null;
+  /** The score for the exact spot (its own weather, distances from the spot). */
   score: PointScore;
   /** Earthquake distances here are measured from the spot itself. */
   events: HazardEvent[];

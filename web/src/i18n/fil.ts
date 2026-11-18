@@ -232,14 +232,16 @@ export const fil: Strings = {
     stale: 'LUMA NA', // REVIEW: unsure about "LUMA NA"
     staleText: 'May datos na mahigit 1 oras na.', // REVIEW
     bandAtSpot: '{band} sa lugar na ito', // REVIEW
+    bandInTown: '{band} sa buong {town}', // REVIEW
     hazardsTitle: 'Ayon sa uri ng banta', // REVIEW
     notCovered:
       'Hindi saklaw dito: pagguho ng lupa, daluyong, tsunami, wind signal at babala sa ulan ng PAGASA, alert level ng bulkan ng PHIVOLCS. Gamitin ang mga opisyal na link sa ibaba.', // REVIEW
     incomplete: 'May kulang na datos, kaya maaaring mas mataas ang totoong score.', // REVIEW
     nearTitle: 'Mga bagyo at sakuna malapit dito', // REVIEW
-    wholeTown: 'Buong bayan ({town}): {score}, {band}', // REVIEW
+    exactSpot: 'Sa mismong lugar na pinili mo: {score}, {band}', // REVIEW
     wholeProvince: 'Buong lalawigan/probinsya ({province}): {score}, {band}', // REVIEW
     areaNote: 'Ang score na ito ay para sa mismong lugar na pinili mo. Ang mga numero ng bayan at lalawigan/probinsya sa mapa ay para sa pinaka-apektadong bahagi ng bawat isa, kaya maaaring mas mataas ang mga ito.', // REVIEW
+    townNote: 'Ang malaking numero ay para sa buong bayan, ang parehong score na nagbibigay ng kulay nito sa mapa. Binibilang nito ang pinaka-apektadong bahagi ng bayan (pinakamainit, pinakamaulan, pinakamalapit sa lindol), kaya maaaring mas mababa ang mismong lugar. Ang lalawigan/probinsya ay nagpapakita ng pinakamataas nitong bayan.', // REVIEW
     why: 'Bakit', // REVIEW
     quakesTitle: 'Mga lindol, nakaraang 3 araw', // REVIEW
     quakesNone: 'Wala sa abot ng lugar na ito.', // REVIEW

@@ -56,7 +56,7 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `place_weather_points` | Which points each town reads its weather from |
 | `point_readings` | Each weather point's reading per model hour (last 2 days) |
 | `weather_readings` | The worst weather across each province's points, per model hour |
-| `place_scores` | The latest score and reasons for each town (no history) |
+| `place_scores` | The latest score, reasons and per-hazard scores for each town (no history) |
 | `official_alerts` | PAGASA alerts, in PAGASA's own words |
 | `province_scores` | The latest score and reasons for each province: those of its highest town |
 | `province_score_history` | Past scores with their part-scores; a row is added only when something changed |
@@ -80,7 +80,7 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/health` | Whether the server and database are up |
 | `GET /api/provinces` | Every province's shape and score, for the map |
 | `GET /api/provinces/:psgc` | One province in detail |
-| `GET /api/point?lat=..&lon=..` | The score for one exact spot, worked out on demand |
+| `GET /api/point?lat=..&lon=..` | The clicked town's saved score (the card's main number) and the exact spot's score, worked out on demand |
 | `GET /api/places?q=..` | Place search: cities, municipalities and provinces by name, from our own database |
 | `GET /api/places/shapes` | Every town's shape (downloaded once, when the reader zooms in or picks a spot) |
 | `GET /api/places/scores` | Every town's latest score, for the zoomed-in map |
@@ -101,7 +101,8 @@ The web page talks only to these addresses on our own server (port 3001).
 - **Light or dark:** follows the device setting until the reader picks one in the top bar
   (remembered in the browser). The dark theme uses a dark basemap and a score scale where
   brighter means more stress.
-- **Status card:** opens on a click. Score for that spot, the reasons, the province's score,
+- **Status card:** opens on a click. The town's score (the same as its map colour) with its
+  reasons, the exact spot's own score, the province's score,
   the 7-day outlook, nearby events (within 300 km), storms forecast to pass within 300 km,
   headlines naming the province, and official bulletin links.
 - **Headlines panel** and **live streams panel:** see [news-and-streams.md](news-and-streams.md).

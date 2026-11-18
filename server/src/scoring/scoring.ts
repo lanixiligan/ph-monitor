@@ -442,6 +442,8 @@ export type AreaScore = {
   event: number;
   unknown: SignalName[];
   reasons: ScoreReason[];
+  /** One score per hazard, for the status card's rows. */
+  hazards: HazardScores;
 };
 
 /**
@@ -465,7 +467,8 @@ export function scoreArea(
   });
   // Towns use the area wording ('province'): "inside", "in or beside".
   const reasons = buildReasons(quakes, weather, 'province', events, unknown);
-  return { score, quake, weather: weatherPoints, event: eventPoints, unknown, reasons };
+  const hazards = hazardScores(quakes, weather, events);
+  return { score, quake, weather: weatherPoints, event: eventPoints, unknown, reasons, hazards };
 }
 
 /**
