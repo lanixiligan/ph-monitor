@@ -4,34 +4,34 @@
 // The formulas and weights are NOT here: the replay calls scoring/scoring.ts.
 
 import type { AlertLevel, DisasterKind } from '@ph-monitor/shared';
-import { WEIGHTS } from '../scoring/scoring.ts';
-import type { EventInput, QuakeInput } from '../scoring/scoring.ts';
+import { highestTown, WEIGHTS } from '../scoring/scoring.ts';
+import type { AreaScore, EventInput, QuakeInput } from '../scoring/scoring.ts';
 
 const HOUR_MS = 60 * 60 * 1000;
 
 /** A score of this much or more is "High" (the same limit as web/src/scoreScale.ts). */
 export const HIGH_FROM = 60;
 
-/** One past earthquake as seen from one province. */
-export type ProvinceQuake = {
+/** One past earthquake as seen from one town (the distance is to the town's edge). */
+export type TownQuake = {
   magnitude: number;
   depthKm: number | null;
   distanceKm: number;
   occurredAt: Date;
 };
 
-/** One past disaster event as seen from one province. */
-export type ProvinceEvent = {
+/** One past disaster event as seen from one town. */
+export type TownEvent = {
   kind: DisasterKind;
   alertLevel: AlertLevel | null;
   startedAt: Date;
   endedAt: Date;
-  /** Where it was over time, as a distance from the province, oldest first. A fixed event has one entry. */
+  /** Where it was over time, as a distance from the town, oldest first. A fixed event has one entry. */
   positions: { at: Date; distanceKm: number }[];
 };
 
 /** The quakes the score job would have counted at that hour. */
-export function quakesAt(quakes: ProvinceQuake[], at: Date): QuakeInput[] {
+export function quakesAt(quakes: TownQuake[], at: Date): QuakeInput[] {
   const inputs: QuakeInput[] = [];
   for (const quake of quakes) {
     const hoursAgo = (at.getTime() - quake.occurredAt.getTime()) / HOUR_MS;
@@ -42,7 +42,7 @@ export function quakesAt(quakes: ProvinceQuake[], at: Date): QuakeInput[] {
 }
 
 /** The events the score job would have counted at that hour, measured from where each one was then. */
-export function eventsAt(events: ProvinceEvent[], at: Date): EventInput[] {
+export function eventsAt(events: TownEvent[], at: Date): EventInput[] {
   const inputs: EventInput[] = [];
   for (const event of events) {
     if (at.getTime() < event.startedAt.getTime()) continue;
@@ -100,8 +100,46 @@ export function parseBestTrack(text: string, name: string, year: number): TrackP
   return points;
 }
 
-/** One province's score at one past hour, with its parts. `weather` null = no archived reading. */
-export type ReplayStep = { at: Date; score: number; quake: number; weather: number | null; event: number };
+/**
+ * The time of the live weather job's last fetch at or before `at`, if it ran
+ * every `everyMinutes`, starting at midnight UTC. The live score keeps using
+ * that reading until the next fetch, so the replay does the same.
+ */
+export function weatherFetchAt(at: Date, everyMinutes: number): Date {
+  const stepMs = everyMinutes * 60 * 1000;
+  return new Date(Math.floor(at.getTime() / stepMs) * stepMs);
+}
+
+/**
+ * One province's score at one past hour, with its parts. `weather` null = no
+ * archived reading. `town` is the town whose score the province shows; the
+ * rain amounts are that town's (null when its rain was too little to mention).
+ */
+export type ReplayStep = {
+  at: Date;
+  score: number;
+  quake: number;
+  weather: number | null;
+  event: number;
+  town: number | null;
+  rain1hMm: number | null;
+  rain24hMm: number | null;
+};
+
+/** A province's step from its towns' scores: its highest town, as on the live map. null = no towns. */
+export function provinceStep(at: Date, towns: { psgc: number; area: AreaScore }[]): ReplayStep | null {
+  const top = highestTown(towns);
+  if (top === null) return null;
+  const { score, quake, weather, event, reasons } = top.area;
+  // The rain reason carries both amounts. Checking `key` tells TypeScript which kind of reason it is.
+  const rain = reasons.find((reason) => reason.key === 'rain');
+  return {
+    at, score, quake, weather, event,
+    town: top.psgc,
+    rain1hMm: rain?.key === 'rain' ? rain.rain1hMm : null,
+    rain24hMm: rain?.key === 'rain' ? rain.rain24hMm : null,
+  };
+}
 
 export type ReplaySummary = {
   /** The hour with the highest score (the first one, if several tie). null when there were no steps. */

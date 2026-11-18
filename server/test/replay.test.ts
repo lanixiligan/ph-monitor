@@ -3,8 +3,9 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { eventsAt, parseBestTrack, quakesAt, summarize } from '../src/replay/replay.ts';
-import type { ProvinceEvent, ReplayStep } from '../src/replay/replay.ts';
+import { eventsAt, parseBestTrack, provinceStep, quakesAt, summarize, weatherFetchAt } from '../src/replay/replay.ts';
+import type { TownEvent, ReplayStep } from '../src/replay/replay.ts';
+import { scoreArea } from '../src/scoring/scoring.ts';
 
 const at = (text: string) => new Date(text);
 
@@ -23,7 +24,7 @@ test('quakesAt: only quakes that have already happened, and not older than the 7
   assert.deepEqual(quakesAt(quakes, at('2022-07-31T00:00:00Z')), []);
 });
 
-const typhoon: ProvinceEvent = {
+const typhoon: TownEvent = {
   kind: 'typhoon',
   alertLevel: 'red',
   startedAt: at('2021-12-13T00:00:00Z'),
@@ -72,7 +73,7 @@ test('parseBestTrack: reads one storm from a JMA best-track file (positions in t
 });
 
 function step(time: string, score: number): ReplayStep {
-  return { at: at(time), score, quake: score, weather: 0, event: 0 };
+  return { at: at(time), score, quake: score, weather: 0, event: 0, town: null, rain1hMm: null, rain24hMm: null };
 }
 
 test('summarize: the peak, the first hour at "High" (60 or more) and how that compares with the key time', () => {
@@ -97,4 +98,37 @@ test('summarize: a province that never reaches "High" says so', () => {
   assert.equal(summary.hoursFromKey, null);
   assert.equal(summary.highHours, 0);
   assert.equal(summary.peak?.score, 59);
+});
+
+test('weatherFetchAt: the weather only changes when the live job would have fetched it (every 2 hours)', () => {
+  assert.deepEqual(weatherFetchAt(at('2023-02-08T14:00:00Z'), 120), at('2023-02-08T14:00:00Z'));
+  assert.deepEqual(weatherFetchAt(at('2023-02-08T15:00:00Z'), 120), at('2023-02-08T14:00:00Z'));
+  assert.deepEqual(weatherFetchAt(at('2023-02-08T00:30:00Z'), 120), at('2023-02-08T00:00:00Z'));
+  // Hourly would change every hour.
+  assert.deepEqual(weatherFetchAt(at('2023-02-08T15:00:00Z'), 60), at('2023-02-08T15:00:00Z'));
+});
+
+const calm = { heatIndexC: 30, rain1hMm: 0, rain24hMm: 0 };
+const downpour = { heatIndexC: 30, rain1hMm: 20, rain24hMm: 20 };
+
+test('provinceStep: the province takes its highest town, the same rule as the live map', () => {
+  const towns = [
+    { psgc: 1, area: scoreArea([], calm, [], []) },
+    { psgc: 2, area: scoreArea([], downpour, [], []) },
+  ];
+  const result = provinceStep(at('2023-02-08T14:00:00Z'), towns);
+  assert.equal(result?.town, 2);
+  assert.equal(result?.score, towns[1]?.area.score);
+  assert.equal(result?.weather, towns[1]?.area.weather);
+  assert.equal(result?.quake, 0);
+  // The rain amounts behind it, so the replay can say which kind of rain did it.
+  assert.equal(result?.rain1hMm, 20);
+  assert.equal(result?.rain24hMm, 20);
+});
+
+test('provinceStep: a town with no weather reading keeps weather as "none", not calm', () => {
+  const result = provinceStep(at('2023-02-08T14:00:00Z'), [{ psgc: 1, area: scoreArea([], null, [], []) }]);
+  assert.equal(result?.weather, null);
+  assert.equal(result?.rain1hMm, null);
+  assert.equal(provinceStep(at('2023-02-08T14:00:00Z'), []), null);
 });
