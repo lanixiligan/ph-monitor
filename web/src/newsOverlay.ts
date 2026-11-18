@@ -8,7 +8,7 @@ import type { RefObject } from 'react';
 import type { NewsItem } from '@ph-monitor/shared';
 import type { ProvinceCollection } from './api.ts';
 import { fetchNews } from './api.ts';
-import { formatTime, newsTypesText, safeUrl } from './format.ts';
+import { formatTime, newsTypesText, safeUrl, uploadedAgo } from './format.ts';
 import { fill, getI18n } from './i18n/index.ts';
 import type { NewsDot } from './newsGeo.ts';
 import { readPalette } from './palette.ts';
@@ -47,6 +47,21 @@ function addLayer(map: maplibregl.Map) {
   );
 }
 
+/** The same time row as the UploadedTime component, built for a map popup. */
+function uploadedRow(iso: string): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'uploaded';
+  const ago = document.createElement('span');
+  ago.className = 'uploaded-ago';
+  ago.textContent = uploadedAgo(iso, Date.now());
+  const at = document.createElement('time');
+  at.className = 'uploaded-at';
+  at.dateTime = iso;
+  at.textContent = formatTime(iso);
+  row.append(ago, ' · ', at);
+  return row;
+}
+
 // Built when the reader clicks, so it uses the language chosen at that moment.
 function newsPopup(dot: NewsDot): HTMLElement {
   const { t } = getI18n();
@@ -71,8 +86,8 @@ function newsPopup(dot: NewsDot): HTMLElement {
     link.textContent = item.title;
     const meta = document.createElement('div');
     meta.className = 'muted';
-    meta.textContent = `${item.outlet} · ${newsTypesText(item.types)} · ${formatTime(item.publishedAt)}`;
-    row.append(link, meta);
+    meta.textContent = `${item.outlet} · ${newsTypesText(item.types)}`;
+    row.append(link, meta, uploadedRow(item.publishedAt));
     list.appendChild(row);
   }
   box.appendChild(list);

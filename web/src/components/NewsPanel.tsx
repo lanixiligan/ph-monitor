@@ -7,8 +7,10 @@ import { useEffect, useState } from 'react';
 import type { NewsItem } from '@ph-monitor/shared';
 import { fetchNews } from '../api.ts';
 import type { ProvinceCollection } from '../api.ts';
-import { formatTime, NEWS_FILTER_IDS, newsTypeLabel, newsTypesText, safeUrl } from '../format.ts';
+import { NEWS_FILTER_IDS, newsTypeLabel, newsTypesText, safeUrl } from '../format.ts';
 import { fill, useStrings } from '../i18n/index.ts';
+import { useNow } from '../useNow.ts';
+import { UploadedTime } from './UploadedTime.tsx';
 import { WarnIcon } from './WarnIcon.tsx';
 
 const REFRESH_MS = 5 * 60 * 1000;
@@ -50,6 +52,8 @@ function PlaceButton({ places, onClick }: { places: string; onClick: () => void 
 export function NewsPanel({ provinces, onShowOnMap, newsType, onNewsTypeChange }: Props) {
   // `t` holds all the words in the current language.
   const { t } = useStrings();
+  // Ticks every 10 seconds so "Uploaded … ago" stays right.
+  const now = useNow();
   // `useState` keeps a value between renders. The text in <...> is its type.
   const [items, setItems] = useState<NewsItem[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -114,8 +118,9 @@ export function NewsPanel({ provinces, onShowOnMap, newsType, onNewsTypeChange }
               </a>
               <br />
               <span className="muted">
-                {item.outlet} · {newsTypesText(item.types)} · {formatTime(item.publishedAt)}
+                {item.outlet} · {newsTypesText(item.types)}
               </span>
+              <UploadedTime iso={item.publishedAt} now={now} />
               <PlaceButton
                 places={placeNames(item.provincePsgcs, nameByPsgc).join(', ')}
                 onClick={() => onShowOnMap(item.provincePsgcs)}

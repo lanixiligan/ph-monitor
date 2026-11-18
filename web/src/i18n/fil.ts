@@ -11,7 +11,7 @@ export const fil: Strings = {
   app: {
     intro: 'Stress ngayon mula sa lindol, panahon at mga sakuna. Maghanap ng lugar o i-click ang kahit saang lupa.', // REVIEW: unsure about "i-click"
     jumpHeadlines: 'Mga balita', // REVIEW
-    jumpStreams: 'Mga live stream', // REVIEW
+    jumpStreams: 'Live na balita', // REVIEW
     loadError: 'Hindi ma-load ang mga score. Tumatakbo ba ang server?', // REVIEW
     staleBanner: 'Hindi na bago: {feeds}. Maaaring luma o kulang ang nakikita mo para sa mga ito.', // REVIEW
     statusError: 'Hindi matiyak kung gaano kabago ang datos.', // REVIEW
@@ -316,16 +316,15 @@ export const fil: Strings = {
     showOnMap: 'Ipakita ang {places} sa mapa', // REVIEW
   },
 
-  // The live streams panel.
+  // The live news panel (YouTube streams and latest videos).
   streams: {
-    title: 'Mga live stream', // REVIEW
+    title: 'Live na balita', // REVIEW
     note: 'Video: YouTube, mula sa sariling channel ng bawat outlet. Hindi opisyal na babala ang isang stream.', // REVIEW
     failed: 'Hindi ma-load ang mga stream ngayon.', // REVIEW
     none: 'Walang magagamit na stream ngayon.', // REVIEW
     live: 'LIVE', // REVIEW
     latest: 'Pinakabago', // REVIEW
     latestMaybeOffline: 'Pinakabago (maaaring offline)', // REVIEW
-    uploaded: 'Na-upload noong {time}', // REVIEW
     videoTitle: 'Video ng {outlet}', // REVIEW
     play: 'I-play', // REVIEW
     stop: 'Ihinto', // REVIEW
@@ -364,5 +363,17 @@ export const fil: Strings = {
   format: {
     never: 'hindi pa', // REVIEW: unsure about "hindi pa"
     lessThanOneKm: 'wala pang 1 km', // REVIEW
+    uploaded: 'Na-upload {ago}', // REVIEW
+    ago: {
+      justNow: 'ngayon lang', // REVIEW
+      second: '{n} segundo ang nakalipas', // REVIEW
+      seconds: '{n} segundo ang nakalipas', // REVIEW
+      minute: '{n} minuto ang nakalipas', // REVIEW
+      minutes: '{n} minuto ang nakalipas', // REVIEW
+      hour: '{n} oras ang nakalipas', // REVIEW
+      hours: '{n} oras ang nakalipas', // REVIEW
+      day: '{n} araw ang nakalipas', // REVIEW
+      days: '{n} araw ang nakalipas', // REVIEW
+    },
   },
 };

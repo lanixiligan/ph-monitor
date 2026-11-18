@@ -102,7 +102,7 @@ somewhat worse.
 - Explainers and stories about equipment pass ("FACT SHEET: The heat index, explained").
 - A local storm name without quotes, or one PAGASA has not put in an alert, is not known.
 
-## Live streams
+## Live news panel (streams)
 
 ### Where they come from
 
@@ -139,7 +139,7 @@ Each slot shows the channel's live stream when it is live ("LIVE"), otherwise it
 ## The link checker
 
 `npm run check:sources` checks everything and prints a table. The scheduler also runs it: feeds
-every hour, streams every 30 minutes. Opening the page or pressing Refresh in the live streams
+every hour, streams every 30 minutes. Opening the page or pressing Refresh in the live news
 panel checks the streams again too, at most once every 10 minutes. Results go in the `sources` table.
 
 **Feeds** (`checker/checkFeed.ts`): does the address answer, is it RSS or Atom, does it have
