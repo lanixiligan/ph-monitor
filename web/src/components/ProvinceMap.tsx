@@ -14,9 +14,10 @@ import type { StyleSpecification } from 'maplibre-gl';
 // address, which we then hand to MapLibre.
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useEffect, useRef, useState } from 'react';
-import type { PlaceScores } from '@ph-monitor/shared';
+import type { HazardLayerInfo, PlaceScores } from '@ph-monitor/shared';
 import { fetchPlaceShapes } from '../api.ts';
 import type { PlaceCollection, ProvinceCollection, Spot } from '../api.ts';
+import { LANDSLIDE_LAYERS, SURGE_LAYERS, useHazardZones } from '../hazardOverlay.ts';
 import { EVENT_LAYERS, OVERLAY_CLICK_LAYERS, STORM_LAYERS, useOverlays } from '../mapOverlays.ts';
 import { MAX_BOUNDS, PH_BOUNDS, SHOW_BASEMAP } from '../mapSettings.ts';
 import type { MapLayers } from '../mapSettings.ts';
@@ -146,6 +147,10 @@ type Props = {
   onLocateResult: (problem: 'outside' | 'failed' | null) => void;
   /** The headline filter chosen in the headlines panel; the news dots follow it. */
   newsType: string;
+  /** The fixed hazard maps the server has loaded (null = not known yet). */
+  hazards: HazardLayerInfo[] | null;
+  /** Called with the zoom level whenever the reader stops zooming (the legend needs it). */
+  onZoom: (zoom: number) => void;
 };
 
 // The box a spot must be in to have a score (the same limits as the server's /api/point).
@@ -160,7 +165,7 @@ const MATCH_NONE: maplibregl.FilterSpecification = ['in', ['get', 'psgc'], ['lit
 const FADE_WITH_ZOOM: maplibregl.ExpressionSpecification = ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 0.45];
 
 export function ProvinceMap({
-  data, placeScores, spot, picked, onSelect, layers, focus, goTo, onLocateResult, newsType,
+  data, placeScores, spot, picked, onSelect, layers, focus, goTo, onLocateResult, newsType, hazards, onZoom,
 }: Props) {
   // A "ref" holds a value that survives re-renders without causing one.
   const containerRef = useRef<HTMLDivElement>(null);
@@ -169,6 +174,8 @@ export function ProvinceMap({
   onSelectRef.current = onSelect;
   const onLocateResultRef = useRef(onLocateResult);
   onLocateResultRef.current = onLocateResult;
+  const onZoomRef = useRef(onZoom);
+  onZoomRef.current = onZoom;
   const { t } = useStrings();
   const spotRef = useRef(spot);
   spotRef.current = spot;
@@ -301,7 +308,7 @@ export function ProvinceMap({
         );
         fillOpacityRef.current = hasBasemap ? FADE_WITH_ZOOM : 0.85;
         // Diagonal stripes over provinces with no score yet (if the browser can draw them).
-        const hatch = hatchImage(palette);
+        const hatch = hatchImage({ color: palette.inkSoft, background: palette.noData });
         if (hatch) {
           theMap.addImage(HATCH, hatch);
           theMap.addLayer(
@@ -316,7 +323,7 @@ export function ProvinceMap({
           );
         }
         // Stripes over the colour of provinces whose score is missing a signal.
-        const lines = hatchImage(palette, false);
+        const lines = hatchImage({ color: palette.inkSoft });
         if (lines) {
           theMap.addImage(HATCH_LINES, lines);
           theMap.addLayer(
@@ -489,6 +496,7 @@ export function ProvinceMap({
         });
 
         // A click on any province shape picks the exact spot under the pointer.
+        // The hazard stripes drawn over it have no click handler, so they never get in the way.
         // 4 decimals is about 11 m, plenty for our purposes and tidy in links.
         theMap.on('click', 'province-fill', (event) => {
           // A click on an event, storm or headline dot opens its popup instead.
@@ -506,7 +514,11 @@ export function ProvinceMap({
         // The town shapes are downloaded right away: the map colours towns at
         // every zoom. If that fails, the next zoom tries again.
         requestTownsRef.current();
-        theMap.on('zoomend', () => requestTownsRef.current());
+        theMap.on('zoomend', () => {
+          requestTownsRef.current();
+          onZoomRef.current(theMap.getZoom());
+        });
+        onZoomRef.current(theMap.getZoom());
 
         // On a small screen the map shrinks when the card opens. If that
         // pushes the picked spot out of view, slide the map to bring it back.
@@ -564,6 +576,8 @@ export function ProvinceMap({
   useOverlays(mapRef, ready);
   // Headline dots (see newsOverlay.ts).
   useNewsDots(mapRef, ready, data, newsType);
+  // Fixed hazard map stripes, over the town colours (see hazardOverlay.ts).
+  useHazardZones(mapRef, ready, hazards, layers);
 
   // A place picked from a headline: outline it and move the map to it.
   useEffect(() => {
@@ -619,6 +633,8 @@ export function ProvinceMap({
     show(EVENT_LAYERS, layers.events);
     show(STORM_LAYERS, layers.storms);
     show(NEWS_LAYERS, layers.news);
+    show(SURGE_LAYERS, layers.stormSurge);
+    show(LANDSLIDE_LAYERS, layers.landslide);
     // Storm names are HTML labels, not map layers; CSS hides them.
     containerRef.current?.classList.toggle('hide-storm-labels', !layers.storms);
   }, [ready, layers, townsShown]);

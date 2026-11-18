@@ -18,6 +18,14 @@
   --live: #c62828; /* the LIVE badge on a stream (only this; never for errors) */
   --on-live: #ffffff; /* text on the LIVE badge */
   --no-data: #b3bec1; /* provinces with no score yet (hatched on the map) */
+  /* Hazard map stripes (Project NOAH), class 1 low to 3 high: darker = higher.
+     Cool tones only, so the score colours stay readable underneath. */
+  --hazard-surge-1: #6b93b8;
+  --hazard-surge-2: #3a6b99;
+  --hazard-surge-3: #173f6b;
+  --hazard-landslide-1: #8d86ad;
+  --hazard-landslide-2: #5f5689;
+  --hazard-landslide-3: #382f63;
   --bar: #10313b; /* the top bar */
   --bar-text: #ffffff;
   --bar-soft: #c3d3d7; /* secondary text in the top bar */
@@ -41,6 +49,13 @@
   --live: #e53935;
   --on-live: #ffffff;
   --no-data: #2b3d44;
+  /* Brighter = higher, like the dark score scale. */
+  --hazard-surge-1: #5d86a8;
+  --hazard-surge-2: #8ab8de;
+  --hazard-surge-3: #c4e0f7;
+  --hazard-landslide-1: #7f789f;
+  --hazard-landslide-2: #aaa2cf;
+  --hazard-landslide-3: #d8d2f2;
   --bar: #08161b;
   --bar-text: #e3ecee;
   --bar-soft: #9db2b8;
@@ -617,6 +632,17 @@ label.legend-row {
   font-size: 13px;
 }
 
+/* The fixed hazard map lines for the spot (HazardZones.tsx). */
+.hazard-map table {
+  width: 100%;
+  margin: 4px 0 6px;
+}
+
+/* A storm surge level, under its "Storm surge" line. */
+.hazard-sub td:first-child {
+  padding-left: 12px;
+}
+
 /* One row per hazard under the score. */
 .hazards {
   width: 100%;
@@ -632,6 +658,54 @@ label.legend-row {
 .swatch-incomplete {
   background: repeating-linear-gradient(-45deg, var(--ink-soft) 0 1px, transparent 1px 4px);
   border: 1px solid var(--ink-soft);
+}
+
+/* Hazard map swatches: the same stripes as on the map (hazardOverlay.ts).
+   Storm surge: flat lines; landslide: falling lines. Denser = higher class. */
+.hazard-scale {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 0 0 0 22px;
+  list-style: none;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.hazard-scale li {
+  display: flex;
+  flex-direction: column;
+}
+
+.hazard-swatch {
+  height: 12px;
+  margin-bottom: 3px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.surge-1 {
+  background: repeating-linear-gradient(180deg, var(--hazard-surge-1) 0 1.5px, transparent 1.5px 6px);
+}
+
+.surge-2 {
+  background: repeating-linear-gradient(180deg, var(--hazard-surge-2) 0 2px, transparent 2px 5px);
+}
+
+.surge-3 {
+  background: repeating-linear-gradient(180deg, var(--hazard-surge-3) 0 2px, transparent 2px 3.5px);
+}
+
+.landslide-1 {
+  background: repeating-linear-gradient(45deg, var(--hazard-landslide-1) 0 1.5px, transparent 1.5px 6px);
+}
+
+.landslide-2 {
+  background: repeating-linear-gradient(45deg, var(--hazard-landslide-2) 0 2px, transparent 2px 5px);
+}
+
+.landslide-3 {
+  background: repeating-linear-gradient(45deg, var(--hazard-landslide-3) 0 2px, transparent 2px 3.5px);
 }
 
 /* The marks for events and storms: drawn with borders only. */

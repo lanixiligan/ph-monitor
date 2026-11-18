@@ -22,6 +22,9 @@ export const fil: Strings = {
     creditWeather: 'Panahon (mula sa modelo):', // REVIEW: unsure about "modelo"
     creditWeatherEnd: ', CC BY 4.0.', // REVIEW
     creditBoundaries: 'Mga hangganan: NAMRIA at PSA sa pamamagitan ng OCHA, CC BY 3.0 IGO, mula sa', // REVIEW
+    creditHazards: 'Mga mapa ng panganib:', // REVIEW
+    creditHazardsMid: 'at ang mga kontribyutor nito (UP NOAH Center); mga mapa ng pagguho ng lupa ng UP NIGS, mga mapa ng daluyong ng PAGASA kasama ang UP NIGS. Lisensya:', // REVIEW: unsure about "kontribyutor"
+    creditHazardsOdbl: 'Ang mga hugis ng hazard zone na ipinapakita ng aming mapa ay pinasimple mula sa datos ng Project NOAH at makukuha sa ilalim ng ODbL 1.0.', // REVIEW
     creditEvents: 'Mga sakuna:', // REVIEW
     creditEventsMid: ', © European Union, CC BY 4.0, at', // REVIEW
     creditStorms: 'Landas ng mga bagyo:', // REVIEW
@@ -84,6 +87,15 @@ export const fil: Strings = {
     showLabel: 'Ipakita sa mapa', // REVIEW
     towns: 'May sariling kulay ang bawat lungsod at bayan ayon sa sarili nitong score. Mag-zoom in para makita ang mga hangganan.', // REVIEW
     heading: 'Palatandaan ng mapa', // REVIEW
+    landslide: 'Mga zone ng pagguho ng lupa', // REVIEW
+    stormSurge: 'Mga zone ng daluyong: senaryong SSA 4 (higit sa 4 m)', // REVIEW
+    zoomIn: 'Mag-zoom in para makita ang mga zone', // REVIEW
+    hazardNote: 'Nakapirming mapa mula sa Project NOAH, hindi forecast. Hindi nito binabago ang score.', // REVIEW: unsure about "nakapirming"
+    hazardClasses: {
+      1: 'Mababa', // REVIEW
+      2: 'Katamtaman', // REVIEW
+      3: 'Mataas', // REVIEW
+    },
   },
 
   // The side panel before a spot is picked.
@@ -222,6 +234,7 @@ export const fil: Strings = {
     popupPressure: 'Presyon: {value}', // REVIEW
     popupNewsTitle: '{province}: {count} sa balita', // REVIEW
     popupNewsMore: 'at {count} pa sa panel ng mga balita', // REVIEW
+    hazardAttribution: 'Mga mapa ng panganib © Project NOAH at ang mga kontribyutor nito, ODbL', // REVIEW
   },
 
   // The status card.
@@ -236,7 +249,7 @@ export const fil: Strings = {
     bandInTown: '{band} sa buong {town}', // REVIEW
     hazardsTitle: 'Ayon sa uri ng banta', // REVIEW
     notCovered:
-      'Hindi saklaw dito: pagguho ng lupa, daluyong, tsunami, wind signal at babala sa ulan ng PAGASA, alert level ng bulkan ng PHIVOLCS. Gamitin ang mga opisyal na link sa ibaba.', // REVIEW
+      'Hindi saklaw dito: pagguho ng lupa, tsunami, wind signal at babala sa ulan ng PAGASA, alert level ng bulkan ng PHIVOLCS. Gamitin ang mga opisyal na link sa ibaba.', // REVIEW
     incomplete: 'May kulang na datos, kaya maaaring mas mataas ang totoong score.', // REVIEW
     nearTitle: 'Mga bagyo at sakuna malapit dito', // REVIEW
     exactSpot: 'Sa mismong lugar na pinili mo: {score}, {band}', // REVIEW
@@ -339,6 +352,29 @@ export const fil: Strings = {
     official: 'Opisyal · {agency}', // REVIEW
     global: 'Pandaigdigang pagtatasa', // REVIEW
     model: 'Tantiya ng modelo', // REVIEW
+    hazardMap: 'Nakapirming mapa · Project NOAH', // REVIEW: unsure about "nakapirming"
+  },
+
+  // Ang bloke na "Mapa ng panganib" sa status card (HazardZones.tsx).
+  hazardMap: {
+    title: 'Mapa ng panganib', // REVIEW
+    landslide: 'Pagguho ng lupa', // REVIEW
+    stormSurge: 'Daluyong', // REVIEW
+    classes: {
+      1: 'mababa', // REVIEW
+      2: 'katamtaman', // REVIEW
+      3: 'mataas', // REVIEW
+    },
+    notInZone: 'wala sa zone', // REVIEW
+    notReached: 'hindi inaabot', // REVIEW: unsure about "hindi inaabot"
+    noMap: 'walang hazard map dito', // REVIEW
+    levels: {
+      1: 'SSA 1 (hanggang 2 m)', // REVIEW
+      2: 'SSA 2 (hanggang 3 m)', // REVIEW
+      3: 'SSA 3 (hanggang 4 m)', // REVIEW
+      4: 'SSA 4 (higit sa 4 m)', // REVIEW
+    },
+    note: 'Mga senaryo mula sa nakapirming mapa, hindi forecast: ipinapakita ng bawat antas ng daluyong kung hanggang saan aabot ang daluyong na ganoon kataas. Hindi nito binabago ang score.', // REVIEW
   },
 
   // Mga opisyal na babala (ang teksto ng babala ay sa ahensya, hindi sa atin).

@@ -28,6 +28,29 @@ export const MAX_BOUNDS: Box = [
 ];
 
 /** Which parts of the map are switched on (the tick boxes in the legend). */
-export type MapLayers = { scores: boolean; events: boolean; storms: boolean; news: boolean };
+export type MapLayers = {
+  scores: boolean;
+  events: boolean;
+  storms: boolean;
+  news: boolean;
+  /** The fixed Project NOAH hazard maps. */
+  landslide: boolean;
+  stormSurge: boolean;
+};
 
-export const ALL_LAYERS_ON: MapLayers = { scores: true, events: true, storms: true, news: true };
+/** What the page opens with: everything on except the two hazard maps. */
+export const DEFAULT_LAYERS: MapLayers = {
+  scores: true,
+  events: true,
+  storms: true,
+  news: true,
+  landslide: false,
+  stormSurge: false,
+};
+
+/**
+ * Each hazard map shows from this zoom level up (the server sends no tiles below
+ * it). Storm surge shows even for the whole country; landslide is much bigger,
+ * so it waits until zoom 9.
+ */
+export const HAZARD_MIN_ZOOM = { stormSurge: 4, landslide: 9 };

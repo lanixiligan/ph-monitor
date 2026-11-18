@@ -1,6 +1,7 @@
 // The status card: everything we know about the spot the reader picked.
 // Order: the place, official alerts, storms and serious events, the score
-// with its reasons, official links, then the details (each starts closed).
+// with its hazard rows, the fixed hazard map (Project NOAH), what is not
+// covered, the reasons, official links, then the details (each starts closed).
 
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
@@ -15,6 +16,7 @@ import { useTheme } from '../theme/index.ts';
 import { WarnIcon } from './WarnIcon.tsx';
 import { Bulletins, ConditionsSections, NearHere } from './Conditions.tsx';
 import { Fold } from './Fold.tsx';
+import { HazardZones } from './HazardZones.tsx';
 import { OfficialAlerts } from './OfficialAlerts.tsx';
 import { Disclaimer } from './Disclaimer.tsx';
 import { Ladder } from './Ladder.tsx';
@@ -194,6 +196,8 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
           ))}
         </tbody>
       </table>
+      {/* Fixed scenario maps: shown beside the score, never part of it. */}
+      <HazardZones zones={detail.hazardZones} />
       <p className="muted">{t.card.notCovered}</p>
       {incomplete && (
         <p className="notice">
