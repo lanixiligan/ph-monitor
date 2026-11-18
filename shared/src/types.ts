@@ -177,6 +177,8 @@ export type ProvinceMapProperties = {
   event_score: number | null;
   /** True when a signal could not be checked: the score is "at least" this much. */
   incomplete: boolean;
+  /** The town whose score the province shows (its highest); null when it has no towns. */
+  top_place: string | null;
   /** A spot inside the province, where the map pins its headlines. */
   point_lat: number;
   point_lon: number;
@@ -199,6 +201,28 @@ export type Place = {
   name: string;
   /** 'City' or 'Mun' (municipality). */
   geoLevel: string;
+};
+
+/** What the map knows about each town shape. The `properties` of GET /api/places/shapes. */
+export type PlaceShapeProperties = {
+  psgc: number;
+  name: string;
+  province_name: string;
+};
+
+/** One town's latest score, for the map. */
+export type PlaceScoreEntry = {
+  psgc: number;
+  score: number;
+  /** True when a signal could not be checked: the score is "at least" this much. */
+  incomplete: boolean;
+};
+
+/** Every town's latest score. Returned by GET /api/places/scores */
+export type PlaceScores = {
+  /** When the scores were worked out; null before the first score run. */
+  computedAt: string | null;
+  places: PlaceScoreEntry[];
 };
 
 /** A score worked out on demand for one exact spot. */
@@ -234,7 +258,9 @@ export type PointDetail = {
   /** The city or municipality the spot is in, if known. */
   place: Place | null;
   province: Province;
-  /** The whole province's score, for comparison. null until the first score run. */
+  /** The whole town's score, as on the map. null until the first score run, or with no town. */
+  placeScore: { score: number; incomplete: boolean } | null;
+  /** The whole province's score (its highest town), for comparison. null until the first score run. */
   provinceScore: number | null;
   score: PointScore;
   /** Earthquake distances here are measured from the spot itself. */

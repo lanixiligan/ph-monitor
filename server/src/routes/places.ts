@@ -1,10 +1,13 @@
-// API route for the place search:
-//   GET /api/places?q=cebu  → up to 10 cities, municipalities and provinces
+// API routes for cities and municipalities ("towns"):
+//   GET /api/places?q=cebu    → up to 10 cities, municipalities and provinces
+//   GET /api/places/shapes    → every town's shape, as GeoJSON (for the map)
+//   GET /api/places/scores    → every town's latest score (for the map)
 // Every name comes from our own database (no outside geocoder). The rule for
 // what matches is in placeSearch.ts.
 
 import { Router } from 'express';
 import { z } from 'zod';
+import type { PlaceScores, PlaceShapeProperties, SignalName } from '@ph-monitor/shared';
 import { pool } from '../db.ts';
 import { searchPlaces } from '../placeSearch.ts';
 import type { SearchPlace } from '../placeSearch.ts';
@@ -46,4 +49,53 @@ placesRouter.get('/', async (req, res) => {
     return;
   }
   res.json(searchPlaces(await getPlaces(), parsed.data.q));
+});
+
+// ---------- GET /api/places/shapes ----------
+
+// Town shapes never change while the server runs, and simplifying them takes
+// a moment, so the answer is built once and kept in memory as JSON text.
+let cachedShapes: string | null = null;
+
+placesRouter.get('/shapes', async (_req, res) => {
+  if (cachedShapes === null) {
+    // Simplified to about 500 m (0.005°), 4 decimals (about 10 m), like the provinces.
+    const result = await pool.query<{ psgc: number; name: string; province_name: string; geometry: unknown }>(
+      `SELECT c.psgc, c.name, p.name AS province_name,
+              ST_AsGeoJSON(ST_SimplifyPreserveTopology(c.geom, 0.005), 4)::json AS geometry
+       FROM places c JOIN provinces p ON p.psgc = c.province_psgc
+       ORDER BY c.psgc`,
+    );
+    const features = result.rows.map((row) => {
+      const properties: PlaceShapeProperties = { psgc: row.psgc, name: row.name, province_name: row.province_name };
+      return { type: 'Feature', id: row.psgc, properties, geometry: row.geometry };
+    });
+    const json = JSON.stringify({ type: 'FeatureCollection', features });
+    // An empty list is not kept: the places may simply not be loaded yet.
+    if (features.length === 0) {
+      res.type('application/json').send(json);
+      return;
+    }
+    cachedShapes = json;
+  }
+  // The browser may keep it for a day; the shapes only change with a new boundary file.
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.type('application/json').send(cachedShapes);
+});
+
+// ---------- GET /api/places/scores ----------
+
+placesRouter.get('/scores', async (_req, res) => {
+  const result = await pool.query<{ psgc: number; score: number; unknown_signals: SignalName[]; computed_at: Date }>(
+    'SELECT place_psgc AS psgc, score, unknown_signals, computed_at FROM place_scores ORDER BY place_psgc',
+  );
+  const answer: PlaceScores = {
+    computedAt: result.rows[0]?.computed_at.toISOString() ?? null,
+    places: result.rows.map((row) => ({
+      psgc: row.psgc,
+      score: row.score,
+      incomplete: row.unknown_signals.length > 0,
+    })),
+  };
+  res.json(answer);
 });

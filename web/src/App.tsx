@@ -4,8 +4,8 @@
 
 import { useEffect, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
-import type { FeedHealth } from '@ph-monitor/shared';
-import { fetchProvinces, fetchStatus } from './api.ts';
+import type { FeedHealth, PlaceScores } from '@ph-monitor/shared';
+import { fetchPlaceScores, fetchProvinces, fetchStatus } from './api.ts';
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
 import { Legend } from './components/Legend.tsx';
@@ -15,6 +15,7 @@ import { ProvinceMap } from './components/ProvinceMap.tsx';
 import { Ladder } from './components/Ladder.tsx';
 import { SpotHint } from './components/SpotHint.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
+import type { PickedArea } from './components/StatusCard.tsx';
 import { StreamsPanel } from './components/StreamsPanel.tsx';
 import { WarnIcon } from './components/WarnIcon.tsx';
 import { fill, LanguageSwitch, lookup, useStrings } from './i18n/index.ts';
@@ -43,6 +44,10 @@ export function App() {
   const { t } = useStrings();
   // `useState` remembers a value between re-draws of the page.
   const [provinces, setProvinces] = useState<ProvinceCollection | null>(null);
+  // Every town's score, for the map when zoomed in. null = not loaded (yet).
+  const [placeScores, setPlaceScores] = useState<PlaceScores | null>(null);
+  // The town (or province) the picked spot is in, outlined on the map. null = none yet.
+  const [picked, setPicked] = useState<PickedArea | null>(null);
   // true when the last load failed; the message is looked up when drawn.
   const [failed, setFailed] = useState(false);
   // How each feed is doing. null = not loaded yet; 'failed' = the check itself failed.
@@ -64,6 +69,7 @@ export function App() {
   /** A place picked by name (the search box or the ranking list): open it and fly the map there. */
   function pickPlace(picked: Spot) {
     setSpot(picked);
+    setPicked(null);
     setFocus(null);
     // `{ ...picked }` makes a copy: a new object, so the map moves even for the same place.
     setGoTo({ ...picked });
@@ -103,7 +109,12 @@ export function App() {
       } catch {
         setFailed(true);
       }
-      // Asked separately, so one failing does not hide the other.
+      // Asked separately, so one failing does not hide the others.
+      try {
+        setPlaceScores(await fetchPlaceScores());
+      } catch {
+        // The map then keeps showing provinces only; the error line above covers a dead server.
+      }
       try {
         setFeeds((await fetchStatus()).feeds);
       } catch {
@@ -171,10 +182,13 @@ export function App() {
           />
           <ProvinceMap
             data={provinces}
+            placeScores={placeScores}
             spot={spot}
-            // Picking a spot clears the headline outline.
-            onSelect={(picked) => {
-              setSpot(picked);
+            picked={spot === null ? null : picked}
+            // Picking a spot clears the headline outline and the old town outline.
+            onSelect={(chosen) => {
+              setSpot(chosen);
+              setPicked(null);
               setFocus(null);
             }}
             layers={layers}
@@ -189,7 +203,7 @@ export function App() {
         <div className="side">
           <div className="side-spot">
             {spot !== null ? (
-              <StatusCard spot={spot} onClose={() => setSpot(null)} />
+              <StatusCard spot={spot} onClose={() => setSpot(null)} onArea={setPicked} />
             ) : (
               <SpotHint provinces={provinces} onPick={pickPlace} />
             )}

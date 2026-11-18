@@ -101,10 +101,18 @@ export function parseOpenMeteoLocation(json: unknown, now: Date): WeatherReading
  * null and the other requests carry on. Throws only when every request failed.
  * `options` lets a test pass in a pretend `fetch`.
  */
+/**
+ * Retry settings, plus how long one try may take (default 30 seconds) and how
+ * long to wait between two requests (default none).
+ */
+// `RetryOptions & { ... }` means "everything in RetryOptions, plus these fields".
+export type OpenMeteoOptions = RetryOptions & { timeoutMs?: number; gapMs?: number };
+
 export async function fetchOpenMeteo(
   points: Point[],
-  options: RetryOptions = {},
+  options: OpenMeteoOptions = {},
 ): Promise<(WeatherReading | null)[]> {
+  const timeoutMs = options.timeoutMs ?? 30_000;
   const now = new Date();
   const readings: (WeatherReading | null)[] = [];
   let requests = 0;
@@ -112,6 +120,8 @@ export async function fetchOpenMeteo(
 
   for (let start = 0; start < points.length; start += POINTS_PER_REQUEST) {
     const chunk = points.slice(start, start + POINTS_PER_REQUEST);
+    // Spread a big run out, so it stays well under Open-Meteo's per-minute limit.
+    if (start > 0 && options.gapMs) await new Promise((resolve) => setTimeout(resolve, options.gapMs));
 
     const params = new URLSearchParams({
       latitude: chunk.map((p) => p.lat.toFixed(4)).join(','),
@@ -124,10 +134,10 @@ export async function fetchOpenMeteo(
 
     requests += 1;
     try {
-      // Give up on each try after 30 seconds instead of waiting forever.
+      // Give up on each try after `timeoutMs` instead of waiting forever.
       const response = await fetchWithRetry(
         `${OPEN_METEO_URL}?${params}`,
-        () => ({ signal: AbortSignal.timeout(30_000) }),
+        () => ({ signal: AbortSignal.timeout(timeoutMs) }),
         options,
       );
 

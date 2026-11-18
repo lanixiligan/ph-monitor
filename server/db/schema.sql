@@ -239,16 +239,10 @@ CREATE TABLE IF NOT EXISTS official_alerts (
 );
 CREATE INDEX IF NOT EXISTS official_alerts_expires_idx ON official_alerts (expires_at);
 
--- ---------- Phase 3 of the audit: more weather points ----------
+-- ---------- Phase 3 of the audit: more weather points (replaced) ----------
 
--- Extra weather sample points for big or island provinces (at most two each),
--- on top of provinces.weather_point. Filled by `npm run weather-points`.
-CREATE TABLE IF NOT EXISTS province_weather_points (
-  province_psgc BIGINT REFERENCES provinces,
-  n             SMALLINT NOT NULL,             -- 1 or 2
-  geom          geometry(Point, 4326) NOT NULL,
-  PRIMARY KEY (province_psgc, n)
-);
+-- The old extra points per province. The weather grid below replaced them.
+DROP TABLE IF EXISTS province_weather_points;
 
 -- ---------- Per-town map colours: the weather grid ----------
 
@@ -269,3 +263,34 @@ CREATE TABLE IF NOT EXISTS place_weather_points (
   point_id   INTEGER REFERENCES weather_points ON DELETE CASCADE,
   PRIMARY KEY (place_psgc, point_id)
 );
+
+-- The newest readings at each weather point, written by the weather job.
+-- Only the last 2 days are kept.
+CREATE TABLE IF NOT EXISTS point_readings (
+  point_id     INTEGER REFERENCES weather_points ON DELETE CASCADE,
+  valid_at     TIMESTAMPTZ NOT NULL,
+  temp_c       REAL,
+  humidity_pct REAL,
+  heat_index_c REAL,
+  rain_1h_mm   REAL,
+  rain_24h_mm  REAL,
+  fetched_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (point_id, valid_at)
+);
+
+-- The latest score for each city and municipality (one row per town,
+-- replaced on every run; no history).
+CREATE TABLE IF NOT EXISTS place_scores (
+  place_psgc      BIGINT PRIMARY KEY REFERENCES places ON DELETE CASCADE,
+  score           SMALLINT NOT NULL,
+  quake_score     SMALLINT NOT NULL,
+  weather_score   SMALLINT NOT NULL,
+  event_score     SMALLINT NOT NULL,
+  unknown_signals TEXT[] NOT NULL DEFAULT '{}',
+  reasons         JSONB NOT NULL,
+  computed_at     TIMESTAMPTZ NOT NULL
+);
+
+-- The town whose score the province shows (its highest). NULL for a province
+-- with no towns loaded, which is scored as a whole instead.
+ALTER TABLE province_scores ADD COLUMN IF NOT EXISTS top_place_psgc BIGINT;

@@ -1,6 +1,7 @@
-// The map: provinces coloured by score. Hover shows the province's name and
-// score; a click picks the exact spot under the pointer. The locate button
-// (under the zoom buttons) picks the spot where the reader is.
+// The map: provinces coloured by score, and when zoomed in, each city and
+// municipality ("town"). Hover shows the name and score; a click picks the
+// exact spot under the pointer, and the town it is in gets an outline. The
+// locate button (under the zoom buttons) picks the spot where the reader is.
 //
 // MapLibre draws the map itself (outside React), so this component's job is
 // to create it once and then pass along changes: new data, new selection.
@@ -13,7 +14,9 @@ import type { StyleSpecification } from 'maplibre-gl';
 // address, which we then hand to MapLibre.
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useEffect, useRef, useState } from 'react';
-import type { ProvinceCollection, Spot } from '../api.ts';
+import type { PlaceScores } from '@ph-monitor/shared';
+import { fetchPlaceShapes } from '../api.ts';
+import type { PlaceCollection, ProvinceCollection, Spot } from '../api.ts';
 import { EVENT_LAYERS, OVERLAY_CLICK_LAYERS, STORM_LAYERS, useOverlays } from '../mapOverlays.ts';
 import { MAX_BOUNDS, PH_BOUNDS, SHOW_BASEMAP } from '../mapSettings.ts';
 import type { MapLayers } from '../mapSettings.ts';
@@ -21,7 +24,8 @@ import { provincesBox } from '../newsGeo.ts';
 import { NEWS_LAYERS, useNewsDots } from '../newsOverlay.ts';
 import { hatchImage, readPalette } from '../palette.ts';
 import { bandColors, bandFor, scoreText } from '../scoreScale.ts';
-import { getI18n, useStrings } from '../i18n/index.ts';
+import { fill, getI18n, useStrings } from '../i18n/index.ts';
+import type { PickedArea } from './StatusCard.tsx';
 import { useTheme } from '../theme/index.ts';
 import type { Theme } from '../theme/index.ts';
 
@@ -39,6 +43,13 @@ const HATCH = 'no-data-hatch';
 // Lines only, laid over the colour of a province whose score is incomplete.
 const HATCH_LINES = 'incomplete-hatch';
 
+// The town colours fade in between these zoom levels (5 = whole country,
+// 10 = one city) while the province colours fade out.
+const TOWNS_FROM = 7.5;
+const TOWNS_FULL = 8.5;
+// From here on, the hover label names the town instead of the province.
+const TOWN_LABEL_ZOOM = 8;
+
 /**
  * A plain background with the province shapes only. Used when SHOW_BASEMAP
  * is off, and as a fallback when the basemap can't be reached.
@@ -52,9 +63,16 @@ function plainStyle(): StyleSpecification {
 }
 
 /**
+ * The colour a score is drawn in. Using bandFor() here means the map and the
+ * legend can never disagree.
+ */
+function colorOf(score: number | null, theme: Theme, noDataColor: string): string {
+  return score === null ? noDataColor : bandColors(bandFor(score), theme).color;
+}
+
+/**
  * Returns a copy of the data where every province also carries the colour it
- * should be drawn in, and `noData` for one with no score yet. Using bandFor()
- * here means the map and the legend can never disagree.
+ * should be drawn in, and `noData` for one with no score yet.
  */
 function withColors(data: ProvinceCollection, theme: Theme) {
   const noDataColor = readPalette().noData;
@@ -62,9 +80,31 @@ function withColors(data: ProvinceCollection, theme: Theme) {
     ...data,
     features: data.features.map((feature) => {
       const score = feature.properties.score;
-      const color = score === null ? noDataColor : bandColors(bandFor(score), theme).color;
+      const color = colorOf(score, theme, noDataColor);
       // `incomplete` rides along as it is: some data was missing, so the score is "at least".
       return { ...feature, properties: { ...feature.properties, color, noData: score === null } };
+    }),
+  };
+}
+
+/** The town shapes joined with their scores (by psgc), each with its colour. */
+function withTownColors(shapes: PlaceCollection, scores: PlaceScores | null, theme: Theme) {
+  const noDataColor = readPalette().noData;
+  // psgc → that town's score entry.
+  const byPsgc = new Map((scores?.places ?? []).map((entry) => [entry.psgc, entry]));
+  return {
+    ...shapes,
+    features: shapes.features.map((feature) => {
+      const entry = byPsgc.get(feature.properties.psgc);
+      const score = entry?.score ?? null;
+      const properties = {
+        ...feature.properties,
+        score,
+        incomplete: entry?.incomplete ?? false,
+        color: colorOf(score, theme, noDataColor),
+        noData: score === null,
+      };
+      return { ...feature, properties };
     }),
   };
 }
@@ -85,8 +125,12 @@ async function pickStyle(theme: Theme): Promise<string | StyleSpecification> {
 // `type Props` lists what the parent must pass to this component.
 type Props = {
   data: ProvinceCollection | null;
+  /** Every town's score, shown when zoomed in. null = not loaded. */
+  placeScores: PlaceScores | null;
   /** The spot the reader picked, marked with a dot. null = none. */
   spot: Spot | null;
+  /** The town (or province) the picked spot is in, outlined. null = none. */
+  picked: PickedArea | null;
   // A function the map calls when the reader clicks on land.
   onSelect: (spot: Spot) => void;
   /** Which layers are switched on in the legend. */
@@ -111,12 +155,27 @@ const SPOT_BOX = { minLat: 4, maxLat: 22, minLon: 116, maxLon: 128 };
 // No province has this code, so a filter with it matches nothing.
 const MATCH_NONE: maplibregl.FilterSpecification = ['in', ['get', 'psgc'], ['literal', [-1]]];
 
-// How see-through the province colours are. Over a basemap they fade as you
-// zoom in (zoom 5 = whole country, 10 = one city), so towns show through.
+// How see-through the colours are. Over a basemap they fade as you zoom in,
+// so the basemap's towns and roads show through.
 // `ExpressionSpecification` is MapLibre's type for a rule like this one.
 const FADE_WITH_ZOOM: maplibregl.ExpressionSpecification = ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 0.45];
+// Once the town colours are loaded: the province colours fade out as the
+// towns fade in. A faint province colour stays underneath, to hide the thin
+// gaps that simplifying leaves between neighbouring towns.
+const OPACITY_WITH_TOWNS: Record<'basemap' | 'plain', { province: maplibregl.ExpressionSpecification; town: maplibregl.ExpressionSpecification }> = {
+  basemap: {
+    province: ['interpolate', ['linear'], ['zoom'], 5, 0.8, TOWNS_FROM, 0.62, TOWNS_FULL, 0.15],
+    town: ['interpolate', ['linear'], ['zoom'], TOWNS_FROM, 0, TOWNS_FULL, 0.6, 10, 0.45],
+  },
+  plain: {
+    province: ['interpolate', ['linear'], ['zoom'], TOWNS_FROM, 0.85, TOWNS_FULL, 0.15],
+    town: ['interpolate', ['linear'], ['zoom'], TOWNS_FROM, 0, TOWNS_FULL, 0.85],
+  },
+};
 
-export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocateResult, newsType }: Props) {
+export function ProvinceMap({
+  data, placeScores, spot, picked, onSelect, layers, focus, goTo, onLocateResult, newsType,
+}: Props) {
   // A "ref" holds a value that survives re-renders without causing one.
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -139,6 +198,27 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
   const [ready, setReady] = useState(false);
   // The province colours' normal opacity, kept so the legend can restore it.
   const fillOpacityRef = useRef<maplibregl.ExpressionSpecification | number>(0.85);
+  // Whether the map has a basemap under our colours (it changes how they fade).
+  const hasBasemapRef = useRef(false);
+
+  // The town shapes: large, so they are downloaded once, the first time the
+  // reader zooms in or picks a spot. null = not downloaded (yet).
+  const [townShapes, setTownShapes] = useState<PlaceCollection | null>(null);
+  const townsRequestedRef = useRef(false);
+  // Uses only a ref and a state setter, which never change, so the copy kept
+  // by the map's zoom handler (made on the first draw) still works.
+  const requestTowns = () => {
+    if (townsRequestedRef.current) return;
+    townsRequestedRef.current = true;
+    fetchPlaceShapes()
+      .then(setTownShapes)
+      // Allow another try on the next zoom.
+      .catch(() => (townsRequestedRef.current = false));
+  };
+  const requestTownsRef = useRef(requestTowns);
+  // True when there is something to show for the towns: shapes and scores.
+  const townsShown =
+    townShapes !== null && townShapes.features.length > 0 && placeScores !== null && placeScores.places.length > 0;
 
   // Create the map when the component first appears, and again when the
   // theme changes (the basemap and every colour change with it).
@@ -236,6 +316,7 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
           firstRoad ?? firstLabel,
         );
         fillOpacityRef.current = hasBasemap ? FADE_WITH_ZOOM : 0.85;
+        hasBasemapRef.current = hasBasemap;
         // Diagonal stripes over provinces with no score yet (if the browser can draw them).
         const hatch = hatchImage(palette);
         if (hatch) {
@@ -266,6 +347,60 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
             firstRoad ?? firstLabel,
           );
         }
+        // The towns: the same colours and stripes, drawn over the provinces.
+        // Fully see-through until the town colours are loaded (see the legend effect below).
+        theMap.addSource('places', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
+        theMap.addLayer(
+          {
+            id: 'town-fill',
+            type: 'fill',
+            source: 'places',
+            paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0 },
+          },
+          firstRoad ?? firstLabel,
+        );
+        if (hatch) {
+          theMap.addLayer(
+            {
+              id: 'town-nodata',
+              type: 'fill',
+              source: 'places',
+              filter: ['==', ['get', 'noData'], true],
+              paint: { 'fill-pattern': HATCH, 'fill-opacity': 0 },
+            },
+            firstRoad ?? firstLabel,
+          );
+        }
+        if (lines) {
+          theMap.addLayer(
+            {
+              id: 'town-incomplete',
+              type: 'fill',
+              source: 'places',
+              filter: ['all', ['==', ['get', 'incomplete'], true], ['==', ['get', 'noData'], false]],
+              paint: { 'fill-pattern': HATCH_LINES, 'fill-opacity': 0 },
+            },
+            firstRoad ?? firstLabel,
+          );
+        }
+        // Thin town borders, appearing as the town colours fade in.
+        theMap.addLayer(
+          {
+            id: 'town-outline',
+            type: 'line',
+            source: 'places',
+            minzoom: TOWNS_FROM,
+            paint: {
+              'line-color': palette.inkSoft,
+              'line-width': 0.4,
+              'line-opacity': ['interpolate', ['linear'], ['zoom'], TOWNS_FROM, 0, TOWNS_FULL, 0.7],
+            },
+          },
+          firstLabel,
+        );
         theMap.addLayer(
           {
             id: 'province-outline',
@@ -286,6 +421,26 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
           },
           firstLabel,
         );
+        // The outline of the picked spot's town (or its province when the
+        // town is unknown): a light band under a dark line, so it shows on
+        // every colour in both themes. Matches nothing until a spot is picked.
+        for (const source of ['places', 'provinces']) {
+          theMap.addLayer({
+            id: `picked-${source}-casing`,
+            type: 'line',
+            source,
+            filter: MATCH_NONE,
+            paint: { 'line-color': palette.paper, 'line-width': 6 },
+          });
+          theMap.addLayer({
+            id: `picked-${source}`,
+            type: 'line',
+            source,
+            filter: MATCH_NONE,
+            paint: { 'line-color': palette.ink, 'line-width': 2.5 },
+          });
+        }
+
         // A dot marking the picked spot (empty until the reader clicks).
         theMap.addSource('spot', {
           type: 'geojson',
@@ -316,14 +471,29 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
           const properties = event.features?.[0]?.properties;
           if (!properties) return;
           // Read at this moment, so the label follows the language chosen now.
-          const score = scoreText(
-            typeof properties.score === 'number' ? properties.score : null,
-            properties.incomplete === true,
-          );
-          popup
-            .setLngLat(event.lngLat)
-            .setText(`${properties.name}: ${score}`)
-            .addTo(theMap);
+          const words = getI18n().t.map;
+          // `Record<string, unknown>` = an object with any names; MapLibre's properties are like that.
+          const scoreOf = (props: Record<string, unknown>) =>
+            scoreText(typeof props.score === 'number' ? props.score : null, props.incomplete === true);
+          // Zoomed in: name the town under the pointer, if its colours are loaded.
+          const town =
+            theMap.getZoom() >= TOWN_LABEL_ZOOM && theMap.getLayer('town-fill')
+              ? theMap.queryRenderedFeatures(event.point, { layers: ['town-fill'] })[0]?.properties
+              : undefined;
+          let text: string;
+          if (town && typeof town.score === 'number') {
+            text = fill(words.townLabel, { town: town.name, province: town.province_name, score: scoreOf(town) });
+          } else if (typeof properties.top_place === 'string') {
+            // A province shows its highest town's score, so say which town.
+            text = fill(words.provinceTopLabel, {
+              province: properties.name,
+              score: scoreOf(properties),
+              town: properties.top_place,
+            });
+          } else {
+            text = fill(words.provinceLabel, { province: properties.name, score: scoreOf(properties) });
+          }
+          popup.setLngLat(event.lngLat).setText(text).addTo(theMap);
         };
         theMap.on('mousemove', 'province-fill', (event) => {
           theMap.getCanvas().style.cursor = 'pointer';
@@ -350,6 +520,13 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
             lon: Number(event.lngLat.lng.toFixed(4)),
           });
         });
+
+        // The town shapes are downloaded the first time the reader zooms in near them.
+        const maybeLoadTowns = () => {
+          if (theMap.getZoom() >= TOWNS_FROM - 0.5) requestTownsRef.current();
+        };
+        theMap.on('zoomend', maybeLoadTowns);
+        maybeLoadTowns();
 
         // On a small screen the map shrinks when the card opens. If that
         // pushes the picked spot out of view, slide the map to bring it back.
@@ -380,6 +557,28 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
     const source = mapRef.current?.getSource('provinces') as maplibregl.GeoJSONSource | undefined;
     source?.setData(withColors(data, theme));
   }, [ready, data, theme]);
+
+  // Whenever the town shapes or scores change, hand them to the map.
+  useEffect(() => {
+    if (!ready || !townShapes) return;
+    const source = mapRef.current?.getSource('places') as maplibregl.GeoJSONSource | undefined;
+    source?.setData(withTownColors(townShapes, placeScores, theme));
+  }, [ready, townShapes, placeScores, theme]);
+
+  // Outline the picked spot's town, or its province when the town is unknown.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const placePsgc = picked?.placePsgc ?? null;
+    // The town outline needs the town shapes.
+    if (placePsgc !== null) requestTownsRef.current();
+    const townFilter: maplibregl.FilterSpecification =
+      placePsgc !== null ? ['==', ['get', 'psgc'], placePsgc] : MATCH_NONE;
+    const provinceFilter: maplibregl.FilterSpecification =
+      picked && placePsgc === null ? ['==', ['get', 'psgc'], picked.provincePsgc] : MATCH_NONE;
+    for (const id of ['picked-places', 'picked-places-casing']) map.setFilter(id, townFilter);
+    for (const id of ['picked-provinces', 'picked-provinces-casing']) map.setFilter(id, provinceFilter);
+  }, [ready, picked]);
 
   // Event markers and storm tracks (see mapOverlays.ts).
   useOverlays(mapRef, ready);
@@ -419,12 +618,17 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    // The province colours turn fully see-through instead of being removed,
-    // so a click on land still picks a spot.
-    const opacity = layers.scores ? fillOpacityRef.current : 0;
-    map.setPaintProperty('province-fill', 'fill-opacity', opacity);
-    for (const id of ['province-nodata', 'province-incomplete']) {
-      if (map.getLayer(id)) map.setPaintProperty(id, 'fill-opacity', opacity);
+    // The colours turn fully see-through instead of being removed, so a
+    // click on land still picks a spot. Once the town colours are there, they
+    // take over from the province colours as the reader zooms in.
+    const fades = OPACITY_WITH_TOWNS[hasBasemapRef.current ? 'basemap' : 'plain'];
+    const provinceOpacity = !layers.scores ? 0 : townsShown ? fades.province : fillOpacityRef.current;
+    const townOpacity = layers.scores && townsShown ? fades.town : 0;
+    for (const id of ['province-fill', 'province-nodata', 'province-incomplete']) {
+      if (map.getLayer(id)) map.setPaintProperty(id, 'fill-opacity', provinceOpacity);
+    }
+    for (const id of ['town-fill', 'town-nodata', 'town-incomplete']) {
+      if (map.getLayer(id)) map.setPaintProperty(id, 'fill-opacity', townOpacity);
     }
     const show = (ids: string[], on: boolean) => {
       for (const id of ids) {
@@ -436,7 +640,7 @@ export function ProvinceMap({ data, spot, onSelect, layers, focus, goTo, onLocat
     show(NEWS_LAYERS, layers.news);
     // Storm names are HTML labels, not map layers; CSS hides them.
     containerRef.current?.classList.toggle('hide-storm-labels', !layers.storms);
-  }, [ready, layers]);
+  }, [ready, layers, townsShown]);
 
   // Whenever the picked spot changes, move the dot (or remove it).
   useEffect(() => {

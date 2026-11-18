@@ -446,6 +446,12 @@ label.legend-row {
   padding-left: 22px;
 }
 
+/* A short note under the score colours (towns appear when zoomed in). */
+.legend-note {
+  margin: 2px 0 8px;
+  padding-left: 22px;
+}
+
 /* The five score colours side by side, each with its name and range under it. */
 .scale {
   display: grid;
@@ -731,6 +737,11 @@ label.legend-row {
 /* ---------- Spot panel: the status card and the hint ---------- */
 .card-where {
   margin: 0;
+}
+
+/* The whole town's and province's numbers sit close together. */
+.card-area {
+  margin: 4px 0;
 }
 
 .score-row {

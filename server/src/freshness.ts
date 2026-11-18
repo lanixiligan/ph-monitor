@@ -20,13 +20,13 @@ type FeedRule = {
 /**
  * Every feed, in the order the banner lists them. Limits are a few missed
  * runs, so one slow fetch does not raise the banner.
- * Weather has no `signal` here: each province's weather is unknown when it
- * has no reading in the last 3 hours (see computeScores.ts).
+ * Weather has no `signal` here: each province's and town's weather is unknown
+ * when it has no reading in the last 4.5 hours (see computeScores.ts).
  */
 export const FEED_RULES: FeedRule[] = [
   { id: 'earthquakes', sources: ['usgs'], staleAfterMinutes: 60, signal: 'quake' },
-  // Weather is fetched hourly, so two missed runs raise the banner.
-  { id: 'weather', sources: ['open-meteo'], staleAfterMinutes: 150 },
+  // Weather is fetched every 2 hours, so one missed run passes and the second raises the banner.
+  { id: 'weather', sources: ['open-meteo'], staleAfterMinutes: 270 },
   { id: 'officialAlerts', sources: ['pagasa'], staleAfterMinutes: 60 },
   { id: 'events', sources: ['gdacs'], staleAfterMinutes: 120, signal: 'event' },
   { id: 'naturalEvents', sources: ['eonet'], staleAfterMinutes: 120 },
@@ -37,7 +37,7 @@ export const FEED_RULES: FeedRule[] = [
   { id: 'news', sources: ['news'], staleAfterMinutes: 60 },
 ];
 
-/** A weather run is "fresh" only if at least this share of provinces was saved. */
+/** A weather run is "fresh" only if at least this share of weather points answered. */
 const MIN_SAVED_SHARE = 0.9;
 
 /** True when enough of a run was saved to call the feed fresh. */

@@ -22,12 +22,17 @@ import { Ladder } from './Ladder.tsx';
 // How often an open card asks the server again.
 const REFRESH_MS = 5 * 60 * 1000;
 
+/** The town (or, if unknown, the province) a spot is in, for the map to outline. */
+export type PickedArea = { placePsgc: number | null; provincePsgc: number };
+
 type Props = {
   spot: Spot;
   onClose: () => void;
+  /** Called when the spot's details arrive, with the town and province it is in. */
+  onArea: (area: PickedArea) => void;
 };
 
-export function StatusCard({ spot, onClose }: Props) {
+export function StatusCard({ spot, onClose, onArea }: Props) {
   // `t` holds all the words in the current language.
   const { t } = useStrings();
   const { theme } = useTheme();
@@ -38,6 +43,9 @@ export function StatusCard({ spot, onClose }: Props) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   // true from the moment a new spot is picked until its card has been announced.
   const announceRef = useRef(false);
+  // Kept in a ref so a new function from the parent doesn't reload the card.
+  const onAreaRef = useRef(onArea);
+  onAreaRef.current = onArea;
 
   // When a new spot's details arrive, move the keyboard focus to the card's
   // title: a screen reader then reads the place name, and Tab continues into
@@ -64,6 +72,7 @@ export function StatusCard({ spot, onClose }: Props) {
         const result = await fetchPointDetail(spot);
         if (!cancelled) {
           setDetail(result);
+          onAreaRef.current({ placePsgc: result.place?.psgc ?? null, provincePsgc: result.province.psgc });
           // Clear any earlier error, so one failed refresh doesn't stick.
           setFailed(false);
         }
@@ -99,7 +108,7 @@ export function StatusCard({ spot, onClose }: Props) {
     );
   }
 
-  const { place, province, provinceScore, score, events, freshness } = detail;
+  const { place, placeScore, province, provinceScore, score, events, freshness } = detail;
   const band = bandFor(score.score);
   // Some signal could not be checked: the score is a lower limit.
   const incomplete = score.unknownSignals.length > 0;
@@ -182,8 +191,18 @@ export function StatusCard({ spot, onClose }: Props) {
           <WarnIcon /> {t.card.incomplete}
         </p>
       )}
+      {/* The whole town's and province's numbers, as the map shows them. */}
+      {place && placeScore && (
+        <p className="muted card-area">
+          {fill(t.card.wholeTown, {
+            town: place.name,
+            score: scoreText(placeScore.score, placeScore.incomplete),
+            band: bandLabel(bandFor(placeScore.score)).toLowerCase(),
+          })}
+        </p>
+      )}
       {provinceScore !== null && (
-        <p className="muted">
+        <p className="muted card-area">
           {fill(t.card.wholeProvince, {
             province: province.name,
             score: provinceScore,
@@ -191,6 +210,7 @@ export function StatusCard({ spot, onClose }: Props) {
           })}
         </p>
       )}
+      {(placeScore !== null || provinceScore !== null) && <p className="muted">{t.card.areaNote}</p>}
 
       <h3>{t.card.why}</h3>
       <ul>

@@ -118,6 +118,28 @@ export async function addWeather(
   );
 }
 
+/**
+ * Gives a town a weather point (inside it) with one reading, the way the
+ * weather job and `npm run weather-points` do.
+ */
+export async function addTownWeather(
+  placePsgc: number,
+  reading: { validAt: Date; rain1hMm: number; rain24hMm: number },
+): Promise<void> {
+  const point = await pool.query<{ id: number }>(
+    `INSERT INTO weather_points (kind, geom)
+     SELECT 'grid', ST_PointOnSurface(geom) FROM places WHERE psgc = $1 RETURNING id`,
+    [placePsgc],
+  );
+  const id = point.rows[0]?.id;
+  await pool.query('INSERT INTO place_weather_points (place_psgc, point_id) VALUES ($1, $2)', [placePsgc, id]);
+  await pool.query(
+    `INSERT INTO point_readings (point_id, valid_at, temp_c, humidity_pct, heat_index_c, rain_1h_mm, rain_24h_mm)
+     VALUES ($1, $2, 26, 70, 26, $3, $4)`,
+    [id, reading.validAt, reading.rain1hMm, reading.rain24hMm],
+  );
+}
+
 export async function addEvent(
   id: string,
   event: {

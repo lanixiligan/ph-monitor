@@ -82,6 +82,7 @@ export const fil: Strings = {
     stormForecast: 'Forecast ng bagyo', // REVIEW
     news: 'Lugar na nasa balita (mas malaki = mas maraming balita)', // REVIEW
     showLabel: 'Ipakita sa mapa', // REVIEW
+    towns: 'Mag-zoom in para makita ang bawat lungsod at bayan. Ipinapakita ng lalawigan/probinsya ang pinakamataas na score ng mga bayan nito.', // REVIEW
   },
 
   // The side panel before a spot is picked.
@@ -201,10 +202,13 @@ export const fil: Strings = {
 
   // Map popups and hover labels.
   map: {
-    label: 'Mapa ng Pilipinas, may kulay ang mga lalawigan/probinsya ayon sa score. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+    label: 'Mapa ng Pilipinas, may kulay ayon sa score: ang mga lalawigan/probinsya, at ang mga lungsod at bayan kapag naka-zoom in. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
     sampleNotice: 'Sample na datos, hindi totoong bagyo', // REVIEW
     noScoreYet: 'wala pang score', // REVIEW
     atLeast: 'hindi bababa sa {score}', // REVIEW
+    provinceLabel: '{province}: {score}', // REVIEW
+    provinceTopLabel: '{province}: {score}, pinakamataas sa {town}', // REVIEW
+    townLabel: '{town}, {province}: {score}', // REVIEW
     popupKind: 'Uri: {kind}', // REVIEW
     popupAlert: 'Antas ng alerto: {level}', // REVIEW
     popupSource: 'Pinagmulan: {source}', // REVIEW
@@ -233,7 +237,9 @@ export const fil: Strings = {
       'Hindi saklaw dito: pagguho ng lupa, daluyong, tsunami, wind signal at babala sa ulan ng PAGASA, alert level ng bulkan ng PHIVOLCS. Gamitin ang mga opisyal na link sa ibaba.', // REVIEW
     incomplete: 'May kulang na datos, kaya maaaring mas mataas ang totoong score.', // REVIEW
     nearTitle: 'Mga bagyo at sakuna malapit dito', // REVIEW
+    wholeTown: 'Buong bayan ({town}): {score}, {band}', // REVIEW
     wholeProvince: 'Buong lalawigan/probinsya ({province}): {score}, {band}', // REVIEW
+    areaNote: 'Ang score na ito ay para sa mismong lugar na pinili mo. Ang mga numero ng bayan at lalawigan/probinsya sa mapa ay para sa pinaka-apektadong bahagi ng bawat isa, kaya maaaring mas mataas ang mga ito.', // REVIEW
     why: 'Bakit', // REVIEW
     quakesTitle: 'Mga lindol, nakaraang 3 araw', // REVIEW
     quakesNone: 'Wala sa abot ng lugar na ito.', // REVIEW

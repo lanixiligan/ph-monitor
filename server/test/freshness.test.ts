@@ -36,13 +36,19 @@ test('a feed that never succeeded is stale and has no time', () => {
   assert.deepEqual(feed(buildFeedHealth(lastOk, now), 'events'), { id: 'events', lastOkAt: null, isStale: true });
 });
 
-test('each feed has its own limit: 3 hours is stale for weather, fine for the outlook', () => {
+test('each feed has its own limit: 5 hours is stale for weather, fine for the outlook', () => {
   const lastOk = allFresh();
-  lastOk.set('open-meteo', minutesAgo(180));
-  lastOk.set('open-meteo-daily', minutesAgo(180));
+  lastOk.set('open-meteo', minutesAgo(300));
+  lastOk.set('open-meteo-daily', minutesAgo(300));
   const health = buildFeedHealth(lastOk, now);
   assert.equal(feed(health, 'weather').isStale, true);
   assert.equal(feed(health, 'outlook').isStale, false);
+});
+
+test('weather runs every 2 hours: one missed run (4 hours) is not stale yet', () => {
+  const lastOk = allFresh();
+  lastOk.set('open-meteo', minutesAgo(240));
+  assert.equal(feed(buildFeedHealth(lastOk, now), 'weather').isStale, false);
 });
 
 test('storm tracks are fresh while either JMA or JTWC is', () => {

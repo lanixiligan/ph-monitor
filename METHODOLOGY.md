@@ -1,8 +1,10 @@
 # How the score is calculated
 
-Each province gets a score from 0 (calm) to 100 (severe) describing stress **right now** from
-three signals: recent earthquakes, current weather, and disaster events with an alert level. Every number below is a constant in
-`WEIGHTS` at the top of `server/src/scoring/scoring.ts`.
+Each city and municipality ("town") gets a score from 0 (calm) to 100 (severe) describing
+stress **right now** from three signals: recent earthquakes, current weather, and disaster
+events with an alert level. A province shows the score of its highest town (see "Towns and
+provinces" below). Every number below is a constant in `WEIGHTS` at the top of
+`server/src/scoring/scoring.ts`.
 
 **All thresholds are starting guesses, not calibrated values.** They are meant to be tuned.
 
@@ -66,8 +68,9 @@ National Weather Service method (the Rothfusz regression with its two adjustment
 PAGASA also uses. We do not use Open-Meteo's own "apparent temperature", which follows a
 different formula. Code: `server/src/heatIndex.ts`.
 
-A weather reading older than 3 hours is not used; the weather signal is then unknown (see
-"Unknown is not calm" below).
+A weather reading older than 4.5 hours is not used; the weather signal is then unknown (see
+"Unknown is not calm" below). Weather is fetched every 2 hours, so one failed run still leaves
+a usable reading.
 
 ## Disaster event score
 
@@ -106,18 +109,32 @@ counts in full.
 On the map: 0–19 nothing detected, 20–39 low, 40–59 moderate, 60–79 high, 80–100 severe.
 The lowest band is named for what we know ("nothing detected"); it is not an all-clear.
 
+## Towns and provinces
+
+- **A town** is scored from the quakes and events near it, measured to the town's edge (0 km if
+  inside), and from the weather at its grid points (the worst of them: most rain, hottest
+  point). The radius, reach and fading are the same as everywhere else.
+- **A province** shows the score, part-scores and reasons of its highest town
+  (`highestTown`). So the number on the map always belongs to a real town, and the hover label
+  names it. If any of its towns is missing a signal, the province is "at least N" too. A
+  province with no towns loaded is scored as a whole, from its own inputs.
+- **The map** shows province colours when zoomed out and town colours from zoom 8 (they fade
+  in between 7.5 and 8.5).
+- Town scores are replaced on every run and have no history; province history is kept as
+  before.
+
 ## Unknown is not calm
 
 A signal that could not be checked is **unknown**, never 0:
 
 | Signal | Unknown when |
 |---|---|
-| Weather | the province (or spot) has no reading from the last 3 hours |
+| Weather | the town (or spot) has no reading from the last 4.5 hours |
 | Earthquakes | the USGS fetch has not succeeded for 1 hour |
 | Disaster events | the GDACS fetch has not succeeded for 2 hours |
 
 The score is then built from the signals we do know, so it is a lower limit. The page writes it
-as "at least N", draws stripes over the province, and names the missing signal in the reasons.
+as "at least N", draws stripes over the town or province, and names the missing signal in the reasons.
 Earthquakes and events already saved still count while their feed is down.
 
 ## Score for one spot
@@ -126,14 +143,15 @@ Clicking the map scores that exact spot with the same formulas, worked out on de
 saved:
 
 - **Earthquakes and disaster events:** distance is measured from the spot itself instead of the
-  province boundary. A spot far from a quake or event can score lower than its province, whose
-  score uses the nearest edge.
+  town's edge. A spot far from a quake or event can score lower than its town, whose score uses
+  the nearest edge.
 - **Weather:** fetched from Open-Meteo for the spot, snapped to a 0.05° grid (about 5 km) and
   reused for 30 minutes. This is finer than the weather model itself, so nothing is lost.
 - **Place name:** the city or municipality containing the spot. A click up to 2 km outside a
   boundary still counts as the nearest one, because the drawn shapes are simplified.
 
-The card also shows the whole province's score for comparison.
+The card also shows the whole town's and the whole province's score, as the map shows them,
+with a note that those count the most exposed part of each and so can be higher.
 
 ## Hazard by hazard
 
@@ -157,14 +175,14 @@ change any score.
 
 ## Freshness
 
-Earthquakes are fetched every 15 minutes, weather every hour, disaster events every 30 minutes. The card shows
+Earthquakes are fetched every 15 minutes, weather every 2 hours, disaster events every 30 minutes. The card shows
 when the earthquake and weather feeds were last fetched **successfully**. If either is more than
 1 hour old, the data is marked stale.
 
 Every feed also has its own limit (`FEED_RULES` in `server/src/freshness.ts`): earthquakes and
-headlines 1 hour, weather 90 minutes, disaster events and storm tracks 2 hours, the outlook 13
+headlines 1 hour, weather 4.5 hours, disaster events and storm tracks 2 hours, the outlook 13
 hours. A banner at the top of the page names each feed past its limit. A weather run counts as
-a success only when at least 90% of provinces got a reading; each request is tried twice.
+a success only when at least 90% of weather points answered; each request is tried twice.
 
 A disaster event with no end date is dropped from the score and the map once its feed stops
 listing it, or after 24 hours without a refresh.
@@ -174,10 +192,11 @@ A quiet day with no earthquakes is not stale: what counts is that the fetch work
 
 - **Weather is modelled, not measured.** Open-Meteo values come from weather models, not from a
   station. Each value is stored with the hour it is valid for (`valid_at`).
-- **A few weather points per province.** Every province has one point guaranteed to be inside
-  it (PostGIS `ST_PointOnSurface`); big and island provinces have up to two more, at least
-  40 km apart. The province's weather is the worst of them (most rain, hottest point). Rain
-  between the points can still be missed.
+- **A weather grid, about 28 km apart.** Weather is fetched at about 600 points: a 0.25° grid
+  over the land, each province's own point, and a point for any small-island town more than
+  30 km from the others (`npm run weather-points`). A town uses the points inside it, or else
+  its nearest one; a province uses all of its points. Rain between points can still be missed,
+  and the "last hour" of rain can be up to 2 hours old.
 - **Rain is hourly.** "Last hour" means the latest full model hour, so a short burst can be
   smoothed out.
 - **USGS is a global catalogue.** Around the Philippines it reliably reports only quakes of

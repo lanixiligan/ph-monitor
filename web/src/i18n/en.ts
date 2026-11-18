@@ -85,6 +85,7 @@ export const en = {
     stormForecast: 'Storm forecast',
     news: 'Place named in the news (bigger = more headlines)',
     showLabel: 'Show on the map',
+    towns: 'Zoom in to see each city and municipality. A province shows its highest town.',
   },
 
   // The side panel before a spot is picked.
@@ -206,10 +207,14 @@ export const en = {
   // Map popups and hover labels.
   map: {
     // Read out by a screen reader when it reaches the map.
-    label: 'Map of the Philippines, provinces coloured by score. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
+    label: 'Map of the Philippines coloured by score: provinces, and cities and municipalities when zoomed in. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
     sampleNotice: 'Sample data, not a real storm',
     noScoreYet: 'no score yet',
     atLeast: 'at least {score}',
+    // Hover labels. A province shows its highest town's score and names that town.
+    provinceLabel: '{province}: {score}',
+    provinceTopLabel: '{province}: {score}, highest in {town}',
+    townLabel: '{town}, {province}: {score}',
     popupKind: 'Kind: {kind}',
     popupAlert: 'Alert level: {level}',
     popupSource: 'Source: {source}',
@@ -238,7 +243,9 @@ export const en = {
       'Not covered here: landslides, storm surge, tsunami, PAGASA wind signals and rainfall warnings, PHIVOLCS volcano alert levels. Use the official links below.',
     incomplete: 'Some data is missing, so the real score may be higher.',
     nearTitle: 'Storms and disaster events near here',
+    wholeTown: 'Whole town ({town}): {score}, {band}',
     wholeProvince: 'Whole province ({province}): {score}, {band}',
+    areaNote: 'This score is for the exact spot you picked. The town and province numbers on the map count the most exposed part of each, so they can be higher.',
     why: 'Why',
     quakesTitle: 'Earthquakes, last 3 days',
     quakesNone: 'None within reach of this spot.',

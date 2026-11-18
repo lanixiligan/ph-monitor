@@ -1,7 +1,7 @@
 // Runs the jobs on a timer while the server is up.
 //
 // Core cycle (feeds the score), every 15 minutes:
-//   earthquakes every 15 minutes, weather every hour, then the scores.
+//   earthquakes every 15 minutes, weather every 2 hours, then the scores.
 // Extras cycle (shown on the page; only GDACS alert levels reach the score), every 15 minutes:
 //   official alerts and news every 15 minutes; events, storms and the live stream check every 30;
 //   feed link check every hour; the 7-day outlook every 6 hours.
@@ -13,7 +13,7 @@
 import cron from 'node-cron';
 import { checkFeeds, checkStreams } from './checkSources.ts';
 import { computeScores } from './computeScores.ts';
-import { jobsOnTick, readDueJobs } from './due.ts';
+import { jobsOnTick, readDueJobs, SLOW_JOBS } from './due.ts';
 // `import type` brings in a type only; it disappears when the code runs.
 import type { JobName } from './due.ts';
 import { ingestAlerts } from './ingestAlerts.ts';
@@ -82,15 +82,16 @@ async function runExtras(wanted: JobName[]): Promise<void> {
 /** A timer tick: the clock picks the jobs (see jobsOnTick). */
 async function runTick(minute: number): Promise<void> {
   let wanted = jobsOnTick(minute);
-  // The outlook is the costly one, so it also has to be due in the database.
-  if (wanted.includes('outlook')) {
-    let outlookIsDue = false;
+  // Jobs that run less often than hourly (weather, the outlook) come up every
+  // hour, so they also have to be due in the database.
+  if (wanted.some((job) => SLOW_JOBS.includes(job))) {
+    let due: JobName[] = [];
     try {
-      outlookIsDue = (await readDueJobs()).includes('outlook');
+      due = await readDueJobs();
     } catch (error) {
-      console.error('Scheduler: could not check whether the outlook is due:', error);
+      console.error('Scheduler: could not check which slow jobs are due:', error);
     }
-    if (!outlookIsDue) wanted = wanted.filter((job) => job !== 'outlook');
+    wanted = wanted.filter((job) => !SLOW_JOBS.includes(job) || due.includes(job));
   }
   await Promise.all([runCycle(wanted), runExtras(wanted)]);
 }
@@ -115,7 +116,7 @@ export function startScheduler(): void {
 
   void runAtStart();
   console.log(
-    'Scheduler: started (earthquakes, official alerts and news every 15 min; weather hourly; events, storms and streams every 30 min; ' +
+    'Scheduler: started (earthquakes, official alerts and news every 15 min; weather every 2 hours; events, storms and streams every 30 min; ' +
       'feed check hourly; outlook every 6 hours).',
   );
 }

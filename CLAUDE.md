@@ -36,8 +36,9 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
                    jma, jtwc, openMeteoDaily, openMeteoFlood, rss, pagasa (official
                    alerts), retry (one more try for a failed download)
-  jobs/            ingestEarthquakes, ingestWeather, ingestEvents, ingestStorms, ingestAlerts,
-                   ingestForecast, ingestNews, checkSources, computeScores, scheduler,
+  jobs/            ingestEarthquakes, ingestWeather (weather grid), ingestEvents, ingestStorms,
+                   ingestAlerts, ingestForecast, ingestNews, checkSources, computeScores
+                   (towns, then provinces = highest town), townInputs, scheduler,
                    due (which jobs are due; every job's interval)
   news/            keyword filter and kinds of disaster, province and town tagging,
                    checkHeadline (both together), storm names, same-story merging
@@ -45,7 +46,7 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
   scoring/         scoring.ts (WEIGHTS + all formulas)
   replay/          replay.ts (archived records → score inputs for a past hour)
   routes/          provinces.ts (map data), point.ts (score for one spot),
-                   places.ts (place search),
+                   places.ts (place search, town shapes and scores),
                    conditions.ts (events, storms, news, streams, bulletins)
 server/test/       one test file per area, real feed samples in fixtures/
   db/              database tests (testDb.ts seeds a small map; import it first)

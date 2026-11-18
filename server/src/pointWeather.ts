@@ -35,6 +35,14 @@ export function snapToCell(degrees: number): number {
  * The latest weather near this spot, or null if Open-Meteo could not be
  * reached or its answer failed the checks.
  */
+/**
+ * A reader is waiting for the card, so a spot's weather gets 5 seconds per try
+ * and no pause before the second try (about 10 seconds at worst). The weather
+ * job keeps the patient defaults. If both tries fail, the card opens with the
+ * weather marked unknown.
+ */
+export const POINT_FETCH = { pauseMs: 0, timeoutMs: 5_000 };
+
 export async function getPointWeather(lat: number, lon: number): Promise<PointWeather | null> {
   const cell = { lat: snapToCell(lat), lon: snapToCell(lon) };
   const key = `${cell.lat},${cell.lon}`;
@@ -46,7 +54,7 @@ export async function getPointWeather(lat: number, lon: number): Promise<PointWe
 
   let reading: WeatherReading | null = null;
   try {
-    const readings = await fetchOpenMeteo([cell]);
+    const readings = await fetchOpenMeteo([cell], POINT_FETCH);
     reading = readings[0] ?? null;
   } catch (error) {
     console.error('Point weather: fetch failed:', error);

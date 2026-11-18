@@ -11,7 +11,7 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 | Data | Source | Fetched | Changes the score? |
 |---|---|---|---|
 | Earthquakes | USGS | every 15 min | Yes |
-| Current weather | Open-Meteo | every hour | Yes |
+| Current weather | Open-Meteo | every 2 hours | Yes |
 | Official alerts | PAGASA public alert feed | every 15 min | No, shown above the score |
 | Disaster events with alert levels | GDACS | every 30 min | Yes (typhoon, flood, volcano, wildfire) |
 | Natural events | NASA EONET | every 30 min | No, shown only |
@@ -37,11 +37,11 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 ## Current weather: Open-Meteo
 
 - **Address:** `https://api.open-meteo.com/v1/forecast` ([docs](https://open-meteo.com/en/docs))
-- **What we ask for:** temperature, humidity and hourly rain at each province's sample point,
-  plus up to two extra points in big or island provinces (about 200 points, up to 50 per
-  request). The extra points are chosen by `npm run weather-points`: the cities or
-  municipalities furthest from the points already picked, at least 40 km apart. A province's
-  reading is the worst of its points: the most rain and the hottest point.
+- **What we ask for:** temperature, humidity and hourly rain at about 600 points (built by
+  `npm run weather-points`): a 0.25° grid over the land, each province's own point, and a point
+  for any town more than 30 km from the others. Up to 50 points go in one request, 10 seconds
+  apart, so a run takes about 2 minutes and a day about 7,200 of Open-Meteo's 10,000 calls.
+  A town's reading is the worst of its points (most rain, hottest point); so is a province's.
 - **What we keep:** temperature, humidity, rain in the last hour and last 24 hours, and a heat
   index we compute ourselves (`server/src/heatIndex.ts`).
 - **Also on demand:** when a reader clicks the map, weather for that spot is fetched, snapped

@@ -28,13 +28,13 @@ type JobRule = {
 
 /**
  * Every fetching job and how often it runs, in the order the scheduler runs them.
- * Weather is hourly: the model's values are hourly and one run asks for about
- * 200 points, so the day's total stays near 4,800 of Open-Meteo's 10,000 calls.
+ * Weather runs every 2 hours: one run asks for about 600 points, so the day's
+ * total stays near 7,200 of Open-Meteo's 10,000 calls (see PLAN.md).
  * The outlook costs about 176 Open-Meteo calls a run, so it runs rarely.
  */
 export const JOB_RULES: JobRule[] = [
   { job: 'earthquakes', everyMinutes: 15, sources: ['usgs'], needs: 'all' },
-  { job: 'weather', everyMinutes: 60, sources: ['open-meteo'], needs: 'all' },
+  { job: 'weather', everyMinutes: 120, sources: ['open-meteo'], needs: 'all' },
   { job: 'alerts', everyMinutes: 15, sources: ['pagasa'], needs: 'all' },
   { job: 'news', everyMinutes: 15, sources: ['news'], needs: 'all' },
   { job: 'events', everyMinutes: 30, sources: ['gdacs', 'eonet'], needs: 'all' },
@@ -65,11 +65,16 @@ export function dueJobs(lastRun: Map<string, Date>, now: Date): JobName[] {
 
 /**
  * The jobs a timer tick wants, by the clock: a job that runs every 30 minutes
- * runs at :00 and :30. `minute` is the clock minute of the tick.
+ * runs at :00 and :30. `minute` is the clock minute of the tick. A job that
+ * runs less often than hourly is wanted every hour at :00; the scheduler then
+ * also checks that it is due (see `SLOW_JOBS`).
  */
 export function jobsOnTick(minute: number): JobName[] {
   return JOB_RULES.filter((rule) => minute % Math.min(rule.everyMinutes, 60) === 0).map((rule) => rule.job);
 }
+
+/** Jobs that run less often than hourly: a tick runs them only when they are due. */
+export const SLOW_JOBS: JobName[] = JOB_RULES.filter((rule) => rule.everyMinutes > 60).map((rule) => rule.job);
 
 /** Reads the last run of every job from the database and returns the due ones. */
 export async function readDueJobs(now: Date = new Date()): Promise<JobName[]> {

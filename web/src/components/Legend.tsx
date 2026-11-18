@@ -48,6 +48,7 @@ export function Legend({ layers, onChange, newsType }: Props) {
         <span className="swatch swatch-incomplete" />
         {t.legend.incomplete}
       </div>
+      <p className="legend-note muted">{t.legend.towns}</p>
 
       <label className="legend-row">
         <input type="checkbox" checked={layers.events} onChange={() => toggle('events')} />

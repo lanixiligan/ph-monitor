@@ -82,8 +82,11 @@ export const WEIGHTS = {
   },
 
   weather: {
-    /** A weather reading older than this is not used for scoring. */
-    maxAgeHours: 3,
+    /**
+     * A weather reading older than this is not used for scoring. Weather is
+     * fetched every 2 hours, so one failed run still leaves a usable reading.
+     */
+    maxAgeHours: 4.5,
   },
 
   event: {
@@ -426,4 +429,60 @@ export function buildReasons(
 
   if (reasons.length === 0) reasons.push({ key: 'calm' });
   return reasons;
+}
+
+// ---------- Areas: towns and provinces ----------
+
+/** One area's finished score (a town, or a whole province). */
+export type AreaScore = {
+  score: number;
+  quake: number;
+  /** null = no usable weather reading. */
+  weather: number | null;
+  event: number;
+  unknown: SignalName[];
+  reasons: ScoreReason[];
+};
+
+/**
+ * Scores one area from its inputs. `stale` lists the signals whose feed has
+ * not answered lately: stored quakes and events still count (the score is
+ * then "at least" this much), only the claim "nothing else" is dropped.
+ */
+export function scoreArea(
+  quakes: QuakeInput[],
+  weather: WeatherInput | null,
+  events: EventInput[],
+  stale: SignalName[],
+): AreaScore {
+  const quake = quakeScore(quakes);
+  const weatherPoints = weatherScore(weather);
+  const eventPoints = eventScore(events);
+  const { score, unknown } = combineSignals({
+    quake: stale.includes('quake') ? null : quake,
+    weather: weatherPoints,
+    event: stale.includes('event') ? null : eventPoints,
+  });
+  // Towns use the area wording ('province'): "inside", "in or beside".
+  const reasons = buildReasons(quakes, weather, 'province', events, unknown);
+  return { score, quake, weather: weatherPoints, event: eventPoints, unknown, reasons };
+}
+
+/**
+ * The province rule: a province shows the score, parts and reasons of its
+ * highest town, so the number on the map always belongs to a real town.
+ * If any of its towns is missing a signal, the province is too ("at least").
+ * Returns null when the province has no towns.
+ */
+export function highestTown(towns: { psgc: number; area: AreaScore }[]): { psgc: number; area: AreaScore } | null {
+  let top: { psgc: number; area: AreaScore } | null = null;
+  const unknown = new Set<SignalName>();
+  for (const town of towns) {
+    if (top === null || town.area.score > top.area.score) top = town;
+    for (const name of town.area.unknown) unknown.add(name);
+  }
+  if (top === null) return null;
+  // Keep the usual order: quake, weather, event.
+  const names: SignalName[] = ['quake', 'weather', 'event'];
+  return { psgc: top.psgc, area: { ...top.area, unknown: names.filter((name) => unknown.has(name)) } };
 }

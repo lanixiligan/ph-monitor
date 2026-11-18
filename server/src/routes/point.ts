@@ -82,6 +82,15 @@ pointRouter.get('/', async (req, res) => {
   );
   const place = placeResult.rows[0];
 
+  // The whole town's score, as the map shows it (none before the first score run).
+  const placeScoreResult = place
+    ? await pool.query<{ score: number; unknown_signals: string[] }>(
+        'SELECT score, unknown_signals FROM place_scores WHERE place_psgc = $1',
+        [place.psgc],
+      )
+    : null;
+  const placeScore = placeScoreResult?.rows[0];
+
   // Recent quakes near the point, with the distance from the point itself.
   // The database narrows it down to the largest possible radius; the exact
   // radius depends on each quake's magnitude and is checked just below.
@@ -203,6 +212,9 @@ pointRouter.get('/', async (req, res) => {
       regionPsgc: province.region_psgc,
       geoLevel: province.geo_level,
     },
+    placeScore: placeScore
+      ? { score: placeScore.score, incomplete: placeScore.unknown_signals.length > 0 }
+      : null,
     provinceScore: province.province_score,
     score: {
       score,
