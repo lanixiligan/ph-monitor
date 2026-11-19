@@ -98,7 +98,7 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/alerts` | Official alerts in effect (PAGASA) |
 | `GET /api/status` | When each feed last succeeded, and which are out of date |
 | `GET /api/hazards` | Which fixed hazard maps are loaded (kind, storm surge level, provinces, when), for the legend |
-| `GET /api/heatmap?model=..` | The heat map for one model (`ecmwf_ifs`, the default; `dwd_icon_global_native`; `ncep_gfs_global`): the current hour's heat index and band for every town (its hottest point) and province (its hottest town), when the run was fetched, and whether it is out of date. An unknown model gives 400 |
+| `GET /api/heatmap?model=..` | The heat map for one model (`ecmwf_ifs`, the default; `dwd_icon_global_native`; `ncep_gfs_global`) or `average` (each value also has `spread`: models used, lowest, highest): the current hour's heat index and band for every town (its hottest point) and province (its hottest town), when the run was fetched, and whether it is out of date. An unknown model gives 400 |
 | `GET /api/hazards/tiles/:layer/:z/:x/:y.mvt` | Hazard zones as vector tiles (`landslide` or `surge1`…`surge4`), storm surge from zoom 4, landslide from zoom 9; empty below that |
 
 ## What the reader sees
@@ -111,13 +111,18 @@ The web page talks only to these addresses on our own server (port 3001).
   zoom 9, denser for a higher class. Storm surge also shows further out, as coloured zone
   outlines along the coast; landslide starts at zoom 9.
 - **Heat map:** a "Heat map" button at the top right of the map turns it on and opens a small
-  panel. The panel lists the sources (ECMWF, DWD ICON, NOAA GFS) with each model's grid size;
-  the reader can switch at any time and the map recolours straight away. It also shows the
+  panel. The panel lists the sources (ECMWF, DWD ICON, NOAA GFS) with each model's grid size,
+  then "Average of all three"; the reader can switch at any time and the map recolours straight away. It also shows the
   "Model estimate" tag, when the data was updated, and the band key. While it is on, the score
   colours are hidden (the legend says so), and the same town and province shapes are coloured
   by PAGASA's heat bands instead: a pale neutral fill below 27 °C, then caution, extreme
   caution, danger and extreme danger. A shape with no value is striped, never cool. The hover
-  label gives the heat index, for example "Kiamba: 41 °C, extreme caution · ECMWF". The status
+  label gives the heat index, for example "Kiamba: 41 °C, extreme caution · ECMWF". In the
+  average view each town is the mean (to 0.1 °C) of every model that has a value for it, and
+  the label says how many and how far apart they were: "· average of 3 models: 39–43 °C", or
+  "average of 2 of 3 models" when one is missing. A town with no model at all is striped. The
+  view is marked out of date if any of its sources is, and "Updated" gives the oldest source's
+  run. The status
   card still opens on a click. Closing the panel turns the heat map off and brings the score
   colours back. It never changes the score.
 - **Light or dark:** follows the device setting until the reader picks one in the top bar

@@ -9,8 +9,8 @@ Phase 2 (built; status of every phase in `PLAN.md`): the server also collects di
 GDACS alert levels count in the score), storm tracks (JMA, JTWC), a 7-day outlook, disaster news
 and YouTube stream links. The page shows them as map layers, extra status card sections, a
 headlines panel and a live news panel (YouTube streams).
-Phase 4 (step 1 built): a heat map button recolours the map by the heat index from a chosen
-weather model (ECMWF, DWD ICON, NOAA GFS). Display only: it never changes the score.
+Phase 4 (built): a heat map button recolours the map by the heat index from a chosen
+weather model (ECMWF, DWD ICON, NOAA GFS) or their average. Display only: it never changes the score.
 Non-commercial. Plan and decisions: `PLAN.md`. Score formula: `METHODOLOGY.md`.
 
 ## Stack
@@ -39,7 +39,7 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    scoreHistory.ts (a history row only when a score changed),
                    hazardLoad.ts + hazardShapes.ts (NOAH file list, names, shape checks),
                    hazardZones.ts (fixed hazard map answer for one spot),
-                   heatMap.ts (heat map answer: each town's hottest point, per model)
+                   heatMap.ts (heat map answer: each town's hottest point, per model or averaged)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
                    jma, jtwc, openMeteoDaily, openMeteoFlood, openMeteoHeat (three models
                    for the heat map), rss, pagasa (official alerts), retry (one more try

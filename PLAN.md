@@ -15,9 +15,9 @@ roadmap** (making what exists more trustworthy, numbered on its own).
 | Product Phase 2: events, storms, outlook, news, streams, Filipino | Done (PR #1). Official bulletins only partly (no feed for wind signals or PHIVOLCS); AI summaries skipped |
 | Reliability phases 1–5 | Done (PR #2) |
 | Per-town map colours and the 2-hour weather grid | Done (PRs #3, #4) |
-| Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6); USGS impact fields on the card (PR #7); NOAH storm surge zones on the map and card (built 2026-11-19, not committed yet) |
+| Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6); USGS impact fields on the card (PR #7); NOAH storm surge zones on the map and card (PR #9) |
 | Product Phase 3: all kinds of news on the map | Idea only; needs the owner's answers first |
-| Product Phase 4: heat index map with switchable models | Design approved 2026-11-19 (see "Phase 4"). Step 1 (three models: ECMWF, DWD ICON, NOAA GFS) built 2026-11-19, not committed yet; the Agreement view is step 2 |
+| Product Phase 4: heat index map with switchable models | Design approved 2026-11-19 (see "Phase 4"). Built 2026-11-19 on `heat-index-map`: step 1 (three models: ECMWF, DWD ICON, NOAA GFS) and step 2 (their average) |
 
 **Next:** NOAH landslide zones (same code as storm surge). First speed up reading the large
 landslide files (see "Build notes" under "NOAH hazard layer: design").
@@ -218,8 +218,7 @@ To settle before designing:
 
 ## Phase 4 — heat index map (approved 2026-11-19)
 
-**Status:** step 1 (three models) built 2026-11-19, not committed yet. Step 2 (Agreement) waits
-until the owner has looked at the three models side by side.
+**Status:** both steps built 2026-11-19 on `heat-index-map`: the three models, then their average.
 
 **What and why.** A map of the heat index ("feels like" temperature) over the whole country,
 coloured by PAGASA's bands, so a reader can see where it is dangerously hot right now. The
@@ -389,10 +388,15 @@ it. The cost is a forecast up to 12 h older than the newest model run.
 ### Build order
 
 1. **The three models**, built as above. The owner looks at them side by side before step 2.
-2. **Then an Agreement** choice in the panel. A pure, tested function takes one cell's values from every model and returns the
-   lowest, the highest, and whether they agree ("all agree: 40–42 °C" or "models disagree:
-   35–42 °C"). How far apart counts as "disagree", and the Agreement view's colours, are
-   settled with the owner at step 2.
+2. **Then the average** (owner's decisions, 2026-11-19, replacing the "agree / disagree"
+   idea): a fourth choice, "Average of all three", coloured with the same bands.
+   - Each town: the mean (to 0.1 °C) of each model's town value (its hottest point). A model
+     with no value is left out and counted ("average of 2 of 3 models"); none = unknown.
+   - The hover label also shows the range: "· average of 3 models: 39–43 °C".
+   - A province: its hottest town's average, with that town's range.
+   - "Updated" is the oldest source's run; the view is out of date if any source is.
+   - First live run: every town had all three; the models' range was 2.1 °C at the median,
+     4.2 °C at the 90th percentile, 10 °C at most.
 
 ### Left to the builder
 

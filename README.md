@@ -12,8 +12,8 @@ that exact spot, with the reasons and the raw events behind it.
 alert levels. The page also shows disaster events and storm tracks on the map, a 7-day outlook
 and links to official bulletins on the status card, disaster headlines, and live streams or
 latest videos from news channels. A "Heat map" button recolours the map by the heat index from
-a weather model you pick (ECMWF, DWD ICON or NOAA GFS); it is shown only and never changes the
-score. The page can be read in English or Filipino (the Filipino
+a weather model you pick (ECMWF, DWD ICON or NOAA GFS) or their average; it is shown only and
+never changes the score. The page can be read in English or Filipino (the Filipino
 text is a draft under review). Expect rough edges, and scores that change as the formula is
 tuned.
 
