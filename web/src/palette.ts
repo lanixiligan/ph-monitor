@@ -13,6 +13,8 @@ export type Palette = {
   /** Hazard map stripes, one colour per class: [low, medium, high]. */
   surge: string[];
   landslide: string[];
+  /** The heat map: below 27 °C, then the bands [caution, extreme caution, danger, extreme danger]. */
+  heat: { below: string; bands: string[] };
 };
 
 /** Reads the colours of the theme now in use. Call it when you draw, not once at start-up. */
@@ -28,6 +30,10 @@ export function readPalette(): Palette {
     noData: get('--no-data'),
     surge: [get('--hazard-surge-1'), get('--hazard-surge-2'), get('--hazard-surge-3')],
     landslide: [get('--hazard-landslide-1'), get('--hazard-landslide-2'), get('--hazard-landslide-3')],
+    heat: {
+      below: get('--heat-below'),
+      bands: [get('--heat-caution'), get('--heat-extreme-caution'), get('--heat-danger'), get('--heat-extreme-danger')],
+    },
   };
 }
 

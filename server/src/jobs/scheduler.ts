@@ -4,7 +4,8 @@
 //   earthquakes every 15 minutes, weather every 2 hours, then the scores.
 // Extras cycle (shown on the page; only GDACS alert levels reach the score), every 15 minutes:
 //   official alerts and news every 15 minutes; events, storms and the live stream check every 30;
-//   feed link check every hour; the 7-day outlook every 6 hours.
+//   feed link check every hour; the 7-day outlook every 6 hours; the heat map every 12 hours
+//   (display only: it never changes the score).
 // How often each job runs is set in due.ts (JOB_RULES).
 //
 // At start, only the jobs that are due run (see due.ts), so restarting the
@@ -13,13 +14,15 @@
 import cron from 'node-cron';
 import { checkFeeds, checkStreams } from './checkSources.ts';
 import { computeScores } from './computeScores.ts';
-import { jobsOnTick, readDueJobs, SLOW_JOBS } from './due.ts';
+import { HEAT_MAP_EVERY_MINUTES, isDue, jobsOnTick, readDueJobs, SLOW_JOBS } from './due.ts';
+import { lastTried, markTried } from './jobTries.ts';
 // `import type` brings in a type only; it disappears when the code runs.
 import type { JobName } from './due.ts';
 import { ingestAlerts } from './ingestAlerts.ts';
 import { ingestEarthquakes } from './ingestEarthquakes.ts';
 import { ingestEvents } from './ingestEvents.ts';
 import { ingestForecast } from './ingestForecast.ts';
+import { ingestHeatMap } from './ingestHeatMap.ts';
 import { ingestNews } from './ingestNews.ts';
 import { ingestStorms } from './ingestStorms.ts';
 import { ingestWeather } from './ingestWeather.ts';
@@ -30,6 +33,7 @@ const EVERY_15_MINUTES = '*/15 * * * *';
 
 let coreRunning = false;
 let extrasRunning = false;
+let heatRunning = false;
 
 /** Runs one job; a failure is logged but doesn't stop the jobs after it. */
 async function runJob(name: string, job: () => Promise<void>): Promise<void> {
@@ -77,12 +81,39 @@ async function runExtras(wanted: JobName[]): Promise<void> {
   } finally {
     extrasRunning = false;
   }
+  // Started after the outlook, so their Open-Meteo calls don't pile up, but not
+  // waited for: its ~4 minutes must not make the next tick skip alerts and news.
+  if (wanted.includes('heatMap')) void runHeatMap();
+}
+
+/**
+ * The heat map, in a lane of its own. A try is not repeated for 12 hours, even
+ * when it failed or the server restarted mid-run (job_tries keeps the time):
+ * each try costs about 599 Open-Meteo calls, and trying every hour could use up
+ * the calls the score's weather job needs. The last good run stays on the map
+ * meanwhile (out of date after 25 hours).
+ */
+async function runHeatMap(): Promise<void> {
+  if (heatRunning) return;
+  heatRunning = true;
+  try {
+    if (!isDue(await lastTried('heatMap'), HEAT_MAP_EVERY_MINUTES, new Date())) {
+      console.warn('Scheduler: heat map tried less than 12 hours ago; waiting.');
+      return;
+    }
+    await markTried('heatMap');
+    await runJob('heat map', ingestHeatMap);
+  } catch (error) {
+    console.error('Scheduler: heat map could not start:', error);
+  } finally {
+    heatRunning = false;
+  }
 }
 
 /** A timer tick: the clock picks the jobs (see jobsOnTick). */
 async function runTick(minute: number): Promise<void> {
   let wanted = jobsOnTick(minute);
-  // Jobs that run less often than hourly (weather, the outlook) come up every
+  // Jobs that run less often than hourly (weather, the outlook, the heat map) come up every
   // hour, so they also have to be due in the database.
   if (wanted.some((job) => SLOW_JOBS.includes(job))) {
     let due: JobName[] = [];
@@ -117,6 +148,6 @@ export function startScheduler(): void {
   void runAtStart();
   console.log(
     'Scheduler: started (earthquakes, official alerts and news every 15 min; weather every 2 hours; events, storms and streams every 30 min; ' +
-      'feed check hourly; outlook every 6 hours).',
+      'feed check hourly; outlook every 6 hours; heat map every 12 hours).',
   );
 }

@@ -37,6 +37,20 @@ export const en = {
     creditOutlook: '7-day outlook:',
     creditOutlookMid: '; river flow from',
     creditOutlookEnd: ', CC BY 4.0.',
+    // Heat map lines, one per source: lead, link, middle, link(s), end. GFS is public domain (no CC BY).
+    creditHeatEcmwf:
+      'Heat index map, ECMWF source: based on data and products of the European Centre for Medium-Range Weather Forecasts (',
+    creditHeatEcmwfMid: '), IFS HRES',
+    creditHeatEcmwfData: 'open data',
+    creditHeatEcmwfVia: ', via',
+    creditHeatEcmwfEnd: ', CC BY 4.0. Changed: we work out the heat index from its temperature and humidity.',
+    creditHeatIcon: 'Heat index map, ICON source: based on data from Deutscher Wetterdienst (',
+    creditHeatIconMid: '), gridded data reproduced graphically: the ICON global model, via',
+    creditHeatIconEnd: ', CC BY 4.0.',
+    creditHeatGfs: 'Heat index map, GFS source: the Global Forecast System of',
+    // Follows the "NOAA" link with no space.
+    creditHeatGfsMid: "'s National Weather Service (NCEP), via",
+    creditHeatGfsEnd: '. Public domain.',
     creditAlerts: 'Official alerts: © PAGASA, CC BY 4.0, from its public alert feed.',
     creditNews: 'News headlines: the outlets named beside each headline, some found through Google News.',
     creditVideo: 'Video:',
@@ -58,6 +72,7 @@ export const en = {
     outlook: '7-day outlook',
     riverFlow: 'river flow',
     news: 'headlines',
+    heatMap: 'heat map',
   },
 
   // The language switch. The draft note is shown only when Filipino is chosen.
@@ -404,6 +419,61 @@ export const en = {
     heat: 'Heat',
     event: 'Storms and disaster events (GDACS)',
     unknown: 'unknown',
+    // The average view's {model} in the hover labels. {range} is `range` or `degrees`.
+    averageAll: 'average of {total} models: {range}',
+    averagePart: 'average of {used} of {total} models: {range}',
+    averageNone: 'average of {total} models',
+  },
+
+  // The heat map: its button and panel (HeatMapPanel.tsx) and its hover labels.
+  // A display layer only; it never changes the score.
+  heat: {
+    button: 'Heat map',
+    title: 'Heat index map',
+    close: 'Close heat map',
+    source: 'Source',
+    // By the Open-Meteo name (shared/src/heatModels.ts). A model with no name here fails the typecheck.
+    models: { ecmwf_ifs: 'ECMWF', dwd_icon_global_native: 'ICON (DWD)', ncep_gfs_global: 'GFS (NOAA)' },
+    km: '{km} km model',
+    // The fourth choice: each town's value averaged over every model that has one.
+    average: 'Average of all three',
+    averageNote: '{total} models',
+    updated: 'Updated {ago}',
+    loading: 'Loading…',
+    loadError: 'Could not load the heat map right now.',
+    noData: 'No data yet for this source.',
+    stale: 'This forecast is out of date.',
+    staleSome: 'At least one of its sources is out of date.',
+    keyTitle: "Heat index, PAGASA's bands",
+    below: 'Below 27 °C',
+    noValue: 'No value for this hour',
+    // A band's range in the key: "27–32 °C", and the top band "52+ °C".
+    range: '{from}–{to} °C',
+    rangeTop: '{from}+ °C',
+    spacing: 'Points are about 28 km apart for every source; a town shows its hottest point.',
+    cardDiffers: "The status card uses Open-Meteo's blended forecast, so its number can differ.",
+    // The chosen source's credit, shown next to the map (DWD and Open-Meteo ask for it there).
+    // The "Open-Meteo" link (creditLink) follows it.
+    credit: {
+      ecmwf_ifs: 'Data: ECMWF (CC BY 4.0) via',
+      dwd_icon_global_native: 'Data: Deutscher Wetterdienst (CC BY 4.0) via',
+      ncep_gfs_global: 'Data: NOAA GFS (public domain) via',
+    },
+    creditLink: 'Open-Meteo',
+    // Hover labels. {heat} is `degrees`, `degreesBand` or `unknown`; {model} is a name from `models`.
+    townLabel: '{town}, {province}: {heat} · {model}',
+    provinceLabel: '{province}: {heat} · {model}',
+    degrees: '{heat} °C',
+    degreesBand: '{heat} °C, {band}',
+    unknown: 'unknown',
+    // The average view's {model} in the hover labels. {range} is `range` or `degrees`.
+    averageAll: 'average of {total} models: {range}',
+    averagePart: 'average of {used} of {total} models: {range}',
+    averageNone: 'average of {total} models',
+    // Under the score scale in the legend while the heat map is on.
+    scoresHidden: 'Score colours are hidden while the heat map is on.',
+    // Read out by a screen reader when it reaches the map while the heat map is on.
+    mapLabel: 'Map of the Philippines with each city and municipality coloured by its heat index. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
   },
 
   // Small words used by the formatting helpers.

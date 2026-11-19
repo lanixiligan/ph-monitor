@@ -15,25 +15,32 @@ export function formatTime(iso: string | null): string {
 
 /**
  * "Uploaded 12 minutes ago": how long ago `iso` was, counted from `nowMs`.
- * Under 5 seconds (or a time slightly in the future, when a clock is off) is
- * "just now". `t` is the language's strings; it defaults to the current one.
+ * `t` is the language's strings; it defaults to the current one.
  */
 export function uploadedAgo(iso: string, nowMs: number, t: Strings = getI18n().t): string {
+  const ago = timeAgo(iso, nowMs, t);
+  return ago === '' ? '' : fill(t.format.uploaded, { ago });
+}
+
+/**
+ * "12 minutes ago" on its own (the heat map says "Updated 12 minutes ago").
+ * Under 5 seconds (or a time slightly in the future, when a clock is off) is
+ * "just now". A time that is not a date gives ''.
+ */
+export function timeAgo(iso: string, nowMs: number, t: Strings = getI18n().t): string {
   const seconds = Math.floor((nowMs - Date.parse(iso)) / 1000);
   if (Number.isNaN(seconds)) return '';
   const a = t.format.ago;
   // Pick the biggest unit that fits, then "1 minute" or "2 minutes".
-  const ago =
-    seconds < 5
-      ? a.justNow
-      : seconds < 60
-        ? countText(seconds, a.second, a.seconds)
-        : seconds < 3600
-          ? countText(Math.floor(seconds / 60), a.minute, a.minutes)
-          : seconds < 86400
-            ? countText(Math.floor(seconds / 3600), a.hour, a.hours)
-            : countText(Math.floor(seconds / 86400), a.day, a.days);
-  return fill(t.format.uploaded, { ago });
+  return seconds < 5
+    ? a.justNow
+    : seconds < 60
+      ? countText(seconds, a.second, a.seconds)
+      : seconds < 3600
+        ? countText(Math.floor(seconds / 60), a.minute, a.minutes)
+        : seconds < 86400
+          ? countText(Math.floor(seconds / 3600), a.hour, a.hours)
+          : countText(Math.floor(seconds / 86400), a.day, a.days);
 }
 
 /** "{n} minute ago" for 1, "{n} minutes ago" for any other number. */

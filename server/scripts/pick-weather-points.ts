@@ -11,7 +11,13 @@
 // Which points a town uses is decided by townPoints() in src/weatherPoints.ts.
 
 import { pool } from '../src/db.ts';
-import { GRID_DEGREES, MIN_LAND_SHARE, townPoints } from '../src/weatherPoints.ts';
+import {
+  CLEAR_HEAT_RUNS_SQL,
+  CLEAR_WEATHER_POINTS_SQL,
+  GRID_DEGREES,
+  MIN_LAND_SHARE,
+  townPoints,
+} from '../src/weatherPoints.ts';
 
 try {
   const placeCount = await pool.query<{ n: number }>('SELECT count(*)::int AS n FROM places');
@@ -26,7 +32,12 @@ try {
   try {
     await client.query('BEGIN');
     // TRUNCATE empties the tables; RESTART IDENTITY numbers new points from 1 again.
-    await client.query('TRUNCATE place_weather_points, weather_points RESTART IDENTITY');
+    // CASCADE: re-running this script now also empties point_readings and
+    // heat_forecasts. The weather job refills the first within about 3 hours, and
+    // the heat job refills the second at the next hourly tick (its run records are
+    // cleared too, so it is due straight away).
+    await client.query(CLEAR_WEATHER_POINTS_SQL);
+    await client.query(CLEAR_HEAT_RUNS_SQL);
 
     // The grid. ST_SquareGrid cuts the land's bounding area into square cells.
     // A cell's point is its centre if that is on land, otherwise a spot on

@@ -9,7 +9,7 @@ The web page talks only to our own `/api`, with two exceptions:
 2. **A video** loads from `youtube-nocookie.com`, and only after the reader clicks Play.
 
 The browser never calls USGS, Open-Meteo, GDACS or any news site. The server does that.
-The hazard map tiles (Project NOAH zones) come from our own `/api` too.
+The hazard map tiles (Project NOAH zones) and the heat map come from our own `/api` too.
 
 ## Search and "use my location"
 
@@ -36,7 +36,7 @@ The hazard map tiles (Project NOAH zones) come from our own `/api` too.
 
 | Service | Free limit | What we use |
 |---|---|---|
-| Open-Meteo | about 10,000 calls a day | Weather job about 4,800 a day (about 200 points, hourly); outlook about 700 a day; plus clicked spots (reused for 30 minutes per 5 km cell) |
+| Open-Meteo | about 10,000 calls a day | Weather job about 7,200 a day (about 600 points, every 2 hours); outlook about 700 a day; heat map about 1,200 a day (the same points, all three models in one request, every 12 hours); plus clicked spots (reused for 30 minutes per 5 km cell) |
 | YouTube Data API | 10,000 units a day | About 1,900 units a day, at most about 7,500 (only 1-unit calls) |
 
 Open-Meteo's free tier is for non-commercial use. This project is non-commercial.
@@ -49,7 +49,15 @@ Open-Meteo's free tier is for non-commercial use. This project is non-commercial
 - **USGS misses small quakes** near the Philippines; PHIVOLCS records many more.
 - **GDACS alert levels are global estimates** for aid agencies. PAGASA wind signals and
   PHIVOLCS volcano alert levels are not in the score.
-- **Storm tracks, the outlook and news never change the score.**
+- **Storm tracks, the outlook, news and the heat map never change the score.**
+- **The heat map is a model estimate, sampled coarsely.**
+  - A 9 km model (ECMWF) smooths out hills and cities, so it can read low in hot city centres.
+    ICON and GFS are coarser still (about 13 km).
+  - The map reads each model at the same points, about 28 km apart, whatever the model's own
+    grid.
+  - A town shows its hottest point, and a province its hottest town.
+  - The status card uses Open-Meteo's blended forecast, not the chosen model, so its heat index
+    can differ from the map.
 - **Storm surge zones come from a fixed map** (Project NOAH, 2021 data): scenarios for each
   surge level, not live and not a forecast. They are shown on the map and the card, never in
   the score.

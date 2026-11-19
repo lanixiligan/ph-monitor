@@ -78,7 +78,10 @@ export async function resetDb(): Promise<void> {
 
 /** Marks feeds as fetched `minutes` ago (default: every feed, just now). */
 export async function setFeedRuns(minutes = 1, sources?: string[]): Promise<void> {
-  const all = ['usgs', 'open-meteo', 'pagasa', 'gdacs', 'eonet', 'jma', 'jtwc', 'open-meteo-daily', 'open-meteo-flood', 'news'];
+  const all = [
+    'usgs', 'open-meteo', 'pagasa', 'gdacs', 'eonet', 'jma', 'jtwc', 'open-meteo-daily', 'open-meteo-flood', 'news',
+    'open-meteo-heat',
+  ];
   for (const source of sources ?? all) {
     await pool.query(
       `INSERT INTO fetch_runs (source, last_ok_at) VALUES ($1, $2)

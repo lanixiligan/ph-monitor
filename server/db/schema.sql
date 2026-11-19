@@ -329,3 +329,36 @@ CREATE TABLE IF NOT EXISTS hazard_coverage (
   loaded_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (kind, surge_level, province_psgc)
 );
+
+-- ---------- Heat index map (display only; the score never reads these) ----------
+
+-- Heat index forecasts per weather model, at every weather point, for the next
+-- 48 hours. Only each model's newest good run is kept (see ingestHeatMap.ts).
+-- Re-running `npm run weather-points` empties this table (its TRUNCATE ... CASCADE);
+-- the next heat run fills it again.
+CREATE TABLE IF NOT EXISTS heat_forecasts (
+  model        TEXT NOT NULL,                  -- Open-Meteo model name, e.g. 'ecmwf_ifs'
+  point_id     INTEGER NOT NULL REFERENCES weather_points ON DELETE CASCADE,
+  valid_at     TIMESTAMPTZ NOT NULL,
+  temp_c       REAL NOT NULL,
+  humidity_pct REAL NOT NULL,
+  heat_index_c REAL NOT NULL,                  -- our own heatIndexC(), not Open-Meteo's
+  fetched_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (model, point_id, valid_at)
+);
+
+-- Each model's last good run (like fetch_runs, one row per model).
+CREATE TABLE IF NOT EXISTS heat_runs (
+  model      TEXT PRIMARY KEY,
+  last_ok_at TIMESTAMPTZ NOT NULL,
+  last_saved INTEGER NOT NULL,                 -- points with at least one hour saved
+  last_total INTEGER NOT NULL                  -- points asked about
+);
+
+-- When a job last started, even if it then failed (only the heat map uses it
+-- for now). A failed heat run is not tried again for 12 hours, even after a
+-- server restart, so failures can't use up the day's Open-Meteo calls.
+CREATE TABLE IF NOT EXISTS job_tries (
+  job      TEXT PRIMARY KEY,                   -- a JobName from due.ts, e.g. 'heatMap'
+  tried_at TIMESTAMPTZ NOT NULL
+);

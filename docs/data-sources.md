@@ -18,6 +18,7 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 | Storm tracks | JMA, with JTWC as backup | every 30 min | No, shown only |
 | 7-day outlook: rain and gusts | Open-Meteo | every 6 hours | No, shown only |
 | 7-day outlook: river flow | Open-Meteo Flood API (GloFAS) | every 6 hours | No, shown only |
+| Heat index map | ECMWF, DWD ICON and NOAA GFS models, via Open-Meteo | every 12 hours | No, shown only |
 | Boundaries | NAMRIA and PSA via OCHA | once, by hand | Used to measure distances |
 | Landslide and storm surge hazard maps | Project NOAH | once, by hand | No, shown only |
 | Basemap tiles | OpenFreeMap | by the browser | No |
@@ -109,6 +110,48 @@ Events from both sources are removed 30 days after they end. The page shows an e
 - **Licence:** CC BY 4.0. The free tier is for non-commercial use only.
 - **Limits:** modelled, one point per province.
 - **Code:** `fetchers/openMeteoDaily.ts`, `fetchers/openMeteoFlood.ts`, `jobs/ingestForecast.ts`.
+
+## Heat index map: ECMWF, DWD ICON and NOAA GFS via Open-Meteo
+
+- **Address:** `https://api.open-meteo.com/v1/forecast` with the models named in `models=`,
+  never Open-Meteo's default blend.
+- **What we ask for:** hourly temperature and humidity for the next 48 hours, for all three
+  models in one request, at the same ~600 weather points as the score's weather. 50 points per
+  request, 20 seconds apart (half the weather job's pace, so the two together stay well under
+  Open-Meteo's 600 calls a minute; a run takes about 4 minutes). Three models cost the same as
+  one, so a run is about 600 calls and a day (two runs) about 1,200. With the weather job and
+  the outlook that is about 9,100 of the 10,000 a day, leaving about 900 for card clicks. A
+  failed run is not tried again for 12 hours, so failures never cost extra calls.
+
+| Model | Open-Meteo name | Grid | New model run | Licence |
+|---|---|---|---|---|
+| ECMWF IFS HRES (the default) | `ecmwf_ifs` | 9 km | every 6 hours | CC BY 4.0 (ECMWF open data since 1 October 2025) |
+| DWD ICON, global, native grid | `dwd_icon_global_native` | about 13 km | every 6 hours | CC BY 4.0 (DWD open data) |
+| NOAA GFS | `ncep_gfs_global` | 0.11° (about 13 km) | every 6 hours | Public domain |
+
+- **What we keep:** per model, point and hour: temperature, humidity and a heat index we work
+  out ourselves (`server/src/heatIndex.ts`, not Open-Meteo's "apparent temperature"). Only the
+  newest good run of each model is kept. A model counts only when at least 90% of points
+  answered; otherwise its previous run stays. Hours more than 6 hours past are deleted.
+- **Fetched:** every 12 hours, so the map can be up to 12 hours behind the newest model run.
+  Each run holds 48 hours, so the current hour is always in it.
+- **Credit, in each provider's own words:**
+  - ECMWF: "based on data and products of the European Centre for Medium-Range Weather
+    Forecasts (ECMWF)", source www.ecmwf.int, CC BY 4.0, and a note that we changed the data
+    (we work out the heat index). From ECMWF's
+    [licence page](https://apps.ecmwf.int/datasets/licences/general).
+  - DWD: "Based on data from Deutscher Wetterdienst, gridded data reproduced graphically", placed
+    next to the data. From DWD's
+    [source templates](https://www.dwd.de/EN/service/legal_notice/templates_dwd_as_source.html).
+  - NOAA: public domain; no wording is asked for, and the NOAA name must not suggest that NOAA
+    endorses the app ([NWS disclaimer](https://www.weather.gov/disclaimer)).
+  - Open-Meteo: "Weather data by Open-Meteo.com", with a link, CC BY 4.0.
+- **Limits:** modelled, not measured. Open-Meteo marks the old ICON global grid "Discontinued
+  2026-11-30"; we use the native grid. A model that sends nothing shows "no data" while the
+  others carry on.
+- **Code:** `shared/src/heatModels.ts` (the model list), `fetchers/openMeteoHeat.ts`,
+  `jobs/ingestHeatMap.ts`, `server/src/heatMap.ts`, `server/src/routes/heatmap.ts`. By hand:
+  `npm run ingest:heatmap`.
 
 ## Boundaries: NAMRIA and PSA via OCHA
 

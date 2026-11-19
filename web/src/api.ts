@@ -6,6 +6,8 @@ import type {
   BulletinLink,
   DisasterEvent,
   HazardLayerInfo,
+  HeatMapData,
+  HeatViewId,
   NewsItem,
   OfficialAlert,
   PlaceMatch,
@@ -109,4 +111,9 @@ export async function fetchAlerts(): Promise<OfficialAlert[]> {
 /** Which fixed hazard maps (Project NOAH) are loaded, for the legend and the map. May come back empty. */
 export async function fetchHazards(): Promise<HazardLayerInfo[]> {
   return (await getJson('/api/hazards')) as HazardLayerInfo[];
+}
+
+/** Every town's and province's heat index from one weather model (or their average), for the hour now (display only). */
+export async function fetchHeatMap(model: HeatViewId): Promise<HeatMapData> {
+  return (await getJson(`/api/heatmap?model=${model}`)) as HeatMapData;
 }

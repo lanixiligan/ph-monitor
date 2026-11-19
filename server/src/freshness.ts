@@ -7,6 +7,9 @@ import { pool } from './db.ts';
 
 const MINUTE_MS = 60 * 1000;
 
+/** The heat map is out of date after this (also used by heatMap.ts for each model). */
+export const HEAT_MAP_STALE_MINUTES = 25 * 60;
+
 type FeedRule = {
   id: FeedId;
   /** Names in the `fetch_runs` table. The feed is as fresh as the newest of them. */
@@ -34,6 +37,8 @@ export const FEED_RULES: FeedRule[] = [
   { id: 'storms', sources: ['jma', 'jtwc'], staleAfterMinutes: 120 },
   { id: 'outlook', sources: ['open-meteo-daily'], staleAfterMinutes: 13 * 60 },
   { id: 'riverFlow', sources: ['open-meteo-flood'], staleAfterMinutes: 13 * 60 },
+  // The heat map runs every 12 hours, so two missed runs raise the banner.
+  { id: 'heatMap', sources: ['open-meteo-heat'], staleAfterMinutes: HEAT_MAP_STALE_MINUTES },
   { id: 'news', sources: ['news'], staleAfterMinutes: 60 },
 ];
 
