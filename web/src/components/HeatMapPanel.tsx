@@ -1,27 +1,28 @@
 // The heat map's button and panel, over the top-right corner of the map, under
 // the zoom and locate buttons. The button turns the heat map on and opens the
-// panel; the panel lists the sources (the reader can switch at any time), says
+// panel; the panel lists the sources and their average (the reader can switch
+// at any time), says
 // how fresh the chosen one is, and shows the band key. Closing it turns the
 // heat map off, and the score colours come back.
 // A display layer only: it never changes the score.
 
 import { useRef } from 'react';
 import { DEFAULT_HEAT_MODEL, HEAT_MODELS } from '@ph-monitor/shared';
-import type { HeatBandName, HeatMapData, HeatModelId } from '@ph-monitor/shared';
+import type { HeatBandName, HeatMapData, HeatModelId, HeatViewId } from '@ph-monitor/shared';
 import { capitalise, timeAgo } from '../format.ts';
 import { fill, useStrings } from '../i18n/index.ts';
 import { useNow } from '../useNow.ts';
 import { WarnIcon } from './WarnIcon.tsx';
 
 type Props = {
-  /** The chosen model; null = the heat map is off. */
-  chosen: HeatModelId | null;
+  /** The chosen model, or 'average'; null = the heat map is off. */
+  chosen: HeatViewId | null;
   /** The answer for the chosen model; null while it is loading. */
   data: HeatMapData | null;
   /** true when the last load failed. */
   failed: boolean;
-  /** Called with a model to turn the heat map on or switch source, and with null to turn it off. */
-  onChoose: (model: HeatModelId | null) => void;
+  /** Called with a view to turn the heat map on or switch source, and with null to turn it off. */
+  onChoose: (model: HeatViewId | null) => void;
 };
 
 // The band key, mildest first: PAGASA's ranges in °C (`to: null` = no top),
@@ -34,6 +35,11 @@ const KEY: { band: HeatBandName; from: number; to: number | null; swatch: string
   { band: 'danger', from: 42, to: 51, swatch: 'heat-danger' },
   { band: 'extreme danger', from: 52, to: null, swatch: 'heat-extreme-danger' },
 ];
+
+/** The models whose data the chosen view shows: one, or all of them for the average. */
+function creditsFor(view: HeatViewId): HeatModelId[] {
+  return view === 'average' ? HEAT_MODELS.map((model) => model.id) : [view];
+}
 
 /** How fresh the chosen source is. Its own part, so its ticking clock runs only while the panel is open. */
 function HeatStatus({ data, failed }: { data: HeatMapData | null; failed: boolean }) {
@@ -61,7 +67,7 @@ function HeatStatus({ data, failed }: { data: HeatMapData | null; failed: boolea
         )}
         {data !== null && data.fetchedAt !== null && data.isStale && (
           <p className="notice heat-warn">
-            <WarnIcon /> {t.heat.stale}
+            <WarnIcon /> {data.model === 'average' ? t.heat.staleSome : t.heat.stale}
           </p>
         )}
       </div>
@@ -117,6 +123,16 @@ export function HeatMapPanel({ chosen, data, failed, onChoose }: Props) {
                 <span className="muted">{fill(t.heat.km, { km: model.km })}</span>
               </label>
             ))}
+            <label className="heat-source">
+              <input
+                type="radio"
+                name="heat-model"
+                checked={chosen === 'average'}
+                onChange={() => onChoose('average')}
+              />
+              <span>{t.heat.average}</span>
+              <span className="muted">{fill(t.heat.averageNote, { total: HEAT_MODELS.length })}</span>
+            </label>
           </fieldset>
 
           <HeatStatus data={data} failed={failed} />
@@ -144,10 +160,12 @@ export function HeatMapPanel({ chosen, data, failed, onChoose }: Props) {
             </li>
           </ul>
 
-          {/* The source's credit, next to its data (DWD and Open-Meteo ask for it here). */}
-          <p className="heat-note muted">
-            {t.heat.credit[chosen]} <a href="https://open-meteo.com/">{t.heat.creditLink}</a>
-          </p>
+          {/* The source's credit, next to its data (DWD and Open-Meteo ask for it here). The average credits every model. */}
+          {creditsFor(chosen).map((model) => (
+            <p key={model} className="heat-note muted">
+              {t.heat.credit[model]} <a href="https://open-meteo.com/">{t.heat.creditLink}</a>
+            </p>
+          ))}
           <p className="heat-note muted">{t.heat.spacing}</p>
           <p className="heat-note muted">{t.heat.cardDiffers}</p>
         </section>

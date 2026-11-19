@@ -406,6 +406,9 @@ export const fil: Strings = {
     heat: 'Init', // REVIEW
     event: 'Mga bagyo at sakuna (GDACS)', // REVIEW
     unknown: 'hindi alam', // REVIEW
+    averageAll: 'average ng {total} modelo: {range}', // REVIEW
+    averagePart: 'average ng {used} sa {total} modelo: {range}', // REVIEW
+    averageNone: 'average ng {total} modelo', // REVIEW
   },
 
   // The heat map: its button and panel (HeatMapPanel.tsx) and its hover labels.
@@ -420,11 +423,14 @@ export const fil: Strings = {
       ncep_gfs_global: 'GFS (NOAA)', // REVIEW
     },
     km: 'modelong {km} km', // REVIEW
+    average: 'Average ng tatlo', // REVIEW
+    averageNote: '{total} modelo', // REVIEW
     updated: 'Na-update {ago}', // REVIEW
     loading: 'Naglo-load…', // REVIEW
     loadError: 'Hindi ma-load ang mapa ng init ngayon.', // REVIEW
     noData: 'Wala pang datos para sa pinagmulang ito.', // REVIEW
     stale: 'Luma na ang forecast na ito.', // REVIEW
+    staleSome: 'Luma na ang kahit isa sa mga pinagmulan nito.', // REVIEW
     keyTitle: 'Heat index, ayon sa mga antas ng PAGASA', // REVIEW
     below: 'Mas mababa sa 27 °C', // REVIEW
     noValue: 'Walang halaga para sa oras na ito', // REVIEW: unsure about "halaga"
@@ -443,6 +449,9 @@ export const fil: Strings = {
     degrees: '{heat} °C', // REVIEW
     degreesBand: '{heat} °C, {band}', // REVIEW
     unknown: 'hindi alam', // REVIEW
+    averageAll: 'average ng {total} modelo: {range}', // REVIEW
+    averagePart: 'average ng {used} sa {total} modelo: {range}', // REVIEW
+    averageNone: 'average ng {total} modelo', // REVIEW
     scoresHidden: 'Nakatago ang mga kulay ng score habang bukas ang mapa ng init.', // REVIEW
     mapLabel: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa heat index nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
   },

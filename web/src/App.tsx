@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { APP_NAME } from '@ph-monitor/shared';
-import type { FeedHealth, HazardLayerInfo, HeatMapData, HeatModelId, PlaceScores } from '@ph-monitor/shared';
+import type { FeedHealth, HazardLayerInfo, HeatMapData, HeatViewId, PlaceScores } from '@ph-monitor/shared';
 import { fetchHazards, fetchHeatMap, fetchPlaceScores, fetchProvinces, fetchStatus } from './api.ts';
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
@@ -72,15 +72,15 @@ export function App() {
   const [goTo, setGoTo] = useState<Spot | null>(null);
   // What went wrong with "use my location", if anything.
   const [locateProblem, setLocateProblem] = useState<'outside' | 'failed' | null>(null);
-  // The heat map's weather model. null = the heat map is off (the map shows the score).
-  const [heatModel, setHeatModel] = useState<HeatModelId | null>(null);
+  // The heat map's weather model, or 'average'. null = the heat map is off (the map shows the score).
+  const [heatModel, setHeatModel] = useState<HeatViewId | null>(null);
   // The heat map answer for `heatModel`. null = off, or still loading.
   const [heat, setHeat] = useState<HeatMapData | null>(null);
   // true when the last heat map load failed.
   const [heatFailed, setHeatFailed] = useState(false);
 
   /** Turns the heat map on, switches its source, or (with null) turns it off. */
-  function chooseHeatModel(model: HeatModelId | null) {
+  function chooseHeatModel(model: HeatViewId | null) {
     if (model === heatModel) return;
     setHeatModel(model);
     // The answer held now is for another model: drop it.

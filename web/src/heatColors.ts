@@ -6,7 +6,8 @@
 // The palette is passed in (not read from the page), so tests need no browser.
 
 // `import type` brings in types only; they vanish when the code runs.
-import type { HeatBandName, HeatMapData, HeatModelId, HeatValue } from '@ph-monitor/shared';
+import { HEAT_MODELS } from '@ph-monitor/shared';
+import type { HeatBandName, HeatMapData, HeatValue, HeatViewId } from '@ph-monitor/shared';
 import type { PlaceCollection, ProvinceCollection } from './api.ts';
 import { fill, lookup } from './i18n/index.ts';
 import type { Strings } from './i18n/index.ts';
@@ -38,6 +39,10 @@ function heatProperties(value: HeatValue | undefined, palette: Palette) {
     // `?.` gives undefined instead of failing when `value` is missing; `??` then picks null.
     heatIndexC: value?.heatIndexC ?? null,
     band: value?.band ?? null,
+    // Average view only: the spread, as plain numbers (the map keeps flat values best).
+    spreadUsed: value?.spread?.used ?? null,
+    spreadLowC: value?.spread?.lowC ?? null,
+    spreadHighC: value?.spread?.highC ?? null,
   };
 }
 
@@ -71,16 +76,16 @@ export function withTownHeat(shapes: PlaceCollection, heat: HeatMapData, palette
  * the real answer is loading (or could not be loaded), so every shape is
  * striped and the score's colours never show under the heat key.
  */
-export function emptyHeatMap(model: HeatModelId): HeatMapData {
+export function emptyHeatMap(model: HeatViewId): HeatMapData {
   return { model, fetchedAt: null, isStale: true, validAt: null, places: [], provinces: [] };
 }
 
 /**
  * What the map colours by. null = the heat map is off: the score. Otherwise
- * the answer, but only if it is for the model chosen now; an answer for
- * another model (one that arrived late, after a switch) is never drawn.
+ * the answer, but only if it is for the view chosen now; an answer for
+ * another view (one that arrived late, after a switch) is never drawn.
  */
-export function heatForMap(chosen: HeatModelId | null, answer: HeatMapData | null): HeatMapData | null {
+export function heatForMap(chosen: HeatViewId | null, answer: HeatMapData | null): HeatMapData | null {
   if (chosen === null) return null;
   return answer !== null && answer.model === chosen ? answer : emptyHeatMap(chosen);
 }
@@ -96,4 +101,22 @@ export function heatText(heatIndexC: number | null, band: string | null, t: Stri
   return band === null
     ? fill(t.heat.degrees, { heat })
     : fill(t.heat.degreesBand, { heat, band: lookup(t.heatBands, band) });
+}
+
+/**
+ * Where a hover label's number comes from: the model's name, or for the
+ * average "average of 2 of 3 models: 39–43 °C". `props` are the map shape's
+ * properties (see heatProperties). Whole degrees, rounded down like heatText.
+ */
+export function heatSource(view: HeatViewId, props: Record<string, unknown>, t: Strings): string {
+  if (view !== 'average') return t.heat.models[view];
+  const total = HEAT_MODELS.length;
+  const { spreadUsed: used, spreadLowC, spreadHighC } = props;
+  if (typeof used !== 'number' || typeof spreadLowC !== 'number' || typeof spreadHighC !== 'number') {
+    return fill(t.heat.averageNone, { total });
+  }
+  const low = Math.floor(spreadLowC);
+  const high = Math.floor(spreadHighC);
+  const range = low === high ? fill(t.heat.degrees, { heat: low }) : fill(t.heat.range, { from: low, to: high });
+  return fill(used === total ? t.heat.averageAll : t.heat.averagePart, { used, total, range });
 }

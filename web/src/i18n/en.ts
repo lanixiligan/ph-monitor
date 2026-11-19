@@ -419,6 +419,10 @@ export const en = {
     heat: 'Heat',
     event: 'Storms and disaster events (GDACS)',
     unknown: 'unknown',
+    // The average view's {model} in the hover labels. {range} is `range` or `degrees`.
+    averageAll: 'average of {total} models: {range}',
+    averagePart: 'average of {used} of {total} models: {range}',
+    averageNone: 'average of {total} models',
   },
 
   // The heat map: its button and panel (HeatMapPanel.tsx) and its hover labels.
@@ -431,11 +435,15 @@ export const en = {
     // By the Open-Meteo name (shared/src/heatModels.ts). A model with no name here fails the typecheck.
     models: { ecmwf_ifs: 'ECMWF', dwd_icon_global_native: 'ICON (DWD)', ncep_gfs_global: 'GFS (NOAA)' },
     km: '{km} km model',
+    // The fourth choice: each town's value averaged over every model that has one.
+    average: 'Average of all three',
+    averageNote: '{total} models',
     updated: 'Updated {ago}',
     loading: 'Loading…',
     loadError: 'Could not load the heat map right now.',
     noData: 'No data yet for this source.',
     stale: 'This forecast is out of date.',
+    staleSome: 'At least one of its sources is out of date.',
     keyTitle: "Heat index, PAGASA's bands",
     below: 'Below 27 °C',
     noValue: 'No value for this hour',
@@ -458,6 +466,10 @@ export const en = {
     degrees: '{heat} °C',
     degreesBand: '{heat} °C, {band}',
     unknown: 'unknown',
+    // The average view's {model} in the hover labels. {range} is `range` or `degrees`.
+    averageAll: 'average of {total} models: {range}',
+    averagePart: 'average of {used} of {total} models: {range}',
+    averageNone: 'average of {total} models',
     // Under the score scale in the legend while the heat map is on.
     scoresHidden: 'Score colours are hidden while the heat map is on.',
     // Read out by a screen reader when it reaches the map while the heat map is on.

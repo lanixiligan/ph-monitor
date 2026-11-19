@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { HeatMapData } from '@ph-monitor/shared';
 import type { PlaceCollection, ProvinceCollection } from '../src/api.ts';
-import { emptyHeatMap, heatColor, heatForMap, heatText, withProvinceHeat, withTownHeat } from '../src/heatColors.ts';
+import { emptyHeatMap, heatColor, heatForMap, heatSource, heatText, withProvinceHeat, withTownHeat } from '../src/heatColors.ts';
 import { en } from '../src/i18n/en.ts';
 import type { Palette } from '../src/palette.ts';
 
@@ -168,6 +168,53 @@ test('heatText: the number with its band, "below" with no band, or "unknown"', (
 test('heatText: whole degrees never contradict the band (41.9 is still 41, extreme caution)', () => {
   assert.equal(heatText(41.9, 'extreme caution', en), '41 °C, extreme caution');
   assert.equal(heatText(26.9, null, en), '26 °C');
+});
+
+// ---------- The average view ----------
+
+const average: HeatMapData = {
+  ...heat,
+  model: 'average',
+  places: [{ psgc: 101, heatIndexC: 41.5, band: 'extreme caution', spread: { used: 2, lowC: 39.8, highC: 43.2 } }],
+  provinces: [{ psgc: 1, heatIndexC: 41.5, band: 'extreme caution', spread: { used: 2, lowC: 39.8, highC: 43.2 } }],
+};
+
+test('withTownHeat: the average view hands the map each town\'s spread as plain numbers', () => {
+  const features = withTownHeat(towns, average, palette).features;
+  assert.equal(props(features[0]!).spreadUsed, 2);
+  assert.equal(props(features[0]!).spreadLowC, 39.8);
+  assert.equal(props(features[0]!).spreadHighC, 43.2);
+  // A town with no value (and every town in a single-model view) has none.
+  assert.equal(props(features[1]!).spreadUsed, null);
+  assert.equal(props(withTownHeat(towns, heat, palette).features[0]!).spreadUsed, null);
+});
+
+test('withProvinceHeat: the average view carries the province\'s spread too', () => {
+  assert.equal(props(withProvinceHeat(provinces, average, palette).features[0]!).spreadUsed, 2);
+});
+
+test('heatSource: a single model gives its name', () => {
+  assert.equal(heatSource('ecmwf_ifs', {}, en), 'ECMWF');
+  assert.equal(heatSource('ncep_gfs_global', { spreadUsed: 3 }, en), 'GFS (NOAA)');
+});
+
+test('heatSource: the average says how many models and their range, in whole degrees', () => {
+  const all = { spreadUsed: 3, spreadLowC: 39.8, spreadHighC: 43.2 };
+  assert.equal(heatSource('average', all, en), 'average of 3 models: 39–43 °C');
+  const two = { spreadUsed: 2, spreadLowC: 39.8, spreadHighC: 43.2 };
+  assert.equal(heatSource('average', two, en), 'average of 2 of 3 models: 39–43 °C');
+  // Models that agree to the degree give one number, not "38–38".
+  const same = { spreadUsed: 1, spreadLowC: 38.2, spreadHighC: 38.2 };
+  assert.equal(heatSource('average', same, en), 'average of 1 of 3 models: 38 °C');
+});
+
+test('heatSource: the average with no value says only what it is', () => {
+  assert.equal(heatSource('average', { spreadUsed: null }, en), 'average of 3 models');
+});
+
+test('heatForMap and emptyHeatMap work for the average view', () => {
+  assert.equal(heatForMap('average', average), average);
+  assert.deepEqual(heatForMap('average', heat), emptyHeatMap('average'));
 });
 
 // ---------- The colours themselves (styles.css) ----------

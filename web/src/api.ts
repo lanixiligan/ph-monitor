@@ -7,7 +7,7 @@ import type {
   DisasterEvent,
   HazardLayerInfo,
   HeatMapData,
-  HeatModelId,
+  HeatViewId,
   NewsItem,
   OfficialAlert,
   PlaceMatch,
@@ -113,7 +113,7 @@ export async function fetchHazards(): Promise<HazardLayerInfo[]> {
   return (await getJson('/api/hazards')) as HazardLayerInfo[];
 }
 
-/** Every town's and province's heat index from one weather model, for the hour now (display only). */
-export async function fetchHeatMap(model: HeatModelId): Promise<HeatMapData> {
+/** Every town's and province's heat index from one weather model (or their average), for the hour now (display only). */
+export async function fetchHeatMap(model: HeatViewId): Promise<HeatMapData> {
   return (await getJson(`/api/heatmap?model=${model}`)) as HeatMapData;
 }

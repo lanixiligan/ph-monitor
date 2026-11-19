@@ -20,7 +20,7 @@ import type { HazardLayerInfo, HeatMapData, PlaceScores } from '@ph-monitor/shar
 import { fetchPlaceShapes } from '../api.ts';
 import type { PlaceCollection, ProvinceCollection, Spot } from '../api.ts';
 import { LANDSLIDE_LAYERS, SURGE_LAYERS, useHazardZones } from '../hazardOverlay.ts';
-import { heatText, withProvinceHeat, withTownHeat } from '../heatColors.ts';
+import { heatSource, heatText, withProvinceHeat, withTownHeat } from '../heatColors.ts';
 import { EVENT_LAYERS, OVERLAY_CLICK_LAYERS, STORM_LAYERS, useOverlays } from '../mapOverlays.ts';
 import { MAX_BOUNDS, PH_BOUNDS, SHOW_BASEMAP } from '../mapSettings.ts';
 import type { MapLayers } from '../mapSettings.ts';
@@ -495,10 +495,19 @@ export function ProvinceMap({
                 typeof props.band === 'string' ? props.band : null,
                 t,
               );
-            const model = t.heat.models[heatNow.model];
+            // The model's name, or for the average how many models and their range.
             text = town
-              ? fill(t.heat.townLabel, { town: town.name, province: town.province_name, heat: heatOf(town), model })
-              : fill(t.heat.provinceLabel, { province: properties.name, heat: heatOf(properties), model });
+              ? fill(t.heat.townLabel, {
+                  town: town.name,
+                  province: town.province_name,
+                  heat: heatOf(town),
+                  model: heatSource(heatNow.model, town, t),
+                })
+              : fill(t.heat.provinceLabel, {
+                  province: properties.name,
+                  heat: heatOf(properties),
+                  model: heatSource(heatNow.model, properties, t),
+                });
           } else if (town && typeof town.score === 'number') {
             text = fill(words.townLabel, { town: town.name, province: town.province_name, score: scoreOf(town) });
           } else if (typeof properties.top_place === 'string') {
