@@ -514,13 +514,23 @@ export type HeatModelId = 'ecmwf_ifs' | 'dwd_icon_global_native' | 'ncep_gfs_glo
 /** PAGASA's heat index bands (27 °C and up). */
 export type HeatBandName = 'caution' | 'extreme caution' | 'danger' | 'extreme danger';
 
-/** One town's or province's heat index for the hour shown. null = unknown. */
-export type HeatValue = { psgc: number; heatIndexC: number | null; band: HeatBandName | null };
+/** What the heat map can show: one model, or the average of all of them. */
+export type HeatViewId = HeatModelId | 'average';
+
+/** Average view only: how many models had a value, and the lowest and highest of them. */
+export type HeatSpread = { used: number; lowC: number; highC: number };
+
+/**
+ * One town's or province's heat index for the hour shown. null = unknown.
+ * `spread?` (the `?` means it may be left out) is only there in the average
+ * view, for a known value.
+ */
+export type HeatValue = { psgc: number; heatIndexC: number | null; band: HeatBandName | null; spread?: HeatSpread };
 
 /** Returned by GET /api/heatmap?model= */
 export type HeatMapData = {
-  model: HeatModelId;
-  /** The newest good run for this model; null = none yet. */
+  model: HeatViewId;
+  /** The newest good run for this model (the average: the oldest of its sources' runs); null = none yet. */
   fetchedAt: string | null;
   isStale: boolean;
   /** The hour shown (the current hour, ISO); null when nothing is stored for it. */

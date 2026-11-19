@@ -355,6 +355,72 @@ test('getHeatMap: a model that only sent nulls answers fetchedAt null, not an er
   assert.equal(((await response.json()) as HeatMapData).fetchedAt, null);
 });
 
+test('getHeatMap average: each town averages its hottest point from every model; a missing model is counted', async () => {
+  await clearHeat();
+  const now = new Date();
+  const hour = hourShown(now);
+  // Alpha City: ECMWF's hottest point is 43, ICON's 40, GFS's 37 → average 40.
+  await addHeat('ecmwf_ifs', points[0]?.id, hour, 35);
+  await addHeat('ecmwf_ifs', points[1]?.id, hour, 43);
+  await addHeat('dwd_icon_global_native', points[0]?.id, hour, 40);
+  await addHeat('ncep_gfs_global', points[1]?.id, hour, 37);
+  // Bravo Town: only ECMWF and GFS have a value.
+  await addHeat('ecmwf_ifs', points[2]?.id, hour, 30);
+  await addHeat('ncep_gfs_global', points[2]?.id, hour, 34);
+  for (const model of ALL_MODELS) await markRun(model, hoursAgo(1));
+  // ECMWF ran earlier than the others: "Updated" follows the oldest source.
+  const oldest = hoursAgo(3);
+  await pool.query(`UPDATE heat_runs SET last_ok_at = $1 WHERE model = 'ecmwf_ifs'`, [oldest]);
+
+  const heat = await getHeatMap('average', now);
+  assert.equal(heat.model, 'average');
+  assert.equal(heat.isStale, false);
+  assert.equal(heat.validAt, hour.toISOString());
+  assert.equal(heat.fetchedAt, oldest.toISOString());
+  assert.deepEqual(valueOf(heat.places, ALPHA_CITY), {
+    psgc: ALPHA_CITY,
+    heatIndexC: 40,
+    band: 'extreme caution',
+    spread: { used: 3, lowC: 37, highC: 43 },
+  });
+  assert.deepEqual(valueOf(heat.places, BRAVO_TOWN), {
+    psgc: BRAVO_TOWN,
+    heatIndexC: 32,
+    band: 'caution',
+    spread: { used: 2, lowC: 30, highC: 34 },
+  });
+  // A province takes its hottest town's average, with that town's spread.
+  assert.deepEqual(valueOf(heat.provinces, ALPHA), {
+    psgc: ALPHA,
+    heatIndexC: 40,
+    band: 'extreme caution',
+    spread: { used: 3, lowC: 37, highC: 43 },
+  });
+  assert.deepEqual(valueOf(heat.provinces, CHARLIE), { psgc: CHARLIE, heatIndexC: null, band: null });
+});
+
+test('getHeatMap average: a model with no run marks the view stale, the others still show', async () => {
+  await clearHeat();
+  const now = new Date();
+  const hour = hourShown(now);
+  await addHeat('ecmwf_ifs', points[0]?.id, hour, 36);
+  await addHeat('ncep_gfs_global', points[0]?.id, hour, 38);
+  await markRun('ecmwf_ifs', hoursAgo(1));
+  await markRun('ncep_gfs_global', hoursAgo(1));
+
+  const heat = await getHeatMap('average', now);
+  assert.equal(heat.isStale, true);
+  assert.deepEqual(valueOf(heat.places, ALPHA_CITY).spread, { used: 2, lowC: 36, highC: 38 });
+  // No model has a value for Bravo Town: unknown, and no spread.
+  assert.deepEqual(valueOf(heat.places, BRAVO_TOWN), { psgc: BRAVO_TOWN, heatIndexC: null, band: null });
+});
+
+test('GET /api/heatmap?model=average answers the average view', async () => {
+  const response = await fetch(`${baseUrl}/api/heatmap?model=average`);
+  assert.equal(response.status, 200);
+  assert.equal(((await response.json()) as HeatMapData).model, 'average');
+});
+
 test('GET /api/heatmap?model=nope gives 400', async () => {
   const response = await fetch(`${baseUrl}/api/heatmap?model=nope`);
   assert.equal(response.status, 400);

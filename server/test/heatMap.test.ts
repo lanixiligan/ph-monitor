@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import type { HeatModelId } from '@ph-monitor/shared';
 import { fetchOpenMeteoHeat, parseHeatLocation } from '../src/fetchers/openMeteoHeat.ts';
 import type { HeatHours } from '../src/fetchers/openMeteoHeat.ts';
-import { bandOf, hourShown, isHeatStale, provinceHeat } from '../src/heatMap.ts';
+import { averageHeat, averageTowns, bandOf, combineRuns, hourShown, isHeatStale, provinceHeat } from '../src/heatMap.ts';
 import { cacheSeconds } from '../src/routes/heatmap.ts';
 
 const ALL_MODELS: HeatModelId[] = ['ecmwf_ifs', 'dwd_icon_global_native', 'ncep_gfs_global'];
@@ -155,6 +155,68 @@ test('provinceHeat: each province takes its hottest town; unknown towns never wi
     { psgc: 20, heatIndexC: null, band: null },
     { psgc: 30, heatIndexC: null, band: null },
   ]);
+});
+
+test('provinceHeat: in the average view a province also carries its hottest town\'s spread', () => {
+  const spread = { used: 3, lowC: 40, highC: 46 };
+  const towns = [
+    { psgc: 1, provincePsgc: 10, heatIndexC: 35, spread: { used: 2, lowC: 34, highC: 36 } },
+    { psgc: 2, provincePsgc: 10, heatIndexC: 43, spread },
+  ];
+  assert.deepEqual(provinceHeat([10, 20], towns), [
+    { psgc: 10, heatIndexC: 43, band: 'danger', spread },
+    { psgc: 20, heatIndexC: null, band: null },
+  ]);
+});
+
+test('averageHeat: the mean of the known values, with how many and their range', () => {
+  assert.deepEqual(averageHeat([40, 42, 44]), { heatIndexC: 42, spread: { used: 3, lowC: 40, highC: 44 } });
+});
+
+test('averageHeat: rounded to 0.1 °C', () => {
+  assert.equal(averageHeat([23.4, 23.9, 25.5]).heatIndexC, 24.3);
+  assert.equal(averageHeat([32.9, 33, 33]).heatIndexC, 33);
+});
+
+test('averageHeat: a missing model is left out and counted', () => {
+  assert.deepEqual(averageHeat([40, null, 43]), { heatIndexC: 41.5, spread: { used: 2, lowC: 40, highC: 43 } });
+  assert.deepEqual(averageHeat([null, 38, null]), { heatIndexC: 38, spread: { used: 1, lowC: 38, highC: 38 } });
+});
+
+test('averageHeat: no model known is unknown, never a guess', () => {
+  assert.deepEqual(averageHeat([null, null, null]), { heatIndexC: null });
+  assert.deepEqual(averageHeat([]), { heatIndexC: null });
+});
+
+test('averageTowns: each town averages its value from every model, matched by psgc', () => {
+  const ecmwf = [
+    { psgc: 1, provincePsgc: 10, heatIndexC: 40 },
+    { psgc: 2, provincePsgc: 10, heatIndexC: null },
+  ];
+  // Listed in another order on purpose.
+  const gfs = [
+    { psgc: 2, provincePsgc: 10, heatIndexC: null },
+    { psgc: 1, provincePsgc: 10, heatIndexC: 44 },
+  ];
+  assert.deepEqual(averageTowns([ecmwf, gfs]), [
+    { psgc: 1, provincePsgc: 10, heatIndexC: 42, spread: { used: 2, lowC: 40, highC: 44 } },
+    { psgc: 2, provincePsgc: 10, heatIndexC: null },
+  ]);
+});
+
+test('combineRuns: the oldest run, stale if any source is, the hour shown if any source has it', () => {
+  const now = new Date('2026-11-19T12:00:00Z');
+  const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
+  const fresh = { fetchedAt: hoursAgo(1), hasHourShown: true };
+  const older = { fetchedAt: hoursAgo(5), hasHourShown: true };
+  assert.deepEqual(combineRuns([fresh, older, fresh], now), { fetchedAt: hoursAgo(5), hasHourShown: true, isStale: false });
+  // One source never ran: the others still show, but the view is marked stale.
+  const never = { fetchedAt: null, hasHourShown: false };
+  assert.deepEqual(combineRuns([fresh, never, fresh], now), { fetchedAt: hoursAgo(1), hasHourShown: true, isStale: true });
+  // One source is over 25 hours old.
+  assert.equal(combineRuns([fresh, { fetchedAt: hoursAgo(26), hasHourShown: true }], now).isStale, true);
+  // Nothing at all.
+  assert.deepEqual(combineRuns([never, never], now), { fetchedAt: null, hasHourShown: false, isStale: true });
 });
 
 test('isHeatStale: no run, a run over 25 hours old, or no row for the hour shown', () => {

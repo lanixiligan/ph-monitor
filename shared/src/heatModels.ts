@@ -2,7 +2,7 @@
 // Adding a model later means adding a row here (and its label in the i18n files).
 
 // `import type` brings in a type only; it disappears when the code runs.
-import type { HeatModelId } from './types.ts';
+import type { HeatModelId, HeatViewId } from './types.ts';
 
 /** One model: its Open-Meteo name and its grid size in km. */
 export type HeatModel = { id: HeatModelId; km: number };
@@ -16,3 +16,7 @@ export const HEAT_MODELS: HeatModel[] = [
 
 /** The model shown when the heat map is turned on. */
 export const DEFAULT_HEAT_MODEL: HeatModelId = 'ecmwf_ifs';
+
+/** Every view the heat map offers: each model, then the average of all of them. */
+// `...` spreads the model names into the new list.
+export const HEAT_VIEWS: HeatViewId[] = [...HEAT_MODELS.map((model) => model.id), 'average'];

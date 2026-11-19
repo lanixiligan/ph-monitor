@@ -1,9 +1,10 @@
 // API route for the heat map (display only; it never changes the score):
 //   GET /api/heatmap?model=ecmwf_ifs → each town's and province's heat index
 //   for the current hour from that model. No model = the default (ECMWF).
+//   GET /api/heatmap?model=average → the average of all the models.
 
 import { Router } from 'express';
-import { DEFAULT_HEAT_MODEL, HEAT_MODELS } from '@ph-monitor/shared';
+import { DEFAULT_HEAT_MODEL, HEAT_VIEWS } from '@ph-monitor/shared';
 import { getHeatMap } from '../heatMap.ts';
 
 export const heatmapRouter = Router();
@@ -16,10 +17,10 @@ export function cacheSeconds(now: Date): number {
 
 heatmapRouter.get('/', async (req, res) => {
   const asked = req.query.model;
-  // Only a model in the list is allowed; `?.id` is undefined when none matches.
-  const model = asked === undefined ? DEFAULT_HEAT_MODEL : HEAT_MODELS.find((entry) => entry.id === asked)?.id;
+  // Only a view in the list is allowed; `find` gives undefined when none matches.
+  const model = asked === undefined ? DEFAULT_HEAT_MODEL : HEAT_VIEWS.find((view) => view === asked);
   if (model === undefined) {
-    res.status(400).json({ error: 'unknown model', models: HEAT_MODELS.map((entry) => entry.id) });
+    res.status(400).json({ error: 'unknown model', models: HEAT_VIEWS });
     return;
   }
   // The data changes every 12 hours and with the clock hour: keep it 5 minutes,
