@@ -16,6 +16,7 @@ import type {
   PointDetail,
   ProvinceMapProperties,
   QuakeMap,
+  RainForecastMap,
   StatusReport,
   Storm,
   StreamSlot,
@@ -122,4 +123,9 @@ export async function fetchHazards(): Promise<HazardLayerInfo[]> {
 /** Every town's and province's heat index from one weather model (or their average), for the hour now (display only). */
 export async function fetchHeatMap(model: HeatViewId): Promise<HeatMapData> {
   return (await getJson(`/api/heatmap?model=${model}`)) as HeatMapData;
+}
+
+/** The rain forecast field for the Typhoon view: 7 days, 3 hours at a time. */
+export async function fetchRainForecast(): Promise<RainForecastMap> {
+  return (await getJson('/api/rainforecast')) as RainForecastMap;
 }
