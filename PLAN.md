@@ -18,6 +18,7 @@ roadmap** (making what exists more trustworthy, numbered on its own).
 | Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6); USGS impact fields on the card (PR #7); NOAH storm surge zones on the map and card (PR #9) |
 | Product Phase 3: all kinds of news on the map | Idea only; needs the owner's answers first |
 | Product Phase 4: heat index map with switchable models | Design approved 2026-11-19 (see "Phase 4"). Built 2026-11-19 on `heat-index-map`: step 1 (three models: ECMWF, DWD ICON, NOAA GFS) and step 2 (their average) |
+| Hazard map buttons (one per kind of disaster) | Steps 0 and 1 built 2026-11-20 on `hazard-map-buttons`: the top bar view switch (Overall, Typhoon, Flood, Earthquake, Heat; Storm surge under More). Next steps: [HAZARD_MAPS_PLAN.md](HAZARD_MAPS_PLAN.md) |
 
 **Next:** NOAH landslide zones (same code as storm surge). First speed up reading the large
 landslide files (see "Build notes" under "NOAH hazard layer: design").
@@ -258,7 +259,8 @@ breaks or gets slower. The page shows two warm scales at once. Missing data look
 | Score weather (`ingestWeather`, every 2 h) | 599 | 12 | 7,188 |
 | Outlook + river flow | 88 × 2 | 4 | 704 |
 | **Heat map, all models in one request, every 12 h** | **599** | **2** | **1,198** |
-| Total | | | **9,090**, leaving ~910 for card clicks |
+| Rain forecast field (Typhoon view, added 2026-11-20) | 256 | 2 | 512 |
+| Total | | | **9,602**, leaving ~400 for card clicks |
 
 Options not chosen: every 6 h (+2,396: over the limit); riding along on the score's
 weather fetch (+480, but it changes the request the score depends on); finer grids (0.15° is

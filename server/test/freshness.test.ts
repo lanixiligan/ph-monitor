@@ -12,7 +12,7 @@ const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60 * 
 function allFresh(): Map<string, Date> {
   const names = [
     'usgs', 'open-meteo', 'pagasa', 'gdacs', 'eonet', 'jma', 'jtwc', 'open-meteo-daily', 'open-meteo-flood', 'news',
-    'open-meteo-heat',
+    'open-meteo-heat', 'open-meteo-rain',
   ];
   return new Map(names.map((name) => [name, minutesAgo(5)]));
 }
@@ -28,7 +28,7 @@ test('every feed is listed, and none is stale when all were just fetched', () =>
   const health = buildFeedHealth(allFresh(), now);
   assert.deepEqual(
     health.map((entry) => entry.id),
-    ['earthquakes', 'weather', 'officialAlerts', 'events', 'naturalEvents', 'storms', 'outlook', 'riverFlow', 'heatMap', 'news'],
+    ['earthquakes', 'weather', 'officialAlerts', 'events', 'naturalEvents', 'storms', 'outlook', 'riverFlow', 'heatMap', 'rainForecast', 'news'],
   );
   assert.ok(health.every((entry) => !entry.isStale));
 });
@@ -69,6 +69,16 @@ test('the heat map is stale after 25 hours (two missed 12-hour runs) and never t
   lastOk.set('open-meteo-heat', minutesAgo(25 * 60 + 1));
   const health = buildFeedHealth(lastOk, now);
   assert.equal(feed(health, 'heatMap').isStale, true);
+  assert.deepEqual(staleSignals(health), []);
+});
+
+test('the rain forecast is stale after 25 hours and never touches a score signal', () => {
+  const lastOk = allFresh();
+  lastOk.set('open-meteo-rain', minutesAgo(24 * 60));
+  assert.equal(feed(buildFeedHealth(lastOk, now), 'rainForecast').isStale, false);
+  lastOk.set('open-meteo-rain', minutesAgo(25 * 60 + 1));
+  const health = buildFeedHealth(lastOk, now);
+  assert.equal(feed(health, 'rainForecast').isStale, true);
   assert.deepEqual(staleSignals(health), []);
 });
 

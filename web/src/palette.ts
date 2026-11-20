@@ -15,6 +15,8 @@ export type Palette = {
   landslide: string[];
   /** The heat map: below 27 °C, then the bands [caution, extreme caution, danger, extreme danger]. */
   heat: { below: string; bands: string[] };
+  /** The rain forecast field: one colour per band in RAIN_BANDS (rainColors.ts), lightest rain first. */
+  rain: string[];
 };
 
 /** Reads the colours of the theme now in use. Call it when you draw, not once at start-up. */
@@ -34,6 +36,8 @@ export function readPalette(): Palette {
       below: get('--heat-below'),
       bands: [get('--heat-caution'), get('--heat-extreme-caution'), get('--heat-danger'), get('--heat-extreme-danger')],
     },
+    // `Array.from({ length: 10 }, …)` = a list of 10, built from each position.
+    rain: Array.from({ length: 10 }, (_, i) => get(`--rain-${i + 1}`)),
   };
 }
 

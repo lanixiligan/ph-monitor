@@ -20,11 +20,13 @@ export const PH_BOUNDS: Box = [
 
 /**
  * How far the reader can pan and zoom out. It is wider than it is tall so
- * the whole country still fits on a wide screen.
+ * the whole country still fits on a wide screen. North and south it leaves
+ * room around the Philippine Area of Responsibility (5–25°N, see parArea.ts),
+ * so the Typhoon view can show all of it, with storms just north of it.
  */
 export const MAX_BOUNDS: Box = [
-  [96, 1],
-  [148, 25],
+  [96, -1],
+  [148, 28],
 ];
 
 /** Which parts of the map are switched on (the tick boxes in the legend). */
@@ -36,9 +38,13 @@ export type MapLayers = {
   /** The fixed Project NOAH hazard maps. */
   landslide: boolean;
   stormSurge: boolean;
+  /** Earthquake markers (USGS), sized by magnitude. */
+  quakes: boolean;
+  /** The rain forecast field (ECMWF), Typhoon view only. */
+  rainForecast: boolean;
 };
 
-/** What the page opens with: everything on except the two hazard maps. */
+/** What the page opens with: everything on except the two hazard maps and the quake markers (the Earthquake view ticks them). */
 export const DEFAULT_LAYERS: MapLayers = {
   scores: true,
   events: true,
@@ -46,6 +52,9 @@ export const DEFAULT_LAYERS: MapLayers = {
   news: true,
   landslide: false,
   stormSurge: false,
+  quakes: false,
+  // Typhoon view only (Legend.tsx offers it nowhere else): it is a warm scale.
+  rainForecast: false,
 };
 
 /**

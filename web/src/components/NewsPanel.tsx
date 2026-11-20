@@ -2,13 +2,16 @@
 // flood...). The map's headline dots follow the same filter.
 // Headlines and links only: we never show article text.
 // A headline that names a place gets a button that shows the place on the map.
+// Pressing a map view sets the filter to its kind (App.tsx); the title then
+// names the kind. An empty kind says so, with a way back to all headlines.
 
 import { useEffect, useState } from 'react';
+import { NEWS_KEEP_DAYS } from '@ph-monitor/shared';
 import type { NewsItem } from '@ph-monitor/shared';
 import { fetchNews } from '../api.ts';
 import type { ProvinceCollection } from '../api.ts';
 import { NEWS_FILTER_IDS, newsTypeLabel, newsTypesText, safeUrl } from '../format.ts';
-import { fill, useStrings } from '../i18n/index.ts';
+import { fill, lookup, useStrings } from '../i18n/index.ts';
 import { useNow } from '../useNow.ts';
 import { UploadedTime } from './UploadedTime.tsx';
 import { WarnIcon } from './WarnIcon.tsx';
@@ -62,6 +65,9 @@ export function NewsPanel({ provinces, onShowOnMap, newsType, onNewsTypeChange }
   useEffect(() => {
     // Stops an old answer from overwriting a newer one.
     let cancelled = false;
+    // The list held now is for another filter: drop it, so it never shows under the new title.
+    setItems(null);
+    setFailed(false);
     async function load() {
       try {
         const result = await fetchNews(newsType, 30);
@@ -82,11 +88,16 @@ export function NewsPanel({ provinces, onShowOnMap, newsType, onNewsTypeChange }
   }, [newsType]);
 
   const nameByPsgc = new Map((provinces?.features ?? []).map((f) => [f.properties.psgc, f.properties.name]));
+  // "Heat headlines" while one kind is chosen; the plain title for all.
+  const title = newsType === 'all' ? t.news.title : lookup(t.news.titles, newsType, t.news.title);
+  // Nothing of the chosen kind: say so in words, never an empty panel.
+  const noneText =
+    newsType === 'all' ? t.news.none : fill(lookup(t.news.noneOfKind, newsType, t.news.none), { days: NEWS_KEEP_DAYS });
 
   return (
     <section className="panel panel-news" aria-labelledby="news-title">
       <div className="panel-head">
-        <h2 id="news-title">{t.news.title}</h2>
+        <h2 id="news-title">{title}</h2>
       </div>
       <div className="panel-body">
       <p className="muted">{t.news.note}</p>
@@ -108,7 +119,17 @@ export function NewsPanel({ provinces, onShowOnMap, newsType, onNewsTypeChange }
           <WarnIcon /> {t.news.failed}
         </p>
       )}
-      {items !== null && items.length === 0 && !failed && <p className="muted">{t.news.none}</p>}
+      {items === null && !failed && <p className="muted">{t.news.loading}</p>}
+      {items !== null && items.length === 0 && !failed && (
+        <div className="news-none">
+          <p className="muted">{noneText}</p>
+          {newsType !== 'all' && (
+            <button type="button" className="filter" onClick={() => onNewsTypeChange('all')}>
+              {t.news.showAll}
+            </button>
+          )}
+        </div>
+      )}
       {items !== null && items.length > 0 && (
         <ul className="plain-list">
           {items.map((item) => (

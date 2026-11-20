@@ -58,10 +58,50 @@ provincesRouter.get('/', async (_req, res) => {
     event_score: number;
     unknown_signals: SignalName[];
     top_place: string | null;
+    quake_top_score: number | null;
+    quake_top_place: string | null;
+    rain_top_score: number | null;
+    rain_top_place: string | null;
+    rain_unknown: boolean;
   }>(
-    `SELECT s.province_psgc, s.score, s.quake_score, s.weather_score, s.event_score, s.unknown_signals,
-            c.name AS top_place
-     FROM province_scores s LEFT JOIN places c ON c.psgc = s.top_place_psgc`,
+    // The LATERAL parts pick, for each province, its town with the highest
+    // earthquake part (Earthquake view) and its town with the highest KNOWN
+    // rain part (Flood view), and check whether any town's rain is unknown.
+    // Read only. A province with no town scores gets no rain town (null) and
+    // rain_unknown false: its rain is never taken from the province's own
+    // weather score, so the map stripes it as "no data".
+    `WITH town_rain AS (
+       SELECT pl.province_psgc, pl.psgc, pl.name,
+              -- NULL when hazards is NULL (old rows) or rain is JSON null (unknown).
+              CASE WHEN jsonb_typeof(ps.hazards->'rain') = 'number'
+                   THEN (ps.hazards->>'rain')::float8 END AS rain
+       -- LEFT JOIN: a town with no score row yet counts as unknown rain too.
+       FROM places pl LEFT JOIN place_scores ps ON ps.place_psgc = pl.psgc
+     )
+     SELECT s.province_psgc, s.score, s.quake_score, s.weather_score, s.event_score, s.unknown_signals,
+            c.name AS top_place, q.quake_score AS quake_top_score, q.name AS quake_top_place,
+            r.rain AS rain_top_score, r.name AS rain_top_place,
+            COALESCE(u.rain_unknown, false) AS rain_unknown
+     FROM province_scores s
+     LEFT JOIN places c ON c.psgc = s.top_place_psgc
+     LEFT JOIN LATERAL (
+       SELECT ps.quake_score, pl.name
+       FROM place_scores ps JOIN places pl ON pl.psgc = ps.place_psgc
+       WHERE pl.province_psgc = s.province_psgc
+       ORDER BY ps.quake_score DESC, pl.psgc
+       LIMIT 1
+     ) q ON true
+     LEFT JOIN LATERAL (
+       SELECT t.rain, t.name FROM town_rain t
+       WHERE t.province_psgc = s.province_psgc AND t.rain IS NOT NULL
+       ORDER BY t.rain DESC, t.psgc
+       LIMIT 1
+     ) r ON true
+     LEFT JOIN LATERAL (
+       -- bool_or = true when at least one town's rain is NULL; NULL with no towns.
+       SELECT bool_or(t.rain IS NULL) AS rain_unknown FROM town_rain t
+       WHERE t.province_psgc = s.province_psgc
+     ) u ON true`,
   );
 
   const scoreByPsgc = new Map(scores.rows.map((row) => [row.province_psgc, row]));
@@ -78,6 +118,14 @@ provincesRouter.get('/', async (_req, res) => {
       event_score: score?.event_score ?? null,
       incomplete: (score?.unknown_signals.length ?? 0) > 0,
       top_place: score?.top_place ?? null,
+      // A province with no town scores falls back to its own earthquake part.
+      quake_top_score: score?.quake_top_score ?? score?.quake_score ?? null,
+      quake_top_place: score?.quake_top_place ?? null,
+      quake_unknown: score?.unknown_signals.includes('quake') ?? false,
+      // Flood view: no fallback to the province's own weather (unknown stays null).
+      rain_top_score: score?.rain_top_score ?? null,
+      rain_top_place: score?.rain_top_place ?? null,
+      rain_unknown: score?.rain_unknown ?? false,
       point_lat: shape.point_lat,
       point_lon: shape.point_lon,
     };

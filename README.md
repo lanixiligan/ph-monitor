@@ -11,9 +11,12 @@ that exact spot, with the reasons and the raw events behind it.
 **Status: work in progress.** The map and score use earthquakes, weather and disaster event
 alert levels. The page also shows disaster events and storm tracks on the map, a 7-day outlook
 and links to official bulletins on the status card, disaster headlines, and live streams or
-latest videos from news channels. A "Heat map" button recolours the map by the heat index from
-a weather model you pick (ECMWF, DWD ICON or NOAA GFS) or their average; it is shown only and
-never changes the score. The page can be read in English or Filipino (the Filipino
+latest videos from news channels. A view switch in the top bar puts the page's focus on one
+hazard: Typhoon shows the storm tracks, the Philippine Area of Responsibility and a 7-day rain
+forecast (ECMWF) with a time slider; Flood colours the towns by the rain part of their
+score; Earthquake colours them by the earthquake part and draws the quakes; Storm surge shows
+Project NOAH's fixed surge zones; Heat recolours the map by the heat index from a weather model you pick (ECMWF, DWD ICON
+or NOAA GFS) or their average. Views are shown only and never change the score. The page can be read in English or Filipino (the Filipino
 text is a draft under review). Expect rough edges, and scores that change as the formula is
 tuned.
 
@@ -90,7 +93,7 @@ data flows through the app, and its limits.
 | Tropical storm warnings (backup) | [Joint Typhoon Warning Center (JTWC)](https://www.metoc.navy.mil/jtwc/jtwc.html), US Navy | Public domain |
 | 7-day outlook: rain and wind gusts (modelled) | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0; free tier is non-commercial only |
 | 7-day outlook: river flow (modelled) | [Open-Meteo Flood API](https://open-meteo.com/en/docs/flood-api), from GloFAS (Copernicus Emergency Management Service) | CC BY 4.0 |
-| Heat index map, ECMWF source (modelled; shown only, not in the score) | Based on data and products of the European Centre for Medium-Range Weather Forecasts ([ECMWF](https://www.ecmwf.int/)): IFS HRES [open data](https://www.ecmwf.int/en/forecasts/datasets/open-data), via [Open-Meteo](https://open-meteo.com/). Changed: we work out the heat index from its temperature and humidity | CC BY 4.0 |
+| Heat index map (ECMWF source) and rain forecast field (modelled; shown only, not in the score) | Based on data and products of the European Centre for Medium-Range Weather Forecasts ([ECMWF](https://www.ecmwf.int/)): IFS HRES [open data](https://www.ecmwf.int/en/forecasts/datasets/open-data), via [Open-Meteo](https://open-meteo.com/). Changed: we work out the heat index from its temperature and humidity, and add up the rain in 3-hour steps | CC BY 4.0 |
 | Heat index map, ICON source (same) | Based on data from [Deutscher Wetterdienst](https://www.dwd.de/) (DWD), gridded data reproduced graphically: the ICON global model, via [Open-Meteo](https://open-meteo.com/) | CC BY 4.0 |
 | Heat index map, GFS source (same) | Global Forecast System of [NOAA](https://www.noaa.gov/)'s National Weather Service (NCEP), via [Open-Meteo](https://open-meteo.com/) | Public domain |
 | News headlines (headline, outlet, time and link only) | RSS feeds of the outlets listed in `server/src/sources.ts`, and [Google News](https://news.google.com/) search | Headlines belong to their outlets; each links to the original article |

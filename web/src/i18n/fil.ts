@@ -32,11 +32,11 @@ export const fil: Strings = {
     creditOutlook: 'Panahon sa susunod na 7 araw:', // REVIEW
     creditOutlookMid: '; daloy ng ilog mula sa', // REVIEW
     creditOutlookEnd: ', CC BY 4.0.', // REVIEW
-    creditHeatEcmwf: 'Mapa ng heat index, pinagmulang ECMWF: batay sa datos at produkto ng European Centre for Medium-Range Weather Forecasts (', // REVIEW
+    creditHeatEcmwf: 'Mapa ng heat index (pinagmulang ECMWF) at forecast ng ulan: batay sa datos at produkto ng European Centre for Medium-Range Weather Forecasts (', // REVIEW
     creditHeatEcmwfMid: '), IFS HRES', // REVIEW
     creditHeatEcmwfData: 'open data', // REVIEW
     creditHeatEcmwfVia: ', sa pamamagitan ng', // REVIEW
-    creditHeatEcmwfEnd: ', CC BY 4.0. Binago: kinukuwenta namin ang heat index mula sa temperatura at halumigmig nito.', // REVIEW: unsure about "kinukuwenta"
+    creditHeatEcmwfEnd: ', CC BY 4.0. Binago: kinukuwenta namin ang heat index mula sa temperatura at halumigmig nito, at pinagsasama ang ulan bawat 3 oras.', // REVIEW: unsure about "kinukuwenta"
     creditHeatIcon: 'Mapa ng heat index, pinagmulang ICON: batay sa datos mula sa Deutscher Wetterdienst (', // REVIEW
     creditHeatIconMid: '), gridded data na ipinakita nang grapiko: ang ICON global model, sa pamamagitan ng', // REVIEW: unsure about "ipinakita nang grapiko"
     creditHeatIconEnd: ', CC BY 4.0.', // REVIEW
@@ -65,6 +65,7 @@ export const fil: Strings = {
     riverFlow: 'agos ng ilog', // REVIEW
     news: 'mga balita', // REVIEW
     heatMap: 'mapa ng heat index', // REVIEW
+    rainForecast: 'forecast ng ulan', // REVIEW
   },
 
   // The language switch. The draft note is shown only when Filipino is chosen.
@@ -88,6 +89,25 @@ export const fil: Strings = {
   },
 
   // The map legend.
+  views: {
+    groupLabel: 'Uri ng mapa', // REVIEW
+    names: {
+      overall: 'Kabuuan', // REVIEW
+      typhoon: 'Bagyo', // REVIEW
+      flood: 'Baha', // REVIEW
+      earthquake: 'Lindol', // REVIEW
+      heat: 'Init', // REVIEW
+      stormSurge: 'Daluyong', // REVIEW
+      tsunami: 'Tsunami', // REVIEW
+    },
+    more: 'Iba pa', // REVIEW
+    moreHolding: 'Iba pa: {view}', // REVIEW
+    notes: {
+      stormSurge: 'Hindi pa naka-load ang mapa ng daluyong', // REVIEW
+      tsunami: 'Wala pang live feed para sa tsunami', // REVIEW
+    },
+    noData: 'Wala pang live na datos', // REVIEW
+  },
   legend: {
     title: 'Stress score (0–100)', // REVIEW
     noScore: 'Wala pang score', // REVIEW
@@ -108,6 +128,9 @@ export const fil: Strings = {
       2: 'Katamtaman', // REVIEW
       3: 'Mataas', // REVIEW
     },
+    otherLayers: 'Iba pang layer', // REVIEW
+    scoresHidden: 'Nakatago ang mga kulay ng score sa view na ito. Pindutin ang Kabuuan para makita ang mga ito.', // REVIEW
+    heatSource: 'Pinagmulan: {model}', // REVIEW
   },
 
   // The side panel before a spot is picked.
@@ -234,6 +257,7 @@ export const fil: Strings = {
     provinceLabel: '{province}: {score}', // REVIEW
     provinceTopLabel: '{province}: {score}, pinakamataas sa {town}', // REVIEW
     townLabel: '{town}, {province}: {score}', // REVIEW
+    townName: '{town}, {province}', // REVIEW
     popupKind: 'Uri: {kind}', // REVIEW
     popupAlert: 'Antas ng alerto: {level}', // REVIEW
     popupSource: 'Pinagmulan: {source}', // REVIEW
@@ -260,6 +284,7 @@ export const fil: Strings = {
     bandAtSpot: '{band} sa lugar na ito', // REVIEW
     bandInTown: '{band} sa buong {town}', // REVIEW
     hazardsTitle: 'Ayon sa uri ng banta', // REVIEW
+    onMap: 'Nasa mapa', // REVIEW
     notCovered:
       'Hindi saklaw dito: pagguho ng lupa, tsunami, wind signal at babala sa ulan ng PAGASA, alert level ng bulkan ng PHIVOLCS. Gamitin ang mga opisyal na link sa ibaba.', // REVIEW
     incomplete: 'May kulang na datos, kaya maaaring mas mataas ang totoong score.', // REVIEW
@@ -275,6 +300,7 @@ export const fil: Strings = {
     kmAway: '{km} km ang layo', // REVIEW
     kmDeep: '{km} km ang lalim', // REVIEW
     usgsPage: 'Pahina ng USGS', // REVIEW
+    quakesUnknown: 'Hindi nasuri ang mga lindol kamakailan: maaaring may kulang na bagong lindol.', // REVIEW
     weatherTitle: 'Panahon', // REVIEW
     temperature: 'Temperatura', // REVIEW
     humidity: 'Halumigmig', // REVIEW
@@ -318,6 +344,8 @@ export const fil: Strings = {
     stormsTitle: 'Mga bagyong inaasahang dadaan sa malapit', // REVIEW
     stormLine: 'mga {distance} ang layo bandang {time}', // REVIEW
     stormNote: 'Hindi tiyak ang sentro ng forecast; maaaring iba ang tunay na landas.', // REVIEW
+    stormsNone: 'Walang binabantayang bagyo na inaasahang dadaan sa loob ng 300 km mula rito.', // REVIEW
+    stormsUnsure: 'Hindi nasuri kamakailan ang landas ng mga bagyo: maaaring may bagyong hindi nakalista.', // REVIEW
     newsTitle: 'Mga bagong balita', // REVIEW
     bulletinsTitle: 'Mga opisyal na bulletin', // REVIEW
     bulletinsFallback: 'Mga opisyal na pahina: pagasa.dost.gov.ph at phivolcs.dost.gov.ph.', // REVIEW
@@ -340,6 +368,32 @@ export const fil: Strings = {
     none: 'Walang balitang maipapakita.', // REVIEW
     alsoAt: 'Makikita rin sa:', // REVIEW
     showOnMap: 'Ipakita ang {places} sa mapa', // REVIEW
+    loading: 'Naglo-load…', // REVIEW
+    titles: {
+      typhoon: 'Mga balita tungkol sa bagyo', // REVIEW
+      flood: 'Mga balita tungkol sa baha', // REVIEW
+      earthquake: 'Mga balita tungkol sa lindol', // REVIEW
+      volcano: 'Mga balita tungkol sa bulkan', // REVIEW
+      landslide: 'Mga balita tungkol sa pagguho ng lupa', // REVIEW
+      tsunami: 'Mga balita tungkol sa tsunami at daluyong', // REVIEW
+      drought: 'Mga balita tungkol sa tagtuyot', // REVIEW
+      wildfire: 'Mga balita tungkol sa sunog sa gubat', // REVIEW
+      heat: 'Mga balita tungkol sa matinding init', // REVIEW
+      general: 'Mga pangkalahatang balita', // REVIEW
+    },
+    noneOfKind: {
+      typhoon: 'Walang balita tungkol sa bagyo sa nakaraang {days} araw.', // REVIEW
+      flood: 'Walang balita tungkol sa baha sa nakaraang {days} araw.', // REVIEW
+      earthquake: 'Walang balita tungkol sa lindol sa nakaraang {days} araw.', // REVIEW
+      volcano: 'Walang balita tungkol sa bulkan sa nakaraang {days} araw.', // REVIEW
+      landslide: 'Walang balita tungkol sa pagguho ng lupa sa nakaraang {days} araw.', // REVIEW
+      tsunami: 'Walang balita tungkol sa tsunami o daluyong sa nakaraang {days} araw.', // REVIEW
+      drought: 'Walang balita tungkol sa tagtuyot sa nakaraang {days} araw.', // REVIEW
+      wildfire: 'Walang balita tungkol sa sunog sa gubat sa nakaraang {days} araw.', // REVIEW
+      heat: 'Walang balita tungkol sa matinding init sa nakaraang {days} araw.', // REVIEW
+      general: 'Walang pangkalahatang balita sa nakaraang {days} araw.', // REVIEW
+    },
+    showAll: 'Ipakita ang lahat ng balita', // REVIEW
   },
 
   // The live news panel (YouTube streams and latest videos).
@@ -411,9 +465,84 @@ export const fil: Strings = {
     averageNone: 'average ng {total} modelo', // REVIEW
   },
 
-  // The heat map: its button and panel (HeatMapPanel.tsx) and its hover labels.
+  // The Earthquake view and the quake markers (display only; they never change the score).
+  quakes: {
+    scaleTitle: 'Bahagi ng lindol sa score (0–100)', // REVIEW
+    unknownStripes: 'Guhit sa ibabaw ng kulay: hindi masuri ang lindol, maaaring mas mataas ang bahagi', // REVIEW
+    overallHidden: 'Hindi ipinapakita ang kabuuang score sa view na ito. Pindutin ang Kabuuan para makita ito.', // REVIEW
+    legend: 'Lindol (USGS; mas malaki = mas malakas)', // REVIEW
+    loading: 'Naglo-load ng mga lindol…', // REVIEW
+    loadError: 'Hindi ma-load ang listahan ng lindol ngayon.', // REVIEW
+    stale: 'Luma na ang datos ng lindol: maaaring may kulang na bagong lindol.', // REVIEW
+    none: 'Walang lindol na binilang ng score sa nakaraang {hours} oras.', // REVIEW
+    countOne: '1 lindol sa nakaraang {hours} oras.', // REVIEW
+    count: '{count} lindol sa nakaraang {hours} oras.', // REVIEW
+    townLabel: '{town}, {province}: bahagi ng lindol {score}', // REVIEW
+    provinceLabel: '{province}: bahagi ng lindol {score}', // REVIEW
+    provinceTopLabel: '{province}: bahagi ng lindol {score}, sa {town}', // REVIEW
+    noValueLabel: 'wala pang score', // REVIEW
+    popupMagnitude: 'Magnitude {magnitude}', // REVIEW
+    popupNoDepth: 'Walang ibinigay na lalim', // REVIEW
+    popupClick: 'I-click para sa pahina ng USGS', // REVIEW
+    mapLabel: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa bahagi ng lindol sa score nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+  },
+
+  // The Flood view: towns coloured by the rain part of the score.
+  flood: {
+    scaleTitle: 'Bahagi ng ulan sa score (0–100)', // REVIEW
+    about: 'Ulan sa nakaraang oras at nakaraang 24 oras, mula sa modelo ng panahon. Tantiya ng modelo, hindi babala ng PAGASA sa ulan.', // REVIEW
+    noValue: 'Walang sukat ng ulan', // REVIEW
+    unknownStripes: 'Guhit sa ibabaw ng kulay: may mga bayang walang sukat ng ulan, maaaring mas mataas ang bahagi', // REVIEW
+    overallHidden: 'Hindi ipinapakita ang kabuuang score sa view na ito. Pindutin ang Kabuuan para makita ito.', // REVIEW
+    townLabel: '{town}, {province}: bahagi ng ulan {score}', // REVIEW
+    provinceLabel: '{province}: bahagi ng ulan {score}', // REVIEW
+    provinceTopLabel: '{province}: bahagi ng ulan {score}, sa {town}', // REVIEW
+    noValueLabel: 'walang sukat ng ulan', // REVIEW
+    mapLabel: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa bahagi ng ulan sa score nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+  },
+
+  // The Typhoon view: storm tracks only (no wind data yet).
+  typhoon: {
+    title: 'Landas ng mga bagyo', // REVIEW
+    sources: 'Landas at forecast mula sa JMA at JTWC.', // REVIEW
+    noWind: 'Wala pang kulay ng hangin para sa bawat bayan: landas lang ng bagyo ang ipinapakita ng mapa.', // REVIEW
+    alertsNote: 'Nasa status card ng isang lugar ang mga babala ng PAGASA sa bagyo, sa sariling salita ng PAGASA.', // REVIEW
+    par: 'Philippine Area of Responsibility (PAR): binibigyan ng PAGASA ng pangalan at babala ang mga bagyo sa loob nito', // REVIEW
+    parShort: 'PAR',
+    loading: 'Naglo-load ng landas ng mga bagyo…', // REVIEW
+    loadError: 'Hindi ma-load ang landas ng mga bagyo ngayon.', // REVIEW
+    stale: 'Luma na ang datos ng landas ng bagyo: maaaring may bagyong hindi nakalista, o luma na ang landas nito.', // REVIEW
+    unchecked: 'Hindi matiyak kung gaano kabago ang landas ng mga bagyo: maaaring may bagyong hindi nakalista.', // REVIEW
+    none: 'Walang binabantayang bagyo ngayon.', // REVIEW
+    hidden: 'Nakapatay ang landas ng mga bagyo. Lagyan ng tsek sa palatandaan para makita ito.', // REVIEW
+    mapLabel: 'Mapa ng Pilipinas na may landas ng mga bagyo. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+  },
+
+  rain: {
+    title: 'Forecast ng ulan (mm sa loob ng 3 oras)', // REVIEW
+    noValue: 'Walang forecast dito', // REVIEW
+    about: 'Modelong ECMWF, mga puntong mga 165 km ang layo, pinakinis sa pagitan nila. Tantiya ng modelo, hindi forecast ng PAGASA.', // REVIEW
+    panelTitle: 'Forecast ng ulan', // REVIEW
+    play: 'I-play', // REVIEW
+    pause: 'I-pause', // REVIEW
+    slider: 'Oras ng forecast', // REVIEW
+    updated: 'Na-update {ago}', // REVIEW
+    loading: 'Naglo-load ng forecast ng ulan…', // REVIEW
+    loadError: 'Hindi ma-load ang forecast ng ulan ngayon.', // REVIEW
+    noData: 'Wala pang forecast ng ulan: hindi pa tapos ang unang pag-download.', // REVIEW
+    stale: 'Luma na ang forecast ng ulan: maaaring iba ang mas bagong takbo ng modelo.', // REVIEW
+  },
+
+  // The Storm surge view: the fixed Project NOAH zones.
+  stormSurge: {
+    title: 'Mapa ng panganib sa daluyong', // REVIEW
+    about: 'Nakapirming mapa ng maaaring abutin ng daluyong. Hindi ito kasalukuyang daluyong at hindi forecast.', // REVIEW: unsure about "nakapirming"
+    hidden: 'Nakapatay ang mga zone ng daluyong. Lagyan ng tsek sa palatandaan para makita ang mga ito.', // REVIEW
+    mapLabel: 'Mapa ng Pilipinas na may mga zone ng panganib sa daluyong mula sa Project NOAH. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+  },
+
+  // The heat map: its panel (HeatMapPanel.tsx), its key in the legend and its hover labels.
   heat: {
-    button: 'Mapa ng init', // REVIEW: unsure about "init" for heat index
     title: 'Mapa ng heat index', // REVIEW
     close: 'Isara ang mapa ng init', // REVIEW
     source: 'Pinagmulan', // REVIEW
@@ -452,7 +581,6 @@ export const fil: Strings = {
     averageAll: 'average ng {total} modelo: {range}', // REVIEW
     averagePart: 'average ng {used} sa {total} modelo: {range}', // REVIEW
     averageNone: 'average ng {total} modelo', // REVIEW
-    scoresHidden: 'Nakatago ang mga kulay ng score habang bukas ang mapa ng init.', // REVIEW
     mapLabel: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa heat index nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
   },
 

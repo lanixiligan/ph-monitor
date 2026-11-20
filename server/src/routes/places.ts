@@ -1,7 +1,8 @@
 // API routes for cities and municipalities ("towns"):
 //   GET /api/places?q=cebu    → up to 10 cities, municipalities and provinces
 //   GET /api/places/shapes    → every town's shape, as GeoJSON (for the map)
-//   GET /api/places/scores    → every town's latest score (for the map)
+//   GET /api/places/scores    → every town's latest score, its earthquake part and its rain
+//                               part (for the map; null rain = unknown, never 0)
 // Every name comes from our own database (no outside geocoder). The rule for
 // what matches is in placeSearch.ts.
 
@@ -86,8 +87,20 @@ placesRouter.get('/shapes', async (_req, res) => {
 // ---------- GET /api/places/scores ----------
 
 placesRouter.get('/scores', async (_req, res) => {
-  const result = await pool.query<{ psgc: number; score: number; unknown_signals: SignalName[]; computed_at: Date }>(
-    'SELECT place_psgc AS psgc, score, unknown_signals, computed_at FROM place_scores ORDER BY place_psgc',
+  const result = await pool.query<{
+    psgc: number;
+    score: number;
+    quake_score: number;
+    rain_score: number | null;
+    unknown_signals: SignalName[];
+    computed_at: Date;
+  }>(
+    // The rain part is read from the saved hazard parts. It is NULL when the
+    // row was saved before that column, or rain was unknown (JSON null).
+    `SELECT place_psgc AS psgc, score, quake_score, unknown_signals, computed_at,
+            CASE WHEN jsonb_typeof(hazards->'rain') = 'number'
+                 THEN (hazards->>'rain')::float8 END AS rain_score
+     FROM place_scores ORDER BY place_psgc`,
   );
   const answer: PlaceScores = {
     computedAt: result.rows[0]?.computed_at.toISOString() ?? null,
@@ -95,6 +108,11 @@ placesRouter.get('/scores', async (_req, res) => {
       psgc: row.psgc,
       score: row.score,
       incomplete: row.unknown_signals.length > 0,
+      // For the Earthquake view (display only). Unknown quakes are never shown as calm.
+      quakeScore: row.quake_score,
+      quakeUnknown: row.unknown_signals.includes('quake'),
+      // For the Flood view (display only). null = unknown, striped, never calm.
+      rainScore: row.rain_score,
     })),
   };
   res.json(answer);

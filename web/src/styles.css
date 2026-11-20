@@ -1,7 +1,8 @@
 /* The look: a sea chart. Cool sea-and-ink colours everywhere, so the warm
    score scale (scoreScale.ts) is the only thing on the page that looks hot.
-   The one other warm scale, the heat map's bands (--heat-*), replaces it
-   while the heat map is on, so the two are never shown together.
+   The other warm scales replace it, so two are never shown together: the heat
+   map's bands (--heat-*) while Heat is pressed, and the rain forecast field
+   (--rain-*) in the Typhoon view, where the score colours are hidden.
    Titles and numbers are set in Barlow Condensed, the rest in Atkinson
    Hyperlegible. Both fonts ship with the app (see main.tsx). */
 
@@ -37,6 +38,20 @@
   --heat-extreme-caution: #eb7d1f;
   --heat-danger: #d42d1d;
   --heat-extreme-danger: #730a24;
+  /* The rain forecast field (Typhoon view), the third warm scale, approved by
+     the owner 2026-11-20: the forecasters' usual blue → green → yellow → red →
+     magenta, one colour per band of rain in 3 hours (rainColors.ts). Shown only
+     while the score colours are hidden. Below 0.5 mm nothing is drawn. */
+  --rain-1: #a9d7f2; /* 0.5–1 mm */
+  --rain-2: #5fb3ea; /* 1–2 */
+  --rain-3: #2172cc; /* 2–5 */
+  --rain-4: #1aa9a0; /* 5–10 */
+  --rain-5: #37a943; /* 10–15 */
+  --rain-6: #a6c92c; /* 15–20 */
+  --rain-7: #f0cc1f; /* 20–30 */
+  --rain-8: #ee8619; /* 30–50 */
+  --rain-9: #d9302a; /* 50–80 */
+  --rain-10: #c43bbd; /* 80 and more */
   --bar: #10313b; /* the top bar */
   --bar-text: #ffffff;
   --bar-soft: #c3d3d7; /* secondary text in the top bar */
@@ -73,6 +88,17 @@
   --heat-extreme-caution: #a24f15;
   --heat-danger: #d33a26;
   --heat-extreme-danger: #ff9480;
+  /* The same order of hues, a little brighter, so the pale bands show on the dark map. */
+  --rain-1: #7fc4ef;
+  --rain-2: #4aa6ef;
+  --rain-3: #2f7ff0;
+  --rain-4: #21c2b8;
+  --rain-5: #45c853;
+  --rain-6: #b9df3a;
+  --rain-7: #ffdc2e;
+  --rain-8: #ff9a2a;
+  --rain-9: #ff4a3d;
+  --rain-10: #e95ae0;
   --bar: #08161b;
   --bar-text: #e3ecee;
   --bar-soft: #9db2b8;
@@ -192,6 +218,120 @@ p {
 
 .topbar :focus-visible {
   outline-color: var(--bar-text);
+}
+
+/* ---------- View switch (ViewSwitch.tsx) ----------
+   One row of buttons in the top bar. Never warm: bar colours only. The pressed
+   one is filled with the bar's ink (its text colour), like the language switch.
+   The outer box places the More list; the inner row scrolls sideways when it
+   does not fit, so the page itself never does. */
+.view-switch {
+  position: relative;
+  /* Its own row under the rest of the bar on a narrow screen (see 900px below). */
+  order: 1;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.view-row {
+  display: flex;
+  gap: 4px;
+  /* A little room so the focus outline is not cut off by the scrolling. */
+  padding: 2px;
+  overflow-x: auto;
+}
+
+.view-button {
+  flex: none;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--bar-line);
+  border-radius: 2px;
+  color: var(--bar-text);
+  background: transparent;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.view-button:hover {
+  border-color: var(--bar-text);
+}
+
+/* "More ▾" stays on one line (the row wraps only a greyed-out view's note). */
+.view-more-button {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* Pressed (or the More button while it holds the pressed view): filled. */
+.view-button[aria-pressed='true'],
+.view-more-button.holds-pressed {
+  color: var(--bar);
+  background: var(--bar-text);
+  border-color: var(--bar-text);
+  font-weight: 700;
+}
+
+/* No data behind it: greyed out (muted ink, dashed edge), with its note. */
+.view-button[aria-disabled='true'] {
+  color: var(--bar-soft);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.view-button[aria-disabled='true']:hover {
+  border-color: var(--bar-line);
+}
+
+.view-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+/* The greyed-out view's note, on its own line under the name. */
+.view-note {
+  flex-basis: 100%;
+  font-size: 12px;
+  white-space: normal;
+}
+
+/* The More list drops under the switch, against its right edge. */
+.view-menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--bar-line);
+  background: var(--bar);
+}
+
+/* `display: flex` above would otherwise beat the `hidden` attribute. */
+.view-menu[hidden] {
+  display: none;
+}
+
+.view-menu .view-button {
+  width: 100%;
+}
+
+/* A finger needs bigger targets than a mouse pointer. */
+@media (pointer: coarse) {
+  .view-button {
+    min-height: 44px;
+  }
 }
 
 /* The language and theme switches: two buttons joined into one control. */
@@ -462,16 +602,54 @@ p {
   display: none;
 }
 
-/* The map and what floats over it (the heat map button and panel). As tall
+/* The PAR outline's label (Typhoon view): quiet, so the storm names stand out. */
+.par-label {
+  padding: 0 4px 2px;
+  color: var(--ink-soft);
+  font-family: var(--font-title);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hide-par .par-label {
+  display: none;
+}
+
+/* The map and what floats over it (the heat map panel). As tall
    as the map on a small screen; fills the map column on a wide one. */
 .map-frame {
   position: relative;
 }
 
-/* ---------- Heat map button and panel (HeatMapPanel.tsx) ----------
+/* ---------- Map note (MapNote.tsx) ----------
+   While the pressed view has nothing (or not all) to show: top left of the
+   map (under the search box on a wide screen, see below), clear of the zoom
+   buttons (top right) and the map's credit line, which can run along the
+   whole bottom edge. Ink on paper, never a warm colour. */
+.map-note {
+  position: absolute;
+  /* Under the search box, so its list of matches drops over the note. */
+  z-index: 1;
+  left: 10px;
+  top: 10px;
+  /* Leaves room for the zoom buttons; never wider than the map (16px gutter). */
+  max-width: min(360px, calc(100% - 68px));
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ---------- Heat map panel (HeatMapPanel.tsx), while Heat is pressed ----------
    Top right, under MapLibre's zoom and locate buttons, which end 111px from
    the top (10px gap, 60px zoom pair, 10px gap, 31px locate button). */
-.heat-control {
+.heat-control,
+.rain-control {
   position: absolute;
   /* Under the search box, so its list of matches drops over the panel. */
   z-index: 1;
@@ -487,25 +665,8 @@ p {
   max-height: calc(100% - 137px);
 }
 
-.heat-button {
-  flex: none;
-  padding: 4px 10px;
-  border: 1px solid var(--ink);
-  border-radius: 2px;
-  color: var(--ink);
-  background: var(--paper);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* On: filled with ink, like a chosen filter. */
-.heat-button[aria-pressed='true'] {
-  color: var(--on-ink);
-  background: var(--ink);
-}
-
-.heat-panel {
+.heat-panel,
+.rain-panel {
   /* min-height 0 lets it shrink to the space left and scroll. */
   min-height: 0;
   overflow-y: auto;
@@ -518,7 +679,8 @@ p {
   overflow-wrap: anywhere;
 }
 
-.heat-head {
+.heat-head,
+.rain-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -526,7 +688,8 @@ p {
   margin-bottom: 4px;
 }
 
-.heat-head h2 {
+.heat-head h2,
+.rain-head h2 {
   margin: 0;
   font-size: 19px;
 }
@@ -567,16 +730,19 @@ p {
   font-size: 12px;
 }
 
-.heat-status {
+.heat-status,
+.rain-status {
   margin-top: 8px;
 }
 
-.heat-status p {
+.heat-status p,
+.rain-status p {
   margin: 0 0 4px;
 }
 
 /* No data or out of date: ink, the icon and words (like .error). */
-.heat-warn {
+.heat-warn,
+.rain-warn {
   font-weight: 700;
 }
 
@@ -600,12 +766,86 @@ p {
   font-variant-numeric: tabular-nums;
 }
 
-.heat-note {
+.heat-note,
+.rain-note {
   margin: 8px 0 0;
   font-size: 12px;
 }
 
-/* The key's swatches: the same colours as on the map (palette.ts). */
+/* ---------- Rain forecast panel (RainForecastPanel.tsx), Typhoon view ----------
+   The same place and look as the heat map panel (rules above): the time shown,
+   play and pause, and a slider through the 7 days. */
+.rain-time {
+  margin: 6px 0 4px;
+  font-family: var(--font-title);
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.rain-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rain-controls input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--ink);
+}
+
+/* Under 900px the map is short: the "about" line goes (the legend has it too). */
+@media (max-width: 899px) {
+  .rain-about {
+    display: none;
+  }
+}
+
+/* The first and last day under the slider. */
+.rain-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+/* ---------- Rain forecast key in the legend (Typhoon view) ---------- */
+.rain-key {
+  display: grid;
+  /* Five bands a row, so the ten fit in two rows. */
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rain-key li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rain-key .swatch-rain {
+  height: 10px;
+}
+
+/* The heat key in the legend (HeatLegend.tsx). Its swatches: the same colours
+   as on the map (palette.ts). */
+.legend-heat p {
+  margin: 2px 0 0;
+}
+
+.legend-heat .tag {
+  margin-left: auto;
+}
+
+.legend-heat .heat-key {
+  margin-top: 6px;
+}
+
 .heat-below {
   background: var(--heat-below);
 }
@@ -628,7 +868,6 @@ p {
 
 /* A finger needs bigger targets than a mouse pointer. */
 @media (pointer: coarse) {
-  .heat-button,
   .heat-source {
     min-height: 44px;
   }
@@ -690,6 +929,38 @@ label.legend-row {
 /* A row with no tick box lines up with the text of the rows that have one. */
 .legend-indent {
   padding-left: 22px;
+}
+
+/* A view's key title with its tag (Flood, Typhoon, Storm surge): the tag sits at the right. */
+.legend-key-title .tag {
+  margin-left: auto;
+}
+
+/* A line under that title saying what the view shows. */
+.legend-key-about {
+  margin: 2px 0 0;
+}
+
+/* While a hazard view is pressed: the score colours are hidden, say so. */
+.legend-view-note {
+  margin: 8px 0;
+}
+
+/* "Other layers": the layers that don't belong to the pressed view, folded at first. */
+.legend-other {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 10px;
+  padding: 6px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 /* A short note under the score colours (towns appear when zoomed in). */
@@ -843,6 +1114,21 @@ label.legend-row {
   font-variant-numeric: tabular-nums;
 }
 
+/* The row the pressed map view shows (moved to the top, cardOrder.ts). */
+.hazard-shown td {
+  font-weight: 700;
+}
+
+.hazard-shown .tag {
+  margin-left: 6px;
+  font-weight: 400;
+}
+
+/* "No heat headlines …" and the "Show all headlines" button under it. */
+.news-none {
+  margin: 8px 0;
+}
+
 /* Stripes over a score colour: the score is missing some data. */
 .swatch-incomplete {
   background: repeating-linear-gradient(-45deg, var(--ink-soft) 0 1px, transparent 1px 4px);
@@ -910,12 +1196,25 @@ label.legend-row {
   border-radius: 50%;
 }
 
+/* A quake marker: a see-through ink disc with a thin ink ring (quakeOverlay.ts). */
+.mark-quake {
+  height: 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink-soft) 35%, transparent);
+}
+
 .mark-storm {
   border-top: 2px solid var(--ink);
 }
 
 .mark-forecast {
   border-top: 2px dashed var(--ink);
+}
+
+/* The PAR outline: longer dashes in the muted ink (the map draws it the same way). */
+.mark-par {
+  border-top: 2px dashed var(--ink-soft);
 }
 
 .mark-news {
@@ -1303,6 +1602,12 @@ footer {
     display: none;
   }
 
+  /* In line with the rest of the bar; it can still shrink and scroll. */
+  .view-switch {
+    order: 0;
+    flex: 0 1 auto;
+  }
+
   /* Spot panel | map | feeds. The names place each column, whatever its
      order in the page (the map comes first there, for small screens). */
   .workspace {
@@ -1350,6 +1655,12 @@ footer {
     left: -1px;
     right: -1px;
     top: 100%;
+  }
+
+  /* The map note goes just under the floating search box (12px + its height + 10px). */
+  .map-note {
+    left: 12px;
+    top: 78px;
   }
 
   /* The legend closes off the bottom of the left column. */

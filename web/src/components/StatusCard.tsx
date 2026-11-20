@@ -2,12 +2,18 @@
 // Order: the place, official alerts, storms and serious events, the score
 // with its hazard rows, the fixed hazard map (Project NOAH), what is not
 // covered, the reasons, official links, then the details (each starts closed).
+// The hazard row of the pressed map view goes first in its table, and its detail
+// section (Earthquake: the quakes; Heat and Flood: the weather) moves up under it,
+// open (cardOrder.ts). Typhoon keeps the storms block above the score even
+// when no storm is coming, and says so.
 
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
-import type { EarthquakeEvent, PointDetail, WeatherEvent } from '@ph-monitor/shared';
+import type { EarthquakeEvent, MapViewId, PointDetail, WeatherEvent } from '@ph-monitor/shared';
 import { fetchPointDetail } from '../api.ts';
 import type { Spot } from '../api.ts';
+import { hazardRowOrder, viewRow, viewSection } from '../cardOrder.ts';
+import type { HazardRowId } from '../cardOrder.ts';
 import { formatTime, formatValue } from '../format.ts';
 import { reasonText } from '../reasonText.ts';
 import { fill, useStrings } from '../i18n/index.ts';
@@ -33,9 +39,13 @@ type Props = {
   onClose: () => void;
   /** Called when the spot's details arrive, with the town and province it is in. */
   onArea: (area: PickedArea) => void;
+  /** The pressed map view: its hazard row goes first and is marked. */
+  view: MapViewId;
+  /** true when the storm tracks are old or could not be loaded (Typhoon's "no storm" can't be trusted). */
+  stormsUnsure: boolean;
 };
 
-export function StatusCard({ spot, onClose, onArea }: Props) {
+export function StatusCard({ spot, onClose, onArea, view, stormsUnsure }: Props) {
   // `t` holds all the words in the current language.
   const { t } = useStrings();
   const { theme } = useTheme();
@@ -123,18 +133,107 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
   const incomplete = score.unknownSignals.length > 0;
   // One row per hazard. `value` is null when that hazard could not be checked.
   const unknown = (name: 'quake' | 'weather' | 'event') => score.unknownSignals.includes(name);
-  const hazardRows: { label: string; value: number | null }[] = [
-    { label: t.hazards.quake, value: unknown('quake') ? null : score.hazards.quake },
-    { label: t.hazards.rain, value: score.hazards.rain },
-    { label: t.hazards.heat, value: score.hazards.heat },
-    { label: t.hazards.event, value: unknown('event') ? null : score.hazards.event },
-  ];
+  // `Record<HazardRowId, ...>` = one row for each hazard row id.
+  const rowsById: Record<HazardRowId, { label: string; value: number | null }> = {
+    quake: { label: t.hazards.quake, value: unknown('quake') ? null : score.hazards.quake },
+    rain: { label: t.hazards.rain, value: score.hazards.rain },
+    heat: { label: t.hazards.heat, value: score.hazards.heat },
+    event: { label: t.hazards.event, value: unknown('event') ? null : score.hazards.event },
+  };
+  // The pressed view's own row first; it is marked "On the map".
+  const shownRow = viewRow(view);
+  // The pressed view's own detail section, moved up under the hazard table (cardOrder.ts).
+  const shownSection = viewSection(view);
+  const hazardRows = hazardRowOrder(view).map((id) => ({ id, ...rowsById[id] }));
   const colors = bandColors(band, theme);
 
   // Split the events by kind. The `(e): e is ...` part tells TypeScript what
   // the filter keeps, so `quakes` is known to hold only earthquakes.
   const quakes = events.filter((e): e is EarthquakeEvent => e.kind === 'earthquake');
   const weather = events.find((e): e is WeatherEvent => e.kind === 'weather');
+
+  /** The earthquakes near here. `open`: it starts open (the pressed view's own section). */
+  const quakesSection = (open: boolean) => (
+      <Fold title={t.card.quakesTitle} count={quakes.length} open={open}>
+      {/* Unknown is never calm: with the feed down, an empty list is not "none". */}
+      {unknown('quake') && (
+        <p className="notice">
+          <WarnIcon /> {t.card.quakesUnknown}
+        </p>
+      )}
+      {quakes.length === 0 ? (
+        !unknown('quake') && <p className="muted">{t.card.quakesNone}</p>
+      ) : (
+        <ul>
+          {quakes.map((quake) => (
+            <li key={quake.id}>
+              <strong>M{quake.magnitude.toFixed(1)}</strong>
+              {quake.place ? `, ${quake.place}` : ''}
+              <br />
+              <span className="muted">
+                {quake.distanceKm < 1
+                  ? t.card.lessThanOneKmAway
+                  : fill(t.card.kmAway, { km: Math.round(quake.distanceKm) })}
+                {quake.depthKm === null
+                  ? ''
+                  : `, ${fill(t.card.kmDeep, { km: Math.round(quake.depthKm) })}`}
+                ,{' '}
+                {formatTime(quake.occurredAt)}
+                {quake.url && (
+                  <>
+                    {' · '}
+                    <a href={quake.url} target="_blank" rel="noreferrer">
+                      {t.card.usgsPage}
+                    </a>
+                  </>
+                )}
+              </span>
+              <QuakeImpact quake={quake} />
+            </li>
+          ))}
+        </ul>
+      )}
+      </Fold>
+  );
+
+  /** The weather reading (the heat index is in it). `open`: it starts open (the pressed view's own section). */
+  const weatherSection = (open: boolean) => (
+      <Fold title={t.card.weatherTitle} tag={t.tiers.model} open={open}>
+      {weather ? (
+        <>
+          <table>
+            <tbody>
+              <tr>
+                <td>{t.card.temperature}</td>
+                <td>{formatValue(weather.tempC, '°C')}</td>
+              </tr>
+              <tr>
+                <td>{t.card.humidity}</td>
+                <td>{formatValue(weather.humidityPct, '%')}</td>
+              </tr>
+              <tr>
+                <td>{t.card.heatIndex}</td>
+                <td>{formatValue(weather.heatIndexC, '°C')}</td>
+              </tr>
+              <tr>
+                <td>{t.card.rain1h}</td>
+                <td>{formatValue(weather.rain1hMm, 'mm')}</td>
+              </tr>
+              <tr>
+                <td>{t.card.rain24h}</td>
+                <td>{formatValue(weather.rain24hMm, 'mm')}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="muted">
+            {fill(t.card.weatherNote, { time: formatTime(weather.validAt) })}
+          </p>
+        </>
+      ) : (
+        <p className="muted">{t.card.weatherNone}</p>
+      )}
+      </Fold>
+  );
 
   return (
     <aside className="panel card">
@@ -163,7 +262,7 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
           <OfficialAlerts alerts={detail.conditions.officialAlerts} />
         </div>
       )}
-      <NearHere conditions={detail.conditions} />
+      <NearHere conditions={detail.conditions} stormsShown={shownSection === 'storms'} stormsUnsure={stormsUnsure} />
 
       <div className="score-row">
         {/* The number sits on its band's colour; `ink` is the text colour that reads on it. */}
@@ -186,8 +285,11 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
       <table className="hazards" aria-label={t.card.hazardsTitle}>
         <tbody>
           {hazardRows.map((row) => (
-            <tr key={row.label}>
-              <td>{row.label}</td>
+            <tr key={row.id} className={row.id === shownRow ? 'hazard-shown' : undefined}>
+              <td>
+                {row.label}
+                {row.id === shownRow && <span className="tag">{t.card.onMap}</span>}
+              </td>
               <td>
                 {row.value === null ? t.hazards.unknown : bandLabel(bandFor(row.value))}
               </td>
@@ -196,6 +298,9 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
           ))}
         </tbody>
       </table>
+      {/* The pressed view's own section, moved up and open (cardOrder.ts). */}
+      {shownSection === 'quakes' && quakesSection(true)}
+      {shownSection === 'weather' && weatherSection(true)}
       {/* Fixed scenario maps: shown beside the score, never part of it. */}
       <HazardZones zones={detail.hazardZones} />
       <p className="muted">{t.card.notCovered}</p>
@@ -239,77 +344,11 @@ export function StatusCard({ spot, onClose, onArea }: Props) {
       {/* Links to the official pages, straight after the score and its reasons. */}
       <Bulletins />
 
-      {/* Everything else starts closed; each title opens its section. */}
-      <Fold title={t.card.quakesTitle} count={quakes.length}>
-      {quakes.length === 0 ? (
-        <p className="muted">{t.card.quakesNone}</p>
-      ) : (
-        <ul>
-          {quakes.map((quake) => (
-            <li key={quake.id}>
-              <strong>M{quake.magnitude.toFixed(1)}</strong>
-              {quake.place ? `, ${quake.place}` : ''}
-              <br />
-              <span className="muted">
-                {quake.distanceKm < 1
-                  ? t.card.lessThanOneKmAway
-                  : fill(t.card.kmAway, { km: Math.round(quake.distanceKm) })}
-                {quake.depthKm === null
-                  ? ''
-                  : `, ${fill(t.card.kmDeep, { km: Math.round(quake.depthKm) })}`}
-                ,{' '}
-                {formatTime(quake.occurredAt)}
-                {quake.url && (
-                  <>
-                    {' · '}
-                    <a href={quake.url} target="_blank" rel="noreferrer">
-                      {t.card.usgsPage}
-                    </a>
-                  </>
-                )}
-              </span>
-              <QuakeImpact quake={quake} />
-            </li>
-          ))}
-        </ul>
-      )}
-      </Fold>
+      {/* Everything else starts closed; each title opens its section. The pressed
+          view's own section was moved up, under the hazard table. */}
+      {shownSection !== 'quakes' && quakesSection(false)}
 
-      <Fold title={t.card.weatherTitle} tag={t.tiers.model}>
-      {weather ? (
-        <>
-          <table>
-            <tbody>
-              <tr>
-                <td>{t.card.temperature}</td>
-                <td>{formatValue(weather.tempC, '°C')}</td>
-              </tr>
-              <tr>
-                <td>{t.card.humidity}</td>
-                <td>{formatValue(weather.humidityPct, '%')}</td>
-              </tr>
-              <tr>
-                <td>{t.card.heatIndex}</td>
-                <td>{formatValue(weather.heatIndexC, '°C')}</td>
-              </tr>
-              <tr>
-                <td>{t.card.rain1h}</td>
-                <td>{formatValue(weather.rain1hMm, 'mm')}</td>
-              </tr>
-              <tr>
-                <td>{t.card.rain24h}</td>
-                <td>{formatValue(weather.rain24hMm, 'mm')}</td>
-              </tr>
-            </tbody>
-          </table>
-          <p className="muted">
-            {fill(t.card.weatherNote, { time: formatTime(weather.validAt) })}
-          </p>
-        </>
-      ) : (
-        <p className="muted">{t.card.weatherNone}</p>
-      )}
-      </Fold>
+      {shownSection !== 'weather' && weatherSection(false)}
 
       <ConditionsSections conditions={detail.conditions} />
 

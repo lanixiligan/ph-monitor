@@ -14,6 +14,25 @@ export function formatTime(iso: string | null): string {
 }
 
 /**
+ * A forecast period in the reader's own time: "Sat, Nov 21, 3 PM – 6 PM" for the
+ * `hours` that end at `endIso`. The browser's clock decides the time zone.
+ */
+export function formatPeriod(endIso: string, hours: number): string {
+  const { lang } = getI18n();
+  const end = new Date(endIso);
+  const start = new Date(end.getTime() - hours * 60 * 60 * 1000);
+  const day = start.toLocaleDateString(localeFor(lang), { weekday: 'short', month: 'short', day: 'numeric' });
+  // Each end on its own ("11 PM – 2 AM"), so a period over midnight stays short.
+  const hour = (date: Date) => date.toLocaleTimeString(localeFor(lang), { hour: 'numeric' });
+  return `${day}, ${hour(start)} – ${hour(end)}`;
+}
+
+/** The weekday and date only, for the ends of the forecast slider: "Sat, Nov 21". */
+export function formatForecastDay(iso: string): string {
+  return new Date(iso).toLocaleDateString(localeFor(getI18n().lang), { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+/**
  * "Uploaded 12 minutes ago": how long ago `iso` was, counted from `nowMs`.
  * `t` is the language's strings; it defaults to the current one.
  */

@@ -36,7 +36,7 @@ The hazard map tiles (Project NOAH zones) and the heat map come from our own `/a
 
 | Service | Free limit | What we use |
 |---|---|---|
-| Open-Meteo | about 10,000 calls a day | Weather job about 7,200 a day (about 600 points, every 2 hours); outlook about 700 a day; heat map about 1,200 a day (the same points, all three models in one request, every 12 hours); plus clicked spots (reused for 30 minutes per 5 km cell) |
+| Open-Meteo | about 10,000 calls a day | Weather job about 7,200 a day (about 600 points, every 2 hours); outlook about 700 a day; heat map about 1,200 a day (the same points, all three models in one request, every 12 hours); rain forecast field 512 a day (256 grid points, every 12 hours); together about 9,600, leaving about 400 for clicked spots (reused for 30 minutes per 5 km cell) |
 | YouTube Data API | 10,000 units a day | About 1,900 units a day, at most about 7,500 (only 1-unit calls) |
 
 Open-Meteo's free tier is for non-commercial use. This project is non-commercial.

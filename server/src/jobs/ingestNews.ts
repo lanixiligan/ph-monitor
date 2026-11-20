@@ -4,6 +4,7 @@
 // last few days are checked again with the current rules.
 // Only headline, outlet, category, time and link are stored (never the text).
 
+import { NEWS_KEEP_DAYS } from '@ph-monitor/shared';
 import type { NewsOutletLink, NewsType, OutletCategory } from '@ph-monitor/shared';
 import { pool } from '../db.ts';
 import { fetchFeed, type FeedItem } from '../fetchers/rss.ts';
@@ -15,7 +16,6 @@ import { stormNamesFromAlerts } from '../news/stormNames.ts';
 import { isSameStory, storyKey } from '../news/storyKey.ts';
 import { NEWS_FEEDS } from '../sources.ts';
 
-const KEEP_DAYS = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
 // Rows this recent are compared with new headlines. Feeds carry at most
 // 3 days of items and the story window is 2 days, so 6 days is enough.
@@ -246,7 +246,7 @@ export async function ingestNews(): Promise<void> {
     }
 
     // Old headlines are not useful; keep two weeks.
-    const old = await client.query('DELETE FROM news WHERE published_at < $1', [new Date(Date.now() - KEEP_DAYS * DAY_MS)]);
+    const old = await client.query('DELETE FROM news WHERE published_at < $1', [new Date(Date.now() - NEWS_KEEP_DAYS * DAY_MS)]);
     removed = old.rowCount ?? 0;
 
     await client.query(

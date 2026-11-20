@@ -39,11 +39,12 @@ export const en = {
     creditOutlookEnd: ', CC BY 4.0.',
     // Heat map lines, one per source: lead, link, middle, link(s), end. GFS is public domain (no CC BY).
     creditHeatEcmwf:
-      'Heat index map, ECMWF source: based on data and products of the European Centre for Medium-Range Weather Forecasts (',
+      'Heat index map (ECMWF source) and rain forecast: based on data and products of the European Centre for Medium-Range Weather Forecasts (',
     creditHeatEcmwfMid: '), IFS HRES',
     creditHeatEcmwfData: 'open data',
     creditHeatEcmwfVia: ', via',
-    creditHeatEcmwfEnd: ', CC BY 4.0. Changed: we work out the heat index from its temperature and humidity.',
+    creditHeatEcmwfEnd:
+      ', CC BY 4.0. Changed: we work out the heat index from its temperature and humidity, and add up the rain in 3-hour steps.',
     creditHeatIcon: 'Heat index map, ICON source: based on data from Deutscher Wetterdienst (',
     creditHeatIconMid: '), gridded data reproduced graphically: the ICON global model, via',
     creditHeatIconEnd: ', CC BY 4.0.',
@@ -73,6 +74,7 @@ export const en = {
     riverFlow: 'river flow',
     news: 'headlines',
     heatMap: 'heat map',
+    rainForecast: 'rain forecast',
   },
 
   // The language switch. The draft note is shown only when Filipino is chosen.
@@ -96,6 +98,27 @@ export const en = {
     and: 'and',
   },
 
+  // The top bar's view switch (ViewSwitch.tsx), by the ids in shared/src/mapViews.ts.
+  // A view with no name here fails the typecheck. A view never changes the score.
+  views: {
+    groupLabel: 'Map view',
+    names: {
+      overall: 'Overall',
+      typhoon: 'Typhoon',
+      flood: 'Flood',
+      earthquake: 'Earthquake',
+      heat: 'Heat',
+      stormSurge: 'Storm surge',
+      tsunami: 'Tsunami',
+    },
+    more: 'More',
+    // The More button while the pressed view is inside its menu.
+    moreHolding: 'More: {view}',
+    // The note beside a greyed-out view, by id; `noData` for one with no note of its own.
+    notes: { stormSurge: 'Storm surge map not loaded yet', tsunami: 'No live feed for tsunamis yet' },
+    noData: 'No live data yet',
+  },
+
   // The map legend.
   legend: {
     title: 'Stress score (0–100)',
@@ -114,6 +137,12 @@ export const en = {
     zoomIn: 'Zoom in to see zones',
     hazardNote: 'Fixed maps from Project NOAH, not a forecast. They do not change the score.',
     hazardClasses: { 1: 'Low', 2: 'Medium', 3: 'High' },
+    // The folded heading over the layers that don't belong to the pressed view.
+    otherLayers: 'Other layers',
+    // In the legend while a hazard view (not Overall) is pressed.
+    scoresHidden: 'The score colours are hidden in this view. Press Overall to see them.',
+    // The heat key's source line; {model} is a name from `heat.models`, or `heat.average`.
+    heatSource: 'Source: {model}',
   },
 
   // The side panel before a spot is picked.
@@ -243,6 +272,8 @@ export const en = {
     provinceLabel: '{province}: {score}',
     provinceTopLabel: '{province}: {score}, highest in {town}',
     townLabel: '{town}, {province}: {score}',
+    // Hover labels while the score colours are hidden (Typhoon, Storm surge): the name only.
+    townName: '{town}, {province}',
     popupKind: 'Kind: {kind}',
     popupAlert: 'Alert level: {level}',
     popupSource: 'Source: {source}',
@@ -270,6 +301,8 @@ export const en = {
     bandAtSpot: '{band} at this spot',
     bandInTown: '{band} across {town}',
     hazardsTitle: 'By hazard',
+    // Beside the hazard row that the pressed map view shows.
+    onMap: 'On the map',
     notCovered:
       'Not covered here: landslides, tsunami, PAGASA wind signals and rainfall warnings, PHIVOLCS volcano alert levels. Use the official links below.',
     incomplete: 'Some data is missing, so the real score may be higher.',
@@ -285,6 +318,7 @@ export const en = {
     kmAway: '{km} km away',
     kmDeep: '{km} km deep',
     usgsPage: 'USGS page',
+    quakesUnknown: 'Earthquakes could not be checked lately: recent ones may be missing.',
     weatherTitle: 'Weather',
     temperature: 'Temperature',
     humidity: 'Humidity',
@@ -333,6 +367,9 @@ export const en = {
     stormsTitle: 'Storms forecast to pass near',
     stormLine: 'about {distance} away around {time}',
     stormNote: 'The forecast centre is uncertain; the real path can be different.',
+    // While Typhoon is pressed the storms block always shows, even with no storm.
+    stormsNone: 'No tracked tropical cyclone is forecast to pass within 300 km of here.',
+    stormsUnsure: 'The storm tracks could not be checked lately: a storm may be missing.',
     newsTitle: 'Recent headlines',
     bulletinsTitle: 'Official bulletins',
     bulletinsFallback: 'Official pages: pagasa.dost.gov.ph and phivolcs.dost.gov.ph.',
@@ -355,6 +392,34 @@ export const en = {
     none: 'No headlines to show.',
     alsoAt: 'Also at:',
     showOnMap: 'Show {places} on the map',
+    loading: 'Loading…',
+    // The panel title while one kind is chosen (by hand or by a map view), by NEWS_TYPES id.
+    titles: {
+      typhoon: 'Typhoon headlines',
+      flood: 'Flood headlines',
+      earthquake: 'Earthquake headlines',
+      volcano: 'Volcano headlines',
+      landslide: 'Landslide headlines',
+      tsunami: 'Tsunami and storm surge headlines',
+      drought: 'Drought headlines',
+      wildfire: 'Wildfire headlines',
+      heat: 'Heat headlines',
+      general: 'General headlines',
+    },
+    // No headline of the chosen kind. {days} is how long headlines are kept (NEWS_KEEP_DAYS).
+    noneOfKind: {
+      typhoon: 'No typhoon headlines in the last {days} days.',
+      flood: 'No flood headlines in the last {days} days.',
+      earthquake: 'No earthquake headlines in the last {days} days.',
+      volcano: 'No volcano headlines in the last {days} days.',
+      landslide: 'No landslide headlines in the last {days} days.',
+      tsunami: 'No tsunami or storm surge headlines in the last {days} days.',
+      drought: 'No drought headlines in the last {days} days.',
+      wildfire: 'No wildfire headlines in the last {days} days.',
+      heat: 'No heat headlines in the last {days} days.',
+      general: 'No general headlines in the last {days} days.',
+    },
+    showAll: 'Show all headlines',
   },
 
   // The live news panel (YouTube streams and latest videos).
@@ -425,10 +490,93 @@ export const en = {
     averageNone: 'average of {total} models',
   },
 
-  // The heat map: its button and panel (HeatMapPanel.tsx) and its hover labels.
-  // A display layer only; it never changes the score.
+  // The Earthquake view and the quake markers (display only; they never change the score).
+  quakes: {
+    scaleTitle: 'Earthquake part of the score (0–100)',
+    unknownStripes: 'Stripes over a colour: earthquakes could not be checked, the part may be higher',
+    overallHidden: 'The overall score is not shown in this view. Press Overall to see it.',
+    legend: 'Earthquake (USGS; bigger = stronger)',
+    loading: 'Loading earthquakes…',
+    loadError: 'Could not load the earthquake list right now.',
+    stale: 'The earthquake feed is out of date: recent earthquakes may be missing.',
+    none: 'No earthquakes counted by the score in the last {hours} hours.',
+    countOne: '1 earthquake in the last {hours} hours.',
+    count: '{count} earthquakes in the last {hours} hours.',
+    townLabel: '{town}, {province}: earthquake part {score}',
+    provinceLabel: '{province}: earthquake part {score}',
+    provinceTopLabel: '{province}: earthquake part {score}, in {town}',
+    // {score} in the labels above when the town has no earthquake part yet.
+    noValueLabel: 'no score yet',
+    popupMagnitude: 'Magnitude {magnitude}',
+    popupNoDepth: 'Depth not given',
+    popupClick: 'Click for the USGS page',
+    mapLabel: 'Map of the Philippines with each city and municipality coloured by the earthquake part of its score. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
+  },
+
+  // The Flood view: towns coloured by the rain part of the score (display only;
+  // it never changes the score). The same keys as `quakes` for the shared parts.
+  flood: {
+    scaleTitle: 'Rain part of the score (0–100)',
+    about: 'Rain in the last hour and the last 24 hours, from the weather model. A model estimate, not a PAGASA rainfall warning.',
+    noValue: 'No rain reading',
+    unknownStripes: 'Stripes over a colour: some towns have no rain reading, the part may be higher',
+    overallHidden: 'The overall score is not shown in this view. Press Overall to see it.',
+    townLabel: '{town}, {province}: rain part {score}',
+    provinceLabel: '{province}: rain part {score}',
+    provinceTopLabel: '{province}: rain part {score}, in {town}',
+    // {score} in the labels above when the town has no rain reading (striped).
+    noValueLabel: 'no rain reading',
+    mapLabel: 'Map of the Philippines with each city and municipality coloured by the rain part of its score. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
+  },
+
+  // The Typhoon view: storm tracks only (no wind data yet). Display only.
+  typhoon: {
+    title: 'Tropical cyclone tracks',
+    sources: 'Tracks and forecasts from JMA and JTWC.',
+    noWind: 'Wind colours for each town are not available yet: the map shows the tracks only.',
+    alertsNote: "PAGASA's tropical cyclone alerts for a place are on its status card, in PAGASA's own words.",
+    // The dashed outline on the map and its legend row.
+    par: 'Philippine Area of Responsibility (PAR): PAGASA names and warns about storms inside it',
+    parShort: 'PAR',
+    // Notes on the map (MapNote.tsx).
+    loading: 'Loading storm tracks…',
+    loadError: 'Could not load the storm tracks right now.',
+    stale: 'The storm track feed is out of date: a storm may be missing, or its track may be old.',
+    unchecked: 'Could not check how fresh the storm tracks are: a storm may be missing.',
+    none: 'No tropical cyclone tracked right now.',
+    hidden: 'Storm tracks are switched off. Tick them in the legend to see them.',
+    mapLabel: 'Map of the Philippines with the tracks of tropical cyclones. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
+  },
+
+  // The rain forecast field in the Typhoon view (ECMWF via Open-Meteo). Display only.
+  rain: {
+    // The legend's tick box and key.
+    title: 'Rain forecast (mm in 3 hours)',
+    noValue: 'No forecast here',
+    about: 'ECMWF model, points about 165 km apart, smoothed between them. A model estimate, not a PAGASA forecast.',
+    // The panel over the map.
+    panelTitle: 'Rain forecast',
+    play: 'Play',
+    pause: 'Pause',
+    slider: 'Forecast time',
+    updated: 'Updated {ago}',
+    loading: 'Loading the rain forecast…',
+    loadError: 'Could not load the rain forecast right now.',
+    noData: 'No rain forecast yet: the first download has not finished.',
+    stale: 'The rain forecast is out of date: newer model runs may differ.',
+  },
+
+  // The Storm surge view: the fixed Project NOAH zones. Display only.
+  stormSurge: {
+    title: 'Storm surge hazard map',
+    about: 'A fixed map of where a storm surge could reach. It is not a live surge and not a forecast.',
+    hidden: 'Storm surge zones are switched off. Tick them in the legend to see them.',
+    mapLabel: 'Map of the Philippines with the Project NOAH storm surge hazard zones. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
+  },
+
+  // The heat map: its panel (HeatMapPanel.tsx, open while Heat is pressed), its
+  // key in the legend and its hover labels. A display layer only; it never changes the score.
   heat: {
-    button: 'Heat map',
     title: 'Heat index map',
     close: 'Close heat map',
     source: 'Source',
@@ -470,8 +618,6 @@ export const en = {
     averageAll: 'average of {total} models: {range}',
     averagePart: 'average of {used} of {total} models: {range}',
     averageNone: 'average of {total} models',
-    // Under the score scale in the legend while the heat map is on.
-    scoresHidden: 'Score colours are hidden while the heat map is on.',
     // Read out by a screen reader when it reaches the map while the heat map is on.
     mapLabel: 'Map of the Philippines with each city and municipality coloured by its heat index. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
   },

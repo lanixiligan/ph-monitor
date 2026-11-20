@@ -19,6 +19,7 @@ import { fill, lookup, useStrings } from '../i18n/index.ts';
 import { useNow } from '../useNow.ts';
 import { Fold } from './Fold.tsx';
 import { UploadedTime } from './UploadedTime.tsx';
+import { WarnIcon } from './WarnIcon.tsx';
 
 // Props lists what the parent hands to this component. `{ conditions }` below
 // pulls that one value out of the props object.
@@ -51,17 +52,30 @@ function EventList({ events }: { events: DisasterEvent[] }) {
   );
 }
 
+type NearHereProps = {
+  conditions: Conditions;
+  /**
+   * true while Typhoon is pressed: the storms part always shows, saying so
+   * when no storm is coming (or when the storm tracks could not be checked).
+   * Left out = drawn only when there is something to list.
+   */
+  stormsShown?: boolean; // `?` means the value may be left out
+  /** true when the storm tracks are old or could not be loaded: "none" can't be trusted. */
+  stormsUnsure?: boolean;
+};
+
 /**
  * Storms forecast to pass near, and the nearby disaster events that are still
  * going or are orange or red (see isTopEvent). Shown above the score: a low
- * score must never hide these. Draws nothing when there are none.
+ * score must never hide these. Draws nothing when there are none (unless
+ * `stormsShown`).
  */
-export function NearHere({ conditions }: Props) {
+export function NearHere({ conditions, stormsShown = false, stormsUnsure = false }: NearHereProps) {
   const { t } = useStrings();
   const c = t.conditions;
   const { stormsComing } = conditions;
   const topEvents = conditions.nearbyEvents.filter(isTopEvent);
-  if (topEvents.length === 0 && stormsComing.length === 0) return null;
+  if (!stormsShown && topEvents.length === 0 && stormsComing.length === 0) return null;
 
   return (
     <div className="near-here">
@@ -84,6 +98,24 @@ export function NearHere({ conditions }: Props) {
           </ul>
           <p className="muted">{c.stormNote}</p>
         </>
+      )}
+      {/* Typhoon pressed, no storm listed: say so; unknown is never calm. */}
+      {stormsShown && stormsComing.length === 0 && (
+        <>
+          <h4>{c.stormsTitle}</h4>
+          {stormsUnsure ? (
+            <p className="notice">
+              <WarnIcon /> {c.stormsUnsure}
+            </p>
+          ) : (
+            <p className="muted">{c.stormsNone}</p>
+          )}
+        </>
+      )}
+      {stormsShown && stormsComing.length > 0 && stormsUnsure && (
+        <p className="notice">
+          <WarnIcon /> {c.stormsUnsure}
+        </p>
       )}
 
       {topEvents.length > 0 && (
