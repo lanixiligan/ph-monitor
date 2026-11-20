@@ -620,8 +620,9 @@ export const en = {
     } satisfies Record<HeatSourceId, string>,
     creditLink: 'Open-Meteo',
     // Hover labels. {heat} is `degrees`, `degreesBand` or `unknown`; {model} is a name from `models`.
-    townLabel: '{town}, {province}: {heat} · {model}',
-    provinceLabel: '{province}: {heat} · {model}',
+    // {time} is the shown hour, e.g. 'Sat 11/21 12PM'.
+    townLabel: '{town}, {province}: {heat} · {model} · {time}',
+    provinceLabel: '{province}: {heat} · {model} · {time}',
     degrees: '{heat} °C',
     degreesBand: '{heat} °C, {band}',
     unknown: 'unknown',
@@ -639,6 +640,9 @@ export const en = {
     dayShort: '{weekday} {month}/{day}',
     weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
     noHour: 'This source has no value for this hour.',
+    // The PAGASA choice in the source list, and its spacing line.
+    pagasaNote: 'About 1 km grid',
+    pagasaSpacing: 'A town shows its hottest 1 km square.',
   },
 
   // Small words used by the formatting helpers.

@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { dayLabel, hourLabel, keepOrDefault, pickDay } from '../src/heatTime.ts';
+import { dayLabel, hourLabel, keepOrDefault, pickDay, timeText } from '../src/heatTime.ts';
 import { en } from '../src/i18n/en.ts';
 
 test('keepOrDefault keeps a choice that is still on the bar', () => {
@@ -48,4 +48,10 @@ test('hourLabel and dayLabel', () => {
   assert.equal(hourLabel(12, en), '12PM');
   assert.equal(hourLabel(17, en), '5PM');
   assert.equal(dayLabel('2026-11-21', en), 'Sat 11/21');
+});
+
+test('timeText: day and hour in Philippine time; no hour says so', () => {
+  assert.equal(timeText('2026-11-21T04:00:00.000Z', en), 'Sat 11/21 12PM');
+  assert.equal(timeText('2026-11-20T16:00:00.000Z', en), 'Sat 11/21 12AM');
+  assert.equal(timeText(null, en), en.heat.noHour);
 });

@@ -24,6 +24,7 @@ import type { HazardLayerInfo, HeatMapData, MapViewId, PlaceScores, QuakeMap, St
 import { fetchPlaceShapes } from '../api.ts';
 import type { PlaceCollection, ProvinceCollection, Spot } from '../api.ts';
 import { LANDSLIDE_LAYERS, SURGE_LAYERS, useHazardZones } from '../hazardOverlay.ts';
+import { timeText } from '../heatTime.ts';
 import { heatSource, heatText, withProvinceHeat, withTownHeat } from '../heatColors.ts';
 import { EVENT_LAYERS, OVERLAY_CLICK_LAYERS, PAR_LAYERS, STORM_LAYERS, useOverlays } from '../mapOverlays.ts';
 import { PAR_BOUNDS } from '../parArea.ts';
@@ -535,11 +536,13 @@ export function ProvinceMap({
                   province: town.province_name,
                   heat: heatOf(town),
                   model: heatSource(heatNow.model, town, t),
+                  time: timeText(heatNow.validAt, t),
                 })
               : fill(t.heat.provinceLabel, {
                   province: properties.name,
                   heat: heatOf(properties),
                   model: heatSource(heatNow.model, properties, t),
+                  time: timeText(heatNow.validAt, t),
                 });
           } else if (partRef.current !== null) {
             // A part view (Earthquake, Flood): that part, never the overall score.

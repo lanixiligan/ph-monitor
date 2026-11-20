@@ -1,7 +1,7 @@
 // Rules for the Heat view's time bar: which time stays chosen, what a day
 // button picks, and the words on the buttons. Pure functions: no clock reads.
 
-import { barTimes, defaultBarTime } from '@ph-monitor/shared';
+import { barTimes, defaultBarTime, phDate } from '@ph-monitor/shared';
 import { fill } from './i18n/index.ts';
 // `import type` brings in a type only; it vanishes when the code runs.
 import type { Strings } from './i18n/index.ts';
@@ -35,4 +35,12 @@ export function hourLabel(hour: number, t: Strings): string {
 export function dayLabel(day: string, t: Strings): string {
   const weekday = t.heat.weekdays[new Date(`${day}T00:00:00Z`).getUTCDay()] ?? '';
   return fill(t.heat.dayShort, { weekday, month: Number(day.slice(5, 7)), day: Number(day.slice(8, 10)) });
+}
+
+/** 'Sat 11/21 12PM' for a shown time (ISO); the "no value" words when there is none. */
+export function timeText(validAt: string | null, t: Strings): string {
+  if (validAt === null) return t.heat.noHour;
+  const at = new Date(validAt);
+  // Philippine time is UTC+8, so the PH hour is the UTC hour plus 8.
+  return `${dayLabel(phDate(at), t)} ${hourLabel((at.getUTCHours() + 8) % 24, t)}`;
 }

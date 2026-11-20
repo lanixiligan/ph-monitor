@@ -1747,6 +1747,11 @@ footer {
   font-size: 13px;
 }
 
+/* A greyed hour says "not allowed", not "busy" (.filter:disabled's cursor). */
+.heat-time .filter:disabled {
+  cursor: not-allowed;
+}
+
 .heat-time-row {
   display: flex;
   gap: 4px;

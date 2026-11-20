@@ -576,8 +576,8 @@ export const fil: Strings = {
       pagasa: 'Heat index forecast: DOST-PAGASA iHeatMAP (iheatmap.pagasa.dost.gov.ph), based on ECMWF data. Used without changes, for a non-commercial purpose.', // REVIEW: draft, same English text for now
     },
     creditLink: 'Open-Meteo', // REVIEW
-    townLabel: '{town}, {province}: {heat} · {model}', // REVIEW
-    provinceLabel: '{province}: {heat} · {model}', // REVIEW
+    townLabel: '{town}, {province}: {heat} · {model} · {time}', // REVIEW
+    provinceLabel: '{province}: {heat} · {model} · {time}', // REVIEW
     degrees: '{heat} °C', // REVIEW
     degreesBand: '{heat} °C, {band}', // REVIEW
     unknown: 'hindi alam', // REVIEW
@@ -592,6 +592,8 @@ export const fil: Strings = {
     dayShort: '{weekday} {month}/{day}', // REVIEW
     weekdays: ['Lin', 'Lun', 'Mar', 'Miy', 'Huw', 'Biy', 'Sab'], // REVIEW
     noHour: 'Walang halaga ang source na ito para sa oras na ito.', // REVIEW
+    pagasaNote: 'Mga 1 km na grid', // REVIEW
+    pagasaSpacing: 'Ipinapakita ng bawat bayan ang pinakamainit nitong 1 km na parisukat.', // REVIEW
   },
 
   // Small words used by the formatting helpers.
