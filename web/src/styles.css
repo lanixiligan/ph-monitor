@@ -1728,3 +1728,27 @@ footer {
     grid-template-columns: 380px minmax(0, 1fr) 400px;
   }
 }
+
+/* ---------- Heat time bar (HeatTimeBar.tsx), while Heat is pressed ----------
+   Along the bottom of the map, above its credit line. Two rows of the usual
+   .filter buttons; each row scrolls sideways on a narrow screen, never the page. */
+.heat-time {
+  position: absolute;
+  z-index: 1;
+  left: 10px;
+  right: 10px;
+  bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  font-size: 13px;
+}
+
+.heat-time-row {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}

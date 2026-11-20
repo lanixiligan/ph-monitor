@@ -631,6 +631,14 @@ export const en = {
     averageNone: 'average of {total} models',
     // Read out by a screen reader when it reaches the map while the heat map is on.
     mapLabel: 'Map of the Philippines with each city and municipality coloured by its heat index. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
+    // The time bar under the map (HeatTimeBar.tsx): hours and days in Philippine time.
+    timeBar: 'Forecast time',
+    today: 'Today',
+    hourAm: '{hour}AM',
+    hourPm: '{hour}PM',
+    dayShort: '{weekday} {month}/{day}',
+    weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    noHour: 'This source has no value for this hour.',
   },
 
   // Small words used by the formatting helpers.

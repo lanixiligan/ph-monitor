@@ -585,6 +585,13 @@ export const fil: Strings = {
     averagePart: 'average ng {used} sa {total} modelo: {range}', // REVIEW
     averageNone: 'average ng {total} modelo', // REVIEW
     mapLabel: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa heat index nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+    timeBar: 'Oras ng forecast', // REVIEW
+    today: 'Ngayon', // REVIEW
+    hourAm: '{hour}AM', // REVIEW
+    hourPm: '{hour}PM', // REVIEW
+    dayShort: '{weekday} {month}/{day}', // REVIEW
+    weekdays: ['Lin', 'Lun', 'Mar', 'Miy', 'Huw', 'Biy', 'Sab'], // REVIEW
+    noHour: 'Walang halaga ang source na ito para sa oras na ito.', // REVIEW
   },
 
   // Small words used by the formatting helpers.
