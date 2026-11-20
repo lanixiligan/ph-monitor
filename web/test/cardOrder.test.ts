@@ -72,20 +72,29 @@ test("hazard rows: Overall keeps today's order", () => {
 test('hazard rows: the pressed view puts its own row first, the others keep their order', () => {
   assert.deepEqual(hazardRowOrder('heat'), ['heat', 'quake', 'rain', 'event']);
   assert.deepEqual(hazardRowOrder('earthquake'), ['quake', 'rain', 'heat', 'event']);
+  assert.deepEqual(hazardRowOrder('flood'), ['rain', 'quake', 'heat', 'event']);
   assert.equal(viewRow('heat'), 'heat');
   assert.equal(viewRow('earthquake'), 'quake');
+  assert.equal(viewRow('flood'), 'rain');
 });
 
 test('hazard rows: a view with no row of its own keeps the order, and every row stays listed', () => {
   assert.deepEqual(hazardRowOrder('tsunami'), HAZARD_ROWS);
-  for (const view of ['overall', 'heat', 'earthquake', 'tsunami'] as const) {
+  // Typhoon (tracks only) and Storm surge (a fixed map) have no part of the score of their own.
+  assert.deepEqual(hazardRowOrder('typhoon'), HAZARD_ROWS);
+  assert.deepEqual(hazardRowOrder('stormSurge'), HAZARD_ROWS);
+  for (const view of ['overall', 'typhoon', 'flood', 'earthquake', 'heat', 'stormSurge', 'tsunami'] as const) {
     assert.deepEqual([...hazardRowOrder(view)].sort(), [...HAZARD_ROWS].sort());
   }
 });
 
-test('a view moves its own detail section up: Earthquake the quakes, Heat the weather', () => {
+test('a view moves its own detail section up: Earthquake the quakes, Heat and Flood the weather, Typhoon the storms', () => {
   assert.equal(viewSection('earthquake'), 'quakes');
   assert.equal(viewSection('heat'), 'weather');
+  // The weather section holds the rain amounts.
+  assert.equal(viewSection('flood'), 'weather');
+  assert.equal(viewSection('typhoon'), 'storms');
+  assert.equal(viewSection('stormSurge'), null);
   // Overall and a view with no section keep the card as it is.
   assert.equal(viewSection('overall'), null);
   assert.equal(viewSection('tsunami'), null);

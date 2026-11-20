@@ -45,3 +45,12 @@ export function hasMapLayer(loaded: HazardLayerInfo[] | null, kind: HazardMapKin
     (layer) => layer.kind === kind && (kind === 'landslide' || layer.surgeLevel === MAP_SURGE_LEVEL),
   );
 }
+
+/**
+ * The hazard map kinds the map can draw now, for the view switch
+ * (isViewAvailable, viewTicks). Not known yet, or failed to load = none.
+ */
+export function loadedMapKinds(loaded: HazardLayerInfo[] | null): HazardMapKind[] {
+  const kinds: HazardMapKind[] = ['stormSurge', 'landslide'];
+  return kinds.filter((kind) => hasMapLayer(loaded, kind));
+}

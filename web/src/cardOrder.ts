@@ -10,11 +10,12 @@ export type HazardRowId = 'quake' | 'rain' | 'heat' | 'event';
 export const HAZARD_ROWS: HazardRowId[] = ['quake', 'rain', 'heat', 'event'];
 
 // Which hazard row each map view shows on the map. A view with no row here
-// (Overall, Tsunami) keeps today's order.
+// (Overall, Typhoon, Storm surge, Tsunami) keeps today's order.
 // `Partial<Record<A, B>>` = an object that may have a B for some of the A keys.
 const VIEW_ROW: Partial<Record<MapViewId, HazardRowId>> = {
   heat: 'heat',
   earthquake: 'quake',
+  flood: 'rain',
 };
 
 /** The hazard row the pressed view shows on the map, or null when it has none. */
@@ -23,13 +24,18 @@ export function viewRow(view: MapViewId): HazardRowId | null {
 }
 
 /** The card's detail sections that a view can bring up to just under the hazard table. */
-export type DetailSectionId = 'quakes' | 'weather';
+// 'storms' = the storms forecast to pass near, above the score.
+export type DetailSectionId = 'quakes' | 'weather' | 'storms';
 
 // Which detail section each map view moves up (and opens). The weather
-// section holds the heat index, so it belongs to Heat.
+// section holds the heat index and the rain amounts, so it belongs to Heat and
+// Flood. Typhoon's storms are already above the score; it keeps them there
+// even when there are none, saying so.
 const VIEW_SECTION: Partial<Record<MapViewId, DetailSectionId>> = {
   earthquake: 'quakes',
   heat: 'weather',
+  flood: 'weather',
+  typhoon: 'storms',
 };
 
 /** The detail section the pressed view moves to the top, or null (Overall: today's order). */
