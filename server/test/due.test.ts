@@ -12,7 +12,7 @@ const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60 * 
 function allRecent(): Map<string, Date> {
   const names = [
     'usgs', 'open-meteo', 'pagasa', 'news', 'gdacs', 'eonet', 'jma', 'jtwc',
-    'open-meteo-daily', 'check:feed', 'check:stream', 'open-meteo-heat',
+    'open-meteo-daily', 'check:feed', 'check:stream', 'open-meteo-heat', 'open-meteo-rain',
   ];
   return new Map(names.map((name) => [name, minutesAgo(5)]));
 }
@@ -37,7 +37,7 @@ test('dueJobs: nothing is due right after everything ran (a restart fetches noth
 
 test('dueJobs: with an empty database every job is due', () => {
   assert.deepEqual(dueJobs(new Map(), now), [
-    'earthquakes', 'weather', 'alerts', 'news', 'events', 'storms', 'streamCheck', 'feedCheck', 'outlook', 'heatMap',
+    'earthquakes', 'weather', 'alerts', 'news', 'events', 'storms', 'streamCheck', 'feedCheck', 'outlook', 'heatMap', 'rainForecast',
   ]);
 });
 
@@ -71,12 +71,21 @@ test('jobsOnTick: the clock decides which jobs a tick wants', () => {
   assert.deepEqual(jobsOnTick(15), ['earthquakes', 'alerts', 'news']);
   assert.deepEqual(jobsOnTick(30), ['earthquakes', 'alerts', 'news', 'events', 'storms', 'streamCheck']);
   assert.deepEqual(jobsOnTick(0), [
-    'earthquakes', 'weather', 'alerts', 'news', 'events', 'storms', 'streamCheck', 'feedCheck', 'outlook', 'heatMap',
+    'earthquakes', 'weather', 'alerts', 'news', 'events', 'storms', 'streamCheck', 'feedCheck', 'outlook', 'heatMap', 'rainForecast',
   ]);
 });
 
-test('slow jobs: weather (every 2 hours), the outlook and the heat map must also be due when a tick wants them', () => {
-  assert.deepEqual(SLOW_JOBS, ['weather', 'outlook', 'heatMap']);
+test('slow jobs: weather (every 2 hours), the outlook, the heat map and the rain forecast must also be due when a tick wants them', () => {
+  assert.deepEqual(SLOW_JOBS, ['weather', 'outlook', 'heatMap', 'rainForecast']);
+});
+
+test('dueJobs: the rain forecast runs every 12 hours, even when stamped minutes after the heat map', () => {
+  const runs = allRecent();
+  runs.set('open-meteo-rain', minutesAgo(11 * 60));
+  assert.deepEqual(dueJobs(runs, now), []);
+  // Stamped at 00:12 (it runs after the heat map); now is the 12:00 tick.
+  runs.set('open-meteo-rain', minutesAgo(11 * 60 + 48));
+  assert.deepEqual(dueJobs(runs, now), ['rainForecast']);
 });
 
 test('dueJobs: the heat map runs every 12 hours', () => {

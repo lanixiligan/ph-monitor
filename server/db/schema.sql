@@ -355,6 +355,18 @@ CREATE TABLE IF NOT EXISTS heat_runs (
   last_total INTEGER NOT NULL                  -- points asked about
 );
 
+-- ---------- Rain forecast field (Typhoon view; display only) ----------
+-- The next 7 days of hourly rain (ECMWF via Open-Meteo, CC BY 4.0) on a fixed
+-- 1.5° grid over the Philippine Area of Responsibility (RAIN_GRID in
+-- server/src/rainForecast.ts). One row per grid point; only the newest good
+-- run is kept. No scoring code reads this table.
+CREATE TABLE IF NOT EXISTS rain_forecasts (
+  point_index INTEGER PRIMARY KEY,             -- row × cols + col, rows from the south
+  start_at    TIMESTAMPTZ NOT NULL,            -- end of the first hour in hourly_mm
+  hourly_mm   REAL[] NOT NULL,                 -- rain in each hour, mm; NULL = missing
+  fetched_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- When a job last started, even if it then failed (only the heat map uses it
 -- for now). A failed heat run is not tried again for 12 hours, even after a
 -- server restart, so failures can't use up the day's Open-Meteo calls.

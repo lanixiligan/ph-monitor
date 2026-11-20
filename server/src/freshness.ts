@@ -39,6 +39,8 @@ export const FEED_RULES: FeedRule[] = [
   { id: 'riverFlow', sources: ['open-meteo-flood'], staleAfterMinutes: 13 * 60 },
   // The heat map runs every 12 hours, so two missed runs raise the banner.
   { id: 'heatMap', sources: ['open-meteo-heat'], staleAfterMinutes: HEAT_MAP_STALE_MINUTES },
+  // The rain forecast runs every 12 hours too (right after the heat map).
+  { id: 'rainForecast', sources: ['open-meteo-rain'], staleAfterMinutes: 25 * 60 },
   { id: 'news', sources: ['news'], staleAfterMinutes: 60 },
 ];
 

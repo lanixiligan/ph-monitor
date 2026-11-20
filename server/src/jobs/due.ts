@@ -16,7 +16,8 @@ export type JobName =
   | 'streamCheck'
   | 'feedCheck'
   | 'outlook'
-  | 'heatMap';
+  | 'heatMap'
+  | 'rainForecast';
 
 /**
  * The heat map runs every 12 hours. The rule says 11.5: a run is stamped when it
@@ -43,7 +44,9 @@ type JobRule = {
  * total stays near 7,200 of Open-Meteo's 10,000 calls (see PLAN.md).
  * The outlook costs about 176 Open-Meteo calls a run, so it runs rarely.
  * The heat map asks for the same ~600 points (all its models in one request)
- * every 12 hours: about 1,198 calls a day. Day total: about 9,090.
+ * every 12 hours: about 1,198 calls a day. The rain forecast field asks for 256
+ * grid points every 12 hours: 512 a day. Day total: about 9,600, leaving about
+ * 400 for spots readers click.
  */
 export const JOB_RULES: JobRule[] = [
   { job: 'earthquakes', everyMinutes: 15, sources: ['usgs'], needs: 'all' },
@@ -57,6 +60,8 @@ export const JOB_RULES: JobRule[] = [
   { job: 'feedCheck', everyMinutes: 60, sources: ['check:feed'], needs: 'all' },
   { job: 'outlook', everyMinutes: 6 * 60, sources: ['open-meteo-daily'], needs: 'all' },
   { job: 'heatMap', everyMinutes: HEAT_MAP_EVERY_MINUTES, sources: ['open-meteo-heat'], needs: 'all' },
+  // Same rhythm as the heat map (and run right after it: see scheduler.ts).
+  { job: 'rainForecast', everyMinutes: HEAT_MAP_EVERY_MINUTES, sources: ['open-meteo-rain'], needs: 'all' },
 ];
 
 const MINUTE_MS = 60 * 1000;

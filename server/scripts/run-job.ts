@@ -8,6 +8,7 @@
 //   npm run ingest:news
 //   npm run ingest:alerts
 //   npm run ingest:heatmap
+//   npm run ingest:rainforecast
 // (The running server does the same jobs on a timer.)
 
 import { pool } from '../src/db.ts';
@@ -19,6 +20,7 @@ import { ingestStorms } from '../src/jobs/ingestStorms.ts';
 import { ingestForecast } from '../src/jobs/ingestForecast.ts';
 import { ingestHeatMap } from '../src/jobs/ingestHeatMap.ts';
 import { ingestNews } from '../src/jobs/ingestNews.ts';
+import { ingestRainForecast } from '../src/jobs/ingestRainForecast.ts';
 import { ingestWeather } from '../src/jobs/ingestWeather.ts';
 
 // A lookup table from job name to the function that runs it.
@@ -33,6 +35,7 @@ const jobs: Record<string, () => Promise<void>> = {
   news: ingestNews,
   alerts: ingestAlerts,
   heatmap: ingestHeatMap,
+  rainforecast: ingestRainForecast,
 };
 
 // process.argv holds the words typed on the command line; [2] is the first
