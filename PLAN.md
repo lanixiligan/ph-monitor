@@ -18,6 +18,7 @@ roadmap** (making what exists more trustworthy, numbered on its own).
 | Reliability Phase 6: tune the score from the replay | **In progress.** Replay re-run on the grid (PR #5); wet day rule for heavy rain (PR #6); USGS impact fields on the card (PR #7); NOAH storm surge zones on the map and card (PR #9) |
 | Product Phase 3: all kinds of news on the map | Idea only; needs the owner's answers first |
 | Product Phase 4: heat index map with switchable models | Design approved 2026-11-19 (see "Phase 4"). Built 2026-11-19 on `heat-index-map`: step 1 (three models: ECMWF, DWD ICON, NOAA GFS) and step 2 (their average) |
+| Hazard map buttons (one per kind of disaster) | Step 0 built 2026-11-20 on `hazard-map-buttons`: the top bar view switch (Overall, Earthquake, Heat). The rest waits for the owner's answers: [HAZARD_MAPS_PLAN.md](HAZARD_MAPS_PLAN.md) |
 
 **Next:** NOAH landslide zones (same code as storm surge). First speed up reading the large
 landslide files (see "Build notes" under "NOAH hazard layer: design").

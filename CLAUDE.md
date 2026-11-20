@@ -9,9 +9,11 @@ Phase 2 (built; status of every phase in `PLAN.md`): the server also collects di
 GDACS alert levels count in the score), storm tracks (JMA, JTWC), a 7-day outlook, disaster news
 and YouTube stream links. The page shows them as map layers, extra status card sections, a
 headlines panel and a live news panel (YouTube streams).
-Phase 4 (built): a heat map button recolours the map by the heat index from a chosen
+Phase 4 (built): the Heat view (top bar view switch) recolours the map by the heat index from a chosen
 weather model (ECMWF, DWD ICON, NOAA GFS) or their average. Display only: it never changes the score.
 Non-commercial. Plan and decisions: `PLAN.md`. Score formula: `METHODOLOGY.md`.
+Hazard views (`HAZARD_MAPS_PLAN.md`): a top bar view switch (Overall, Earthquake, Heat; built
+step 0); the other hazards are proposals. Display only: no view changes the score.
 
 ## Stack
 
@@ -24,7 +26,7 @@ TypeScript is pinned to 5.9.3 on purpose (do not move to 7 without asking).
 
 ```
 shared/src/        types.ts (shared types), appInfo.ts (APP_NAME), newsTypes.ts (kinds of disaster),
-                   heatModels.ts (the heat map's weather models)
+                   heatModels.ts (the heat map's weather models), mapViews.ts (the view switch's views)
 server/db/         schema.sql (all tables; re-runnable)
 server/scripts/    migrate.ts, load-provinces.ts, load-places.ts, run-job.ts,
                    check-sources.ts, load-sample-storm.ts, pick-weather-points.ts,
@@ -39,7 +41,8 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    scoreHistory.ts (a history row only when a score changed),
                    hazardLoad.ts + hazardShapes.ts (NOAH file list, names, shape checks),
                    hazardZones.ts (fixed hazard map answer for one spot),
-                   heatMap.ts (heat map answer: each town's hottest point, per model or averaged)
+                   heatMap.ts (heat map answer: each town's hottest point, per model or averaged),
+                   quakeMap.ts (quakes in the score's window, for the quake markers)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
                    jma, jtwc, openMeteoDaily, openMeteoFlood, openMeteoHeat (three models
                    for the heat map), rss, pagasa (official alerts), retry (one more try
@@ -57,7 +60,7 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
   replay/          replay.ts (archived records → score inputs for a past hour)
   routes/          provinces.ts (map data), point.ts (score for one spot),
                    places.ts (place search, town shapes and scores),
-                   conditions.ts (events, storms, news, streams, bulletins),
+                   conditions.ts (events, quakes, storms, news, streams, bulletins),
                    hazards.ts (loaded hazard maps, hazard zone vector tiles),
                    heatmap.ts (heat index per town and province for one model)
 server/test/       one test file per area, real feed samples in fixtures/
@@ -66,9 +69,11 @@ web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (ti
                    and link helpers, "uploaded … ago"), useNow.ts (a clock for it), cardOrder.ts (what the status card shows where), mapOverlays.ts + stormGeo.ts (event markers and
                    storm tracks), hazardOverlay.ts + hazardLabels.ts (NOAH hazard zones),
                    heatColors.ts (heat band colours for towns and provinces),
+                   viewLayers.ts (tick boxes per pressed view; Overall gets the reader's back),
+                   quakeColors.ts + quakeGeo.ts + quakeOverlay.ts (Earthquake view, quake markers),
                    styles.css (all colours and layout), palette.ts (CSS
-                   colours for the map), components/ (HeatMapPanel.tsx: the heat map's
-                   source picker)
+                   colours for the map), components/ (ViewSwitch.tsx: the top bar view switch;
+                   HeatMapPanel.tsx: the heat map's source picker; HeatLegend.tsx: its band key)
   i18n/            en.ts and fil.ts (every string the reader sees), language switch
   theme/           light/dark choice (sets <html data-theme>), theme switch
 data/              downloaded boundary files (git-ignored)
@@ -121,7 +126,7 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   two warm scales never show at once. Errors and stale data use ink, the
   `WarnIcon` and words, never red or amber. Two fonts, Barlow Condensed (titles, numbers) and Atkinson Hyperlegible (text), come
   from `@fontsource` npm packages and ship with the app; never load a font from a font site.
-- Layout: top bar, then three columns: on the left the spot panel with the legend under it
+- Layout: top bar (with the view switch), then three columns: on the left the spot panel with the legend under it
   (its tick boxes switch map layers; its title folds it away), the map in the middle with
   the place search (top left) and the zoom and locate buttons (top right), and live news
   plus headlines on the right. Along the bottom the notice plus a link to the
