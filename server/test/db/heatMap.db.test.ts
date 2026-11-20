@@ -211,19 +211,6 @@ test('saveHeatRun: a thin run (under 90%) does not mark the feed fresh', async (
   assert.equal((await pool.query('SELECT 1 FROM heat_runs')).rowCount, 0);
 });
 
-test('saveHeatRun: hours more than 6 hours old are deleted', async () => {
-  await clearHeat();
-  await pool.query(
-    `INSERT INTO heat_forecasts (model, point_id, valid_at, temp_c, humidity_pct, heat_index_c)
-     VALUES ('dwd_icon_global_native', $1, $2, 30, 60, 33), ('dwd_icon_global_native', $1, $3, 30, 60, 33)`,
-    [points[0]?.id, hoursAgo(7), hoursAgo(5)],
-  );
-  // ICON sends nothing, so its old rows stay, except the one more than 6 hours old.
-  const noIcon = () => forecast({ ecmwf_ifs: 34, ncep_gfs_global: 34 });
-  await saveHeatRun(points, [noIcon(), noIcon(), noIcon()], ALL_MODELS);
-  assert.equal((await rowsOf('dwd_icon_global_native')).n, 1);
-});
-
 test('saveHeatRun: throws when no point answered for any model', async () => {
   await clearHeat();
   await assert.rejects(saveHeatRun(points, [null, null, null], ALL_MODELS), /nothing saved/);

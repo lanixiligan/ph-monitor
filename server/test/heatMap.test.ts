@@ -113,7 +113,8 @@ test('fetchOpenMeteoHeat: one failed request leaves its points null', async () =
   const first = new URL(urls[0] ?? '').searchParams;
   assert.equal(first.get('hourly'), 'temperature_2m,relative_humidity_2m');
   assert.equal(first.get('models'), 'ecmwf_ifs,dwd_icon_global_native,ncep_gfs_global');
-  assert.equal(first.get('forecast_hours'), '48');
+  assert.equal(first.get('forecast_hours'), '144');
+  assert.equal(first.get('past_hours'), '16');
   assert.equal(first.get('timeformat'), 'unixtime');
   // 1 good request + 2 tries of the failed one.
   assert.equal(urls.length, 3);

@@ -1,10 +1,10 @@
-// Job: fetch the next 48 hours of temperature and humidity at every weather
+// Job: fetch six days (16 hours back, 144 ahead) of temperature and humidity at every weather
 // point, from every heat map model in one request, and save the heat index.
 // Display only: no scoring code reads heat_forecasts.
 // Runs every 12 hours (due.ts); about 599 Open-Meteo calls a run.
 // Run by hand with: npm run ingest:heatmap
 
-import { HEAT_MODELS } from '@ph-monitor/shared';
+import { HEAT_MODELS, barTime, phDate } from '@ph-monitor/shared';
 // `import type` brings in a type only; it disappears when the code runs.
 import type { HeatModelId } from '@ph-monitor/shared';
 import { pool } from '../db.ts';
@@ -20,9 +20,6 @@ import type { WeatherPoint } from './ingestWeather.ts';
  * Open-Meteo's 600, so the score's weather run is never refused. A run takes about 4 minutes.
  */
 const GAP_BETWEEN_REQUESTS_MS = 20_000;
-
-/** Forecast hours further in the past than this are deleted. */
-const KEEP_PAST_HOURS = 6;
 
 // `Promise<void>` = an async function that hands back nothing when it is done.
 export async function ingestHeatMap(): Promise<void> {
@@ -109,11 +106,14 @@ async function replaceModel(model: HeatModelId, rows: HeatRows, total: number): 
  * (null = no usable answer). Split from ingestHeatMap so a test can call it
  * without the network. Each model is judged on its own: it replaces its rows
  * only when at least 90% of points have values; otherwise its last good run stays.
+ * Hours before today's midnight (Philippine time) are deleted. `now` is for tests.
  */
 export async function saveHeatRun(
   points: WeatherPoint[],
   locations: (HeatLocation | null)[],
   models: HeatModelId[],
+  // `= new Date()` = the default when the caller passes nothing.
+  now: Date = new Date(),
 ): Promise<void> {
   const total = points.length;
   let goodModels = 0;
@@ -132,7 +132,7 @@ export async function saveHeatRun(
     }
   }
 
-  await pool.query(`DELETE FROM heat_forecasts WHERE valid_at < now() - make_interval(hours => $1)`, [KEEP_PAST_HOURS]);
+  await pool.query('DELETE FROM heat_forecasts WHERE valid_at < $1', [barTime(phDate(now), 0)]);
 
   if (answered.size === 0) {
     throw new Error('Open-Meteo heat: no point answered for any model; nothing saved.');
