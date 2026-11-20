@@ -8,7 +8,7 @@
 import { HEAT_MODELS, barTimes, phDate } from '@ph-monitor/shared';
 import type { HeatBandName, HeatMapData, HeatModelId, HeatSpread, HeatValue, HeatViewId } from '@ph-monitor/shared';
 import { pool } from './db.ts';
-import { HEAT_MAP_STALE_MINUTES } from './freshness.ts';
+import { HEAT_MAP_STALE_MINUTES, PAGASA_HEAT_STALE_MINUTES } from './freshness.ts';
 import { heatBandOf } from './scoring/scoring.ts';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -78,10 +78,14 @@ export function averageTowns(perModel: TownHeat[][]): TownHeat[] {
   }));
 }
 
-/** Out of date when there is no good run or it is over 25 hours old. (Which hour is shown does not matter.) */
-export function isHeatStale(fetchedAt: Date | null, now: Date): boolean {
+/**
+ * Out of date when there is no good run or it is over the limit (the models' 25 hours unless
+ * told otherwise). (Which hour is shown does not matter.)
+ * `limitMinutes = ...` is a parameter with a default value.
+ */
+export function isHeatStale(fetchedAt: Date | null, now: Date, limitMinutes = HEAT_MAP_STALE_MINUTES): boolean {
   if (fetchedAt === null) return true;
-  return now.getTime() - fetchedAt.getTime() > HEAT_MAP_STALE_MINUTES * 60 * 1000;
+  return now.getTime() - fetchedAt.getTime() > limitMinutes * 60 * 1000;
 }
 
 /** One source's run: when it last succeeded (null = never). */
@@ -173,7 +177,7 @@ async function loadPagasa(at: Date, now: Date): Promise<SourceAnswer & { isStale
   const fetchedAt = run.rows[0]?.last_ok_at ?? null;
   const newestIssue = newest.rows[0]?.newest ?? null;
   // Also stale when the newest issuance is older than today (PH date); 'YYYY-MM-DD' text compares in date order.
-  const isStale = isHeatStale(fetchedAt, now) || newestIssue === null || newestIssue < phDate(now);
+  const isStale = isHeatStale(fetchedAt, now, PAGASA_HEAT_STALE_MINUTES) || newestIssue === null || newestIssue < phDate(now);
   return {
     towns: towns.rows,
     fetchedAt,

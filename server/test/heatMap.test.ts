@@ -11,6 +11,7 @@ import { test } from 'node:test';
 import type { HeatModelId } from '@ph-monitor/shared';
 import { fetchOpenMeteoHeat, parseHeatLocation } from '../src/fetchers/openMeteoHeat.ts';
 import type { HeatHours } from '../src/fetchers/openMeteoHeat.ts';
+import { PAGASA_HEAT_STALE_MINUTES } from '../src/freshness.ts';
 import { averageHeat, averageTowns, bandOf, combineRuns, hourShown, isHeatStale, provinceHeat } from '../src/heatMap.ts';
 import { cacheSeconds } from '../src/routes/heatmap.ts';
 
@@ -235,4 +236,13 @@ test('cacheSeconds: 5 minutes, but never past the end of the hour', () => {
   // 10:58:00 → 120 seconds left in the hour.
   assert.equal(cacheSeconds(new Date('2026-11-19T10:58:00Z')), 120);
   assert.equal(cacheSeconds(new Date('2026-11-19T10:59:59.500Z')), 1);
+});
+
+test('isHeatStale: PAGASA keeps its own 30 hour limit; the models keep 25', () => {
+  const now = new Date('2026-11-19T12:00:00Z');
+  const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
+  assert.equal(PAGASA_HEAT_STALE_MINUTES, 30 * 60);
+  assert.equal(isHeatStale(hoursAgo(27), now, PAGASA_HEAT_STALE_MINUTES), false);
+  assert.equal(isHeatStale(hoursAgo(31), now, PAGASA_HEAT_STALE_MINUTES), true);
+  assert.equal(isHeatStale(hoursAgo(27), now), true);
 });

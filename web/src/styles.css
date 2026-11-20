@@ -1756,6 +1756,18 @@ footer {
   font-size: 13px;
 }
 
+/* Under 900px the map's attribution can wrap over the bar, so the bar leaves the
+   map overlay and sits under it (the map keeps its own height). */
+@media (max-width: 899px) {
+  .map-frame {
+    --heat-bar-space: 0px;
+  }
+  .heat-time {
+    position: static;
+    margin: 6px 10px 0;
+  }
+}
+
 /* A greyed hour says "not allowed", not "busy" (.filter:disabled's cursor). */
 .heat-time .filter:disabled {
   cursor: not-allowed;

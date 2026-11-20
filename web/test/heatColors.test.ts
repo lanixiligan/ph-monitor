@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { HeatMapData } from '@ph-monitor/shared';
 import type { PlaceCollection, ProvinceCollection } from '../src/api.ts';
-import { emptyHeatMap, heatColor, heatForMap, heatSource, heatText, withProvinceHeat, withTownHeat } from '../src/heatColors.ts';
+import { emptyHeatMap, heatColor, heatForMap, heatSource, heatText, heatTier, withProvinceHeat, withTownHeat } from '../src/heatColors.ts';
 import { en } from '../src/i18n/en.ts';
 import type { Palette } from '../src/palette.ts';
 
@@ -258,4 +258,10 @@ test('styles.css: dark heat colours get brighter with each band, like the dark s
 
 test('heatSource: PAGASA gives its own name', () => {
   assert.equal(heatSource('pagasa', {}, en), 'PAGASA iHeatMAP');
+});
+
+test('heatTier: PAGASA is Official, every model and the average are Model estimate', () => {
+  assert.equal(heatTier('pagasa', en), en.tiers.official.replace('{agency}', 'PAGASA'));
+  assert.equal(heatTier('ecmwf_ifs', en), en.tiers.model);
+  assert.equal(heatTier('average', en), en.tiers.model);
 });

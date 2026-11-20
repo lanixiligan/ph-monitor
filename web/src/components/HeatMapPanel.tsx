@@ -9,6 +9,7 @@
 import { HEAT_MODELS } from '@ph-monitor/shared';
 import type { HeatMapData, HeatSourceId, HeatViewId } from '@ph-monitor/shared';
 import { timeAgo } from '../format.ts';
+import { heatTier } from '../heatColors.ts';
 import { fill, useStrings } from '../i18n/index.ts';
 import { useNow } from '../useNow.ts';
 import { viewButtonId } from './ViewSwitch.tsx';
@@ -90,7 +91,7 @@ export function HeatMapPanel({ chosen, data, failed, onChoose, onClose }: Props)
           </button>
         </div>
         <span className="tag">
-          {chosen === 'pagasa' ? fill(t.tiers.official, { agency: 'PAGASA' }) : t.tiers.model}
+          {heatTier(chosen, t)}
         </span>
 
         <fieldset className="heat-sources">

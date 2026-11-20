@@ -10,6 +10,9 @@ const MINUTE_MS = 60 * 1000;
 /** The heat map is out of date after this (also used by heatMap.ts for each model). */
 export const HEAT_MAP_STALE_MINUTES = 25 * 60;
 
+/** PAGASA's heat forecast is saved 0 to 3 hours after its daily publish, so gaps reach about 27 hours. */
+export const PAGASA_HEAT_STALE_MINUTES = 30 * 60;
+
 type FeedRule = {
   id: FeedId;
   /** Names in the `fetch_runs` table. The feed is as fresh as the newest of them. */
@@ -42,7 +45,7 @@ export const FEED_RULES: FeedRule[] = [
   // The rain forecast runs every 12 hours too (right after the heat map).
   { id: 'rainForecast', sources: ['open-meteo-rain'], staleAfterMinutes: 25 * 60 },
   // PAGASA's heat forecast is fetched every 3 hours but published about once a day.
-  { id: 'pagasaHeat', sources: ['pagasa-heat'], staleAfterMinutes: 30 * 60 },
+  { id: 'pagasaHeat', sources: ['pagasa-heat'], staleAfterMinutes: PAGASA_HEAT_STALE_MINUTES },
   { id: 'news', sources: ['news'], staleAfterMinutes: 60 },
 ];
 
