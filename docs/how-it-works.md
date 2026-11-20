@@ -84,12 +84,12 @@ The web page talks only to these addresses on our own server (port 3001).
 | Address | Returns |
 |---|---|
 | `GET /api/health` | Whether the server and database are up |
-| `GET /api/provinces` | Every province's shape and score, for the map; also the highest earthquake part among its towns and that town (`quake_top_score`, `quake_top_place`) and `quake_unknown`, for the Earthquake view |
+| `GET /api/provinces` | Every province's shape and score, for the map; also the highest earthquake part among its towns and that town (`quake_top_score`, `quake_top_place`) and `quake_unknown`, for the Earthquake view; and the highest known rain part among its towns and that town (`rain_top_score`, `rain_top_place`, null when no town's rain is known) and `rain_unknown` (some town's rain is unknown), for the Flood view |
 | `GET /api/provinces/:psgc` | One province in detail |
 | `GET /api/point?lat=..&lon=..` | The clicked town's saved score (the card's main number) and the exact spot's score, worked out on demand |
 | `GET /api/places?q=..` | Place search: cities, municipalities and provinces by name, from our own database |
 | `GET /api/places/shapes` | Every town's shape (downloaded once, when the map first loads) |
-| `GET /api/places/scores` | Every town's latest score, for the map colours, plus its earthquake part (`quakeScore`) and whether earthquakes were unknown for it (`quakeUnknown`), for the Earthquake view |
+| `GET /api/places/scores` | Every town's latest score, for the map colours, plus its earthquake part (`quakeScore`) and whether earthquakes were unknown for it (`quakeUnknown`), for the Earthquake view, and its rain part (`rainScore`, null when unknown), for the Flood view |
 | `GET /api/events` | Current disaster events, for map markers |
 | `GET /api/quakes` | The earthquakes inside the score's window (`WEIGHTS.quake.windowHours`, magnitude from `WEIGHTS.quake.minMagnitude`), newest first: position, magnitude, depth, time, USGS link; plus when USGS last answered and whether that is out of date. For the quake markers |
 | `GET /api/storms` | Active storms with their tracks |
@@ -100,6 +100,7 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/status` | When each feed last succeeded, and which are out of date |
 | `GET /api/hazards` | Which fixed hazard maps are loaded (kind, storm surge level, provinces, when), for the legend |
 | `GET /api/heatmap?model=..` | The heat map for one model (`ecmwf_ifs`, the default; `dwd_icon_global_native`; `ncep_gfs_global`) or `average` (each value also has `spread`: models used, lowest, highest): the current hour's heat index and band for every town (its hottest point) and province (its hottest town), when the run was fetched, and whether it is out of date. An unknown model gives 400 |
+| `GET /api/rainforecast` | The rain forecast field for the Typhoon view: the grid (1.5° apart over the PAR), and the next 7 days of ECMWF rain as 3-hour totals per grid point (null = no forecast), from the period that holds now; when it was fetched and whether that is out of date |
 | `GET /api/hazards/tiles/:layer/:z/:x/:y.mvt` | Hazard zones as vector tiles (`landslide` or `surge1`…`surge4`), storm surge from zoom 4, landslide from zoom 9; empty below that |
 
 ## What the reader sees
@@ -111,8 +112,9 @@ The web page talks only to these addresses on our own server (port 3001).
   widest level, SSA 4) can be switched on in the legend; they show as cool-toned stripes from
   zoom 9, denser for a higher class. Storm surge also shows further out, as coloured zone
   outlines along the coast; landslide starts at zoom 9.
-- **View switch:** a row of buttons in the top bar: Overall (the default), Earthquake and Heat,
-  plus "More" with Tsunami greyed out ("No live feed for tsunamis yet"). Only one is pressed at
+- **View switch:** a row of buttons in the top bar: Overall (the default), Typhoon, Flood,
+  Earthquake and Heat, plus "More" with Storm surge (greyed out, "Storm surge map not loaded
+  yet", until the NOAH map is loaded) and Tsunami greyed out ("No live feed for tsunamis yet"). Only one is pressed at
   a time. Pressing a hazard ticks its legend layers, sets the headline filter to that kind
   (with the panel title "Earthquake headlines", or "No … headlines in the last 14 days" and a
   "Show all headlines" link), and moves that hazard's row and section to the top of the status
@@ -125,6 +127,27 @@ The web page talks only to these addresses on our own server (port 3001).
   stripes. Quake markers (a legend tick box, off on Overall) are sized by magnitude; hovering
   shows magnitude, depth and how long ago, a click adds the USGS link. Under the tick box the
   legend says how many quakes are drawn, or that there are none, or that the feed is out of date.
+- **Flood view:** towns are coloured by the rain part of their score (rain in the last hour and
+  the last 24 hours; provinces, until the towns load, by the highest rain part among their
+  towns), in the score's own colours, tagged "Model estimate". The hover label says "rain
+  part". A town with no rain reading is striped, never shown as dry. The status card puts the
+  rain row and the weather section first.
+- **Typhoon view:** storm tracks and forecasts (JMA, JTWC), plus the NOAH storm surge zones when
+  loaded, and the Philippine Area of Responsibility (PAR) as a dashed outline; pressing it zooms
+  the map out to the whole PAR. The score colours are hidden and towns show as plain outlines.
+  The rain forecast field (a legend tick box, ticked by this view and offered nowhere else)
+  colours sea and land by the rain expected in 3 hours (ECMWF, 7 days ahead), blue for light
+  rain through green, yellow and red to magenta for 80 mm or more; nothing is drawn below
+  0.5 mm, and a spot with no forecast is shown as "no data", never as dry. A panel over the
+  map has the period shown, Play/Pause and a slider through the 7 days, the "Model estimate"
+  tag, when it was updated, and the ECMWF credit. The grid points are about 165 km apart and
+  the field is smoothed between them, so it shows the broad pattern, not single storms. A note on the map says
+  "No tropical cyclone tracked right now", or, with the warning sign, that the storm feed is out
+  of date. Wind colours per town are not available yet (no wind in the weather grid). The
+  status card moves its "Storms forecast to pass near" block up and always shows it: the list,
+  "none within 300 km", or a warning that the tracks could not be checked.
+- **Storm surge view:** the NOAH storm surge zones, a fixed map of where a surge could reach (not
+  a live surge), tagged "Fixed map · Project NOAH". Score colours hidden, towns as plain outlines.
 - **Heat map:** the Heat button in the view switch turns it on and opens a small
   panel over the map. The panel lists the sources (ECMWF, DWD ICON, NOAA GFS) with each model's grid size,
   then "Average of all three"; the reader can switch at any time and the map recolours straight away. It also shows the

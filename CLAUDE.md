@@ -12,8 +12,9 @@ headlines panel and a live news panel (YouTube streams).
 Phase 4 (built): the Heat view (top bar view switch) recolours the map by the heat index from a chosen
 weather model (ECMWF, DWD ICON, NOAA GFS) or their average. Display only: it never changes the score.
 Non-commercial. Plan and decisions: `PLAN.md`. Score formula: `METHODOLOGY.md`.
-Hazard views (`HAZARD_MAPS_PLAN.md`): a top bar view switch (Overall, Earthquake, Heat; built
-step 0); the other hazards are proposals. Display only: no view changes the score.
+Hazard views (`HAZARD_MAPS_PLAN.md`): a top bar view switch (Overall, Typhoon, Flood, Earthquake,
+Heat, and Storm surge under More; built steps 0 and 1); the other hazards are proposals.
+Display only: no view changes the score.
 
 ## Stack
 
@@ -42,14 +43,17 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    hazardLoad.ts + hazardShapes.ts (NOAH file list, names, shape checks),
                    hazardZones.ts (fixed hazard map answer for one spot),
                    heatMap.ts (heat map answer: each town's hottest point, per model or averaged),
+                   rainForecast.ts (rain forecast grid over the PAR, 3-hour frames; Typhoon view),
                    quakeMap.ts (quakes in the score's window, for the quake markers)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
                    jma, jtwc, openMeteoDaily, openMeteoFlood, openMeteoHeat (three models
-                   for the heat map), rss, pagasa (official alerts), retry (one more try
+                   for the heat map), openMeteoRain (7 days of ECMWF rain on the forecast
+                   grid), rss, pagasa (official alerts), retry (one more try
                    for a failed download)
   jobs/            ingestEarthquakes, ingestWeather (weather grid), ingestEvents, ingestStorms,
-                   ingestAlerts, ingestForecast, ingestNews, ingestHeatMap (every 12 h;
-                   never read by the score), checkSources, computeScores
+                   ingestAlerts, ingestForecast, ingestNews, ingestHeatMap and
+                   ingestRainForecast (every 12 h, one after the other; never read by
+                   the score), checkSources, computeScores
                    (towns, then provinces = highest town), townInputs, scheduler,
                    due (which jobs are due; every job's interval), jobTries (when a
                    job last started; spaces out heat map retries)
@@ -62,18 +66,26 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    places.ts (place search, town shapes and scores),
                    conditions.ts (events, quakes, storms, news, streams, bulletins),
                    hazards.ts (loaded hazard maps, hazard zone vector tiles),
-                   heatmap.ts (heat index per town and province for one model)
+                   heatmap.ts (heat index per town and province for one model),
+                   rainForecast.ts (the rain forecast field, GET /api/rainforecast)
 server/test/       one test file per area, real feed samples in fixtures/
   db/              database tests (testDb.ts seeds a small map; import it first)
 web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (time, number
                    and link helpers, "uploaded … ago"), useNow.ts (a clock for it), cardOrder.ts (what the status card shows where), mapOverlays.ts + stormGeo.ts (event markers and
                    storm tracks), hazardOverlay.ts + hazardLabels.ts (NOAH hazard zones),
                    heatColors.ts (heat band colours for towns and provinces),
+                   parArea.ts (the PAR outline for the Typhoon view),
+                   rainColors.ts + rainField.ts + rainOverlay.ts + useRainForecast.ts
+                   (Typhoon view's rain forecast field: bands, pixels, map layer, loading),
                    viewLayers.ts (tick boxes per pressed view; Overall gets the reader's back),
-                   quakeColors.ts + quakeGeo.ts + quakeOverlay.ts (Earthquake view, quake markers),
+                   partColors.ts (Earthquake and Flood views: towns by one part of the score),
+                   mapLook.ts (what each view's shapes show), mapNotes.ts (the map's note per view),
+                   quakeGeo.ts + quakeOverlay.ts (quake markers),
                    styles.css (all colours and layout), palette.ts (CSS
                    colours for the map), components/ (ViewSwitch.tsx: the top bar view switch;
-                   HeatMapPanel.tsx: the heat map's source picker; HeatLegend.tsx: its band key)
+                   HeatMapPanel.tsx: the heat map's source picker; HeatLegend.tsx: its band key;
+                   RainForecastPanel.tsx: the rain forecast's time slider;
+                   MapNote.tsx: a note on the map, e.g. "No tropical cyclone tracked right now")
   i18n/            en.ts and fil.ts (every string the reader sees), language switch
   theme/           light/dark choice (sets <html data-theme>), theme switch
 data/              downloaded boundary files (git-ignored)
@@ -97,6 +109,7 @@ npm run typecheck        tsc over all workspaces
 npm run ingest:earthquakes | ingest:weather | compute:scores   one job by hand
 npm run ingest:events | ingest:storms | ingest:forecast | ingest:news | ingest:alerts
 npm run ingest:heatmap   heat map for all three models (about 600 Open-Meteo calls)
+npm run ingest:rainforecast   rain forecast field for the Typhoon view (256 Open-Meteo calls)
 npm run weather-points   pick extra weather points for big provinces (after load-places);
                          empties point_readings and heat_forecasts until the next runs
 npm run load-hazards -- stormSurge   load Project NOAH zones (or `landslide`); restart the server after
@@ -123,7 +136,9 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   scale (`web/src/scoreScale.ts`) is the only warm colour on the page; it has a light version
   (darker = worse) and a dark version (brighter = worse). Second exception (like `--live`):
   the heat map's band colours (`--heat-*`), shown only while the score colours are hidden, so
-  two warm scales never show at once. Errors and stale data use ink, the
+  two warm scales never show at once. Third exception (owner's OK, 2026-11-20): the rain
+  forecast field's colours (`--rain-*`), offered only in the Typhoon view, where the score
+  colours are hidden. Errors and stale data use ink, the
   `WarnIcon` and words, never red or amber. Two fonts, Barlow Condensed (titles, numbers) and Atkinson Hyperlegible (text), come
   from `@fontsource` npm packages and ship with the app; never load a font from a font site.
 - Layout: top bar (with the view switch), then three columns: on the left the spot panel with the legend under it

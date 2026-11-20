@@ -1,8 +1,8 @@
 # PH Monitor — hazard map buttons (plan)
 
-**Status:** proposal, 2026-11-19. Built so far: the heat map (Phase 4) and step 0 of the build
-order (2026-11-20: the view switch with Overall, Earthquake and Heat; see the reference below).
-The owner still has to answer "Open questions" before the other buttons are built.
+**Status:** proposal, 2026-11-19. Built so far: the heat map (Phase 4), step 0 of the build
+order (2026-11-20: the view switch with Overall, Earthquake and Heat; see the reference below)
+and step 1 (2026-11-20: Typhoon, Flood and Storm surge).
 The main plan lives in [PLAN.md](PLAN.md). This file covers only the hazard buttons.
 
 ## What and why
@@ -34,10 +34,12 @@ tsunamis come from earthquakes. The news filter stays as it is.
 ## Two kinds of button
 
 - **Area views** recolour the province and town shapes, the way the heat map does: heat,
-  flood, typhoon wind, drought.
+  flood (the rain part of the score), drought, and later typhoon wind (there is no wind in
+  the weather grid yet: `weather_readings` and `point_readings` have no wind columns).
   - **Only one at a time.** Turning one on turns the others off and hides the score colours.
     This is the same rule as the heat map, so two warm scales never show at once.
-  - Each area view gets its own band colours (`--<hazard>-*` in `styles.css`, light and dark
+  - An area view that shows a part of the score (Earthquake, Flood) uses the score colours.
+    Any other area view gets its own band colours (`--<hazard>-*` in `styles.css`, light and dark
     sets, read through `palette.ts`). Before adding new warm scales, CLAUDE.md's colour rule
     needs the owner's OK. A cool scale (blues for flood) needs no exception.
 - **Point views** add markers or lines on top of the map: earthquakes, volcanoes, fires, storm
@@ -99,7 +101,7 @@ Only one is pressed at a time, like tabs.
   today). Heat: the heat bands, the model's name and the "Model estimate" tag. Earthquake:
   "Earthquake part of the score" with the score colours. The heat bands move from
   `HeatMapPanel` into the legend, so the key is shown only once.
-- **Each view ticks its own layers.** Earthquake turns on the quake markers. Typhoon (later)
+- **Each view ticks its own layers.** Earthquake turns on the quake markers. Typhoon
   turns on storm tracks and storm surge zones. The reader can still change any tick box.
 - **Overall gives the reader's own tick boxes back.** Going back to Overall restores the
   reader's ticks from before they pressed a hazard. A button never quietly changes the
@@ -121,9 +123,9 @@ Only one is pressed at a time, like tabs.
 
 | Button | Kind | What it shows | Source |
 |---|---|---|---|
-| Typhoon | Area + point | Wind band per town from the weather grid, plus the existing track and cone | `ingestWeather`, JMA/JTWC |
-| Flood | Area | Rain in the last 24 h, or river flow against normal, per town | `ingestWeather`, GloFAS |
-| Storm surge | Area (fixed) | NOAH zones (already a layer) | Project NOAH |
+| Typhoon | Point (**built**) | Storm tracks and forecasts, plus NOAH surge zones when loaded; towns as plain outlines. Wind bands later, once there is a wind source | JMA/JTWC |
+| Flood | Area (**built**) | Towns coloured by the rain part of the score (last hour and last 24 h). River flow later | `ingestWeather` |
+| Storm surge | Area (fixed, **built**) | NOAH zones; greyed out until that map is loaded | Project NOAH |
 | Earthquake | Area + point | Towns coloured by the earthquake part-score, plus quake markers sized by magnitude (new layer and route) | USGS |
 | Landslide | Area (fixed) | NOAH zones, once loaded | Project NOAH |
 | Tsunami | — | Not built until there is a feed | — |
@@ -200,17 +202,52 @@ second area view, not before.
   folded under "Other layers". `HeatLegend.tsx`: the heat band key (moved out of the panel).
 - `cardOrder.ts`: `hazardRowOrder` and `viewSection` put the view's row and section on top of the card.
 - `NewsPanel.tsx`: title per kind; "No … headlines in the last 14 days" with "Show all headlines".
-- Earthquake: `quakeColors.ts` (towns by their earthquake part in the score colours, unknown
+- Earthquake: `quakeColors.ts` (since step 1: `partColors.ts`; towns by their earthquake part in the score colours, unknown
   striped), `quakeGeo.ts` + `quakeOverlay.ts` (markers and popups), `ProvinceMap.tsx` (`view` and
   `quakes` props, hover label "earthquake part").
 
-**Tests:** `web/test/viewLayers.test.ts`, `cardOrder.test.ts`, `quakeColors.test.ts`,
+**Tests:** `web/test/viewLayers.test.ts`, `cardOrder.test.ts`, `quakeColors.test.ts` (now `partColors.test.ts`),
 `quakeGeo.test.ts`, `viewStrings.test.ts`; `server/test/quakeMap.test.ts`,
 `server/test/db/quakes.db.test.ts`.
 
-**A new view will probably need:** its row in `MAP_VIEWS`; for an area view, a colouring file
-like `quakeColors.ts` and a branch in `ProvinceMap.tsx`; its scale block in `Legend.tsx`; its
-row and section in `cardOrder.ts`.
+**A new view will probably need:** its row in `MAP_VIEWS`; for a part-score view, a row in
+`PART_VIEWS` (`partColors.ts`), otherwise its look in `mapLook.ts`; its scale block in
+`Legend.tsx`; its row and section in `cardOrder.ts`; a map note in `mapNotes.ts` if it can be empty.
+
+## Reference: step 1 (Typhoon, Flood, Storm surge)
+
+**Shared:** `MapViewId` and `MAP_VIEWS` gained `typhoon`, `flood` and `stormSurge`. A view can
+need a NOAH map (`needsHazardMap`); `isViewAvailable` and `viewTicks` (`mapViews.ts`) check it
+against what `GET /api/hazards` lists. `PlaceScoreEntry.rainScore`; on provinces
+`rain_top_score`, `rain_top_place`, `rain_unknown`.
+
+**Server** (read only): `GET /api/places/scores` sends each town's rain part
+(`hazards ->> 'rain'`, null when unknown or saved before the parts were stored).
+`GET /api/provinces` sends the town with the highest known rain part and whether any town's
+rain is unknown; no fallback to the province's own weather. Test: `server/test/db/rain.db.test.ts`.
+
+**Web**
+- `partColors.ts` (was `quakeColors.ts`): one table, `PART_VIEWS`, for Earthquake and Flood.
+- `mapLook.ts`: what each view's shapes show (score, heat, a part, or plain outlines).
+- `mapNotes.ts` + `MapNote.tsx`: the note on the map ("No tropical cyclone tracked right now",
+  storm feed out of date with `WarnIcon`, "Zoom in to see zones", a view's own layer switched off).
+- Typhoon also draws the PAR outline (`parArea.ts`, PAGASA's corners) and zooms out to it when
+  pressed; `MAX_BOUNDS` reaches 28°N so the whole box fits.
+- Typhoon's rain forecast field (built 2026-11-20, owner asked for a Panahon-style map): 7 days
+  of ECMWF rain on a 1.5° grid over the PAR (`server/src/rainForecast.ts`, job
+  `ingestRainForecast`, every 12 h, 256 calls a run; `GET /api/rainforecast`), drawn as 3-hour
+  totals with a time slider (`RainForecastPanel.tsx`, `rainField.ts`, `rainOverlay.ts`). Its
+  colours (`--rain-*`) are the third warm scale, approved by the owner; the legend offers the
+  layer only in the Typhoon view.
+- Typhoon and Storm surge hide the score colours and draw plain town outlines. Storm surge is
+  available only when the SSA 4 level (the one the map draws) is loaded (`loadedMapKinds` in
+  `hazardLabels.ts`).
+- `cardOrder.ts`: Flood puts the rain row and the weather section first; Typhoon moves the
+  "Storms forecast to pass near" block up and always shows it (`Conditions.tsx`).
+- Storm surge sets the headline filter to `tsunami`, because `NEWS_TYPES` files storm surge there.
+
+**Tests:** `web/test/partColors.test.ts`, `viewAvailability.test.ts`, `mapNotes.test.ts`, plus
+`viewLayers`, `cardOrder` and `viewStrings`.
 
 ## Build order (proposal)
 
@@ -221,10 +258,14 @@ row and section in `cardOrder.ts`.
    - b. **Built.** Earthquake view: add the earthquake part-score to `GET /api/places/scores` (read
      only; `place_scores` already stores it), a new quakes route, and a quake marker layer
      with its own legend tick box.
-1. **Wind and water:** all its data is already in the database.
-   - a. Flood view.
-   - b. Typhoon view (wind bands plus the existing track layer).
-   - c. A Storm surge button that turns on the existing NOAH layer.
+1. **Wind and water** (**built** 2026-11-20):
+   - a. **Built.** Flood view: towns by the rain part of the score (score colours, "Model estimate").
+   - b. **Built.** Typhoon view: storm tracks only (plus NOAH surge zones when loaded), towns as
+     plain outlines; a note when no storm is tracked or the storm feed is out of date.
+   - c. **Built.** Storm surge view: the NOAH layer; available only when `GET /api/hazards`
+     lists it (`needsHazardMap`, `isViewAvailable`).
+   - d. Later: **Typhoon wind.** Wind bands per town need a new data field (wind speed or gusts
+     in the weather grid) and the owner's OK for its colours.
 2. **Ground:** Landslide once its NOAH zones load.
 3. **Volcano** and **Wildfire** as point buttons from GDACS/EONET.
 4. **Drought** and **Tsunami** only once a source is found and checked (licence, limits).
@@ -234,6 +275,9 @@ Each step ends with `npm test`, `npm run typecheck` and something to see on the 
 ## Open questions for the owner
 
 - ~~Where do the buttons go?~~ Decided: a view switch in the top bar (see above).
-- What does Flood show first: rain in the last 24 h, or river flow?
+- ~~What does Flood show first: rain in the last 24 h, or river flow?~~ Decided 2026-11-20:
+  the rain part of the score first (last hour and last 24 h). River flow (GloFAS) later.
 - ~~Should buttons with no data be hidden?~~ Decided: greyed out with a note.
-- Are new warm scales OK (typhoon wind), or should non-heat views use cool colours only?
+- ~~Are new warm scales OK (typhoon wind)?~~ Decided 2026-11-20 for now: no warm wind scale.
+  Wind needs a new source or field first (step 1d). The same day the owner approved a
+  Panahon-style warm scale for the rain forecast field (blue → green → yellow → red → magenta).

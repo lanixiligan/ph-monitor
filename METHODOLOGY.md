@@ -178,8 +178,9 @@ The card also shows the same formulas one hazard at a time: earthquakes, rain, h
 and disaster events (GDACS). Each gets its own 0–100 number and band, or "unknown". The overall
 score is still the strongest signal plus a share of the others.
 
-The map's hazard views (the top bar's view switch: Earthquake, Heat) are display only: they
-show one of these parts, or the heat index, and never change the score.
+The map's hazard views (the top bar's view switch: Typhoon, Flood, Earthquake, Heat, Storm
+surge) are display only: they show one of these parts (Flood: rain; Earthquake: earthquakes),
+the heat index, storm tracks or a fixed hazard map, and never change the score.
 
 ## Official alerts are not in the score
 

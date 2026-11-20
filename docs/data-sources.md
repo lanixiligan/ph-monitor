@@ -19,6 +19,7 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 | 7-day outlook: rain and gusts | Open-Meteo | every 6 hours | No, shown only |
 | 7-day outlook: river flow | Open-Meteo Flood API (GloFAS) | every 6 hours | No, shown only |
 | Heat index map | ECMWF, DWD ICON and NOAA GFS models, via Open-Meteo | every 12 hours | No, shown only |
+| Rain forecast field (Typhoon view) | ECMWF model, via Open-Meteo | every 12 hours | No, shown only |
 | Boundaries | NAMRIA and PSA via OCHA | once, by hand | Used to measure distances |
 | Landslide and storm surge hazard maps | Project NOAH | once, by hand | No, shown only |
 | Basemap tiles | OpenFreeMap | by the browser | No |
@@ -54,7 +55,9 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 - **Also on demand:** when a reader clicks the map, weather for that spot is fetched, snapped
   to a 0.05° grid (about 5 km) and reused for 30 minutes (`server/src/pointWeather.ts`).
 - **Licence:** CC BY 4.0. The free tier is for non-commercial use only.
-- **Limits:** the values are **modelled**, not measured by a station.
+- **Limits:** the values are **modelled**, not measured by a station. No wind is fetched.
+- **Map:** the Flood view colours towns by the rain part of their score, worked out from these
+  readings (null rain = striped).
 - **Code:** `fetchers/openMeteo.ts`, `jobs/ingestWeather.ts`, `weatherPoints.ts`.
 
 ## Disaster events: GDACS
@@ -99,6 +102,8 @@ Events from both sources are removed 30 days after they end. The page shows an e
 - **Limits:** no storm was active when the JMA fetcher was written, so some of its format is
   inferred and read tolerantly. `npm run sample-storm` loads a clearly labelled fake storm for
   testing the map.
+- **Map:** drawn as tracks and forecasts (a legend tick box), ticked by the Typhoon view. The
+  track points carry wind, but the weather grid has none, so towns get no wind colours yet.
 - **Code:** `fetchers/jma.ts`, `fetchers/jtwc.ts`, `jobs/ingestStorms.ts`.
 
 ## 7-day outlook: Open-Meteo and GloFAS
@@ -155,6 +160,30 @@ Events from both sources are removed 30 days after they end. The page shows an e
   `jobs/ingestHeatMap.ts`, `server/src/heatMap.ts`, `server/src/routes/heatmap.ts`. By hand:
   `npm run ingest:heatmap`.
 
+## Rain forecast field: ECMWF via Open-Meteo (Typhoon view)
+
+- **Address:** `https://api.open-meteo.com/v1/forecast` with `models=ecmwf_ifs`,
+  `hourly=precipitation`, `forecast_days=7`.
+- **What we ask for:** hourly rain for the next 7 days at 256 fixed points: a 1.5° grid (about
+  165 km) from 114°E 4°N to 136.5°E 26.5°N, which covers the Philippine Area of Responsibility
+  and a small margin (`RAIN_GRID` in `server/src/rainForecast.ts`). 50 points per request, 20
+  seconds apart; a run takes about a minute and costs 256 calls. It runs every 12 hours, right
+  after the heat map (never at the same time): 512 calls a day, about 9,600 in total with the
+  other Open-Meteo jobs. A finer grid does not fit the 10,000 a day.
+- **What we keep:** each point's hourly rain in mm (missing hours stay missing). Only the newest
+  good run is kept, and only when at least 90% of points answered. A failed run is not tried
+  again for 12 hours.
+- **What the map shows:** the rain in each 3 hours (00, 03, 06 … UTC), from the period that holds
+  now to the end of the 7 days. A period with a missing hour is "no forecast", never a smaller
+  total. From about day 4 ECMWF gives 3-hour (later 6-hour) totals, which Open-Meteo spreads
+  evenly over the hours.
+- **Licence and credit:** as for the ECMWF heat map source above (CC BY 4.0; we changed the data
+  by adding the hours up).
+- **Limits:** a model estimate, not a PAGASA forecast. The points are far apart, so the field
+  shows the broad pattern only; it is smoothed between points.
+- **Never part of the score.**
+- **Code:** `fetchers/openMeteoRain.ts`, `jobs/ingestRainForecast.ts`, `rainForecast.ts`.
+
 ## Boundaries: NAMRIA and PSA via OCHA
 
 - **Address:** GeoJSON files from
@@ -184,7 +213,9 @@ Events from both sources are removed 30 days after they end. The page shows an e
   here" apart from "not in a zone".
 - **Shown:** as striped map layers, storm surge from zoom 4 (the whole country) and landslide
   from zoom 9 (tick boxes in the legend, off at first), and
-  as a "Hazard map" block on the status card. Never part of the score.
+  as a "Hazard map" block on the status card. The Storm surge view (and the Typhoon view)
+  ticks the storm surge layer; that view can be pressed only once the map is loaded. Never
+  part of the score.
 - **Licence:** Open Data Commons Open Database License
   ([ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/)). Credit "Project NOAH and its
   contributors". The simplified shapes our API sends out are offered under the same licence.
