@@ -1,8 +1,9 @@
 // When a job last started, kept in the database (table job_tries) so it
-// survives a server restart. Only the heat map uses it for now: a failed heat
-// run is not tried again for 12 hours (see scheduler.ts).
+// survives a server restart. Used to space out tries: a failed heat map run is
+// not tried again for 12 hours, a failed PAGASA heat run for 3 (see scheduler.ts).
 
 import { pool } from '../db.ts';
+import { isDue } from './due.ts';
 // `import type` brings in a type only; it disappears when the code runs.
 import type { JobName } from './due.ts';
 
@@ -21,4 +22,9 @@ export async function markTried(job: JobName): Promise<void> {
      ON CONFLICT (job) DO UPDATE SET tried_at = EXCLUDED.tried_at`,
     [job],
   );
+}
+
+/** True when `job` was never tried, or last tried at least `everyMinutes` before `now`. */
+export async function spacedEnough(job: JobName, everyMinutes: number, now: Date): Promise<boolean> {
+  return isDue(await lastTried(job), everyMinutes, now);
 }

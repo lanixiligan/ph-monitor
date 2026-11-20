@@ -30,6 +30,11 @@ export function heatColor(value: HeatValue | undefined, palette: Palette): { col
   return color === undefined ? { color: palette.noData, noData: true } : { color, noData: false };
 }
 
+/** The tag for the chosen source: PAGASA is Official, a model (or the average) is a Model estimate. */
+export function heatTier(view: HeatViewId, t: Strings): string {
+  return view === 'pagasa' ? fill(t.tiers.official, { agency: 'PAGASA' }) : t.tiers.model;
+}
+
 /** The extra properties the map reads while the heat map is on. */
 function heatProperties(value: HeatValue | undefined, palette: Palette) {
   return {
@@ -77,7 +82,7 @@ export function withTownHeat(shapes: PlaceCollection, heat: HeatMapData, palette
  * striped and the score's colours never show under the heat key.
  */
 export function emptyHeatMap(model: HeatViewId): HeatMapData {
-  return { model, fetchedAt: null, isStale: true, validAt: null, places: [], provinces: [] };
+  return { model, fetchedAt: null, isStale: true, validAt: null, hours: [], places: [], provinces: [] };
 }
 
 /**

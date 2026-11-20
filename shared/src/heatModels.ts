@@ -17,6 +17,6 @@ export const HEAT_MODELS: HeatModel[] = [
 /** The model shown when the heat map is turned on. */
 export const DEFAULT_HEAT_MODEL: HeatModelId = 'ecmwf_ifs';
 
-/** Every view the heat map offers: each model, then the average of all of them. */
+/** Every view the heat map offers: each model, PAGASA, then the average of all the models. */
 // `...` spreads the model names into the new list.
-export const HEAT_VIEWS: HeatViewId[] = [...HEAT_MODELS.map((model) => model.id), 'average'];
+export const HEAT_VIEWS: HeatViewId[] = [...HEAT_MODELS.map((model) => model.id), 'pagasa', 'average'];

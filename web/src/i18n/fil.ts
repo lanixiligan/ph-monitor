@@ -43,6 +43,8 @@ export const fil: Strings = {
     creditHeatGfs: 'Mapa ng heat index, pinagmulang GFS: ang Global Forecast System ng National Weather Service (NCEP) ng', // REVIEW
     creditHeatGfsMid: ', sa pamamagitan ng', // REVIEW
     creditHeatGfsEnd: '. Public domain.', // REVIEW
+    creditHeatPagasa: 'Forecast ng heat index: DOST-PAGASA iHeatMAP (', // REVIEW
+    creditHeatPagasaEnd: '), batay sa datos ng ECMWF. Ginamit nang walang pagbabago, para sa hindi pangkomersiyong layunin.', // REVIEW
     creditAlerts: 'Mga opisyal na babala: © PAGASA, CC BY 4.0, mula sa public alert feed nito.', // REVIEW
     creditNews: 'Mga headline ng balita: ang mga news outlet na nakasaad sa tabi ng bawat headline, ang ilan ay nakuha sa pamamagitan ng Google News.', // REVIEW
     creditVideo: 'Video:', // REVIEW
@@ -66,6 +68,7 @@ export const fil: Strings = {
     news: 'mga balita', // REVIEW
     heatMap: 'mapa ng heat index', // REVIEW
     rainForecast: 'forecast ng ulan', // REVIEW
+    pagasaHeat: 'heat index ng PAGASA', // REVIEW
   },
 
   // The language switch. The draft note is shown only when Filipino is chosen.
@@ -550,6 +553,7 @@ export const fil: Strings = {
       ecmwf_ifs: 'ECMWF', // REVIEW
       dwd_icon_global_native: 'ICON (DWD)', // REVIEW
       ncep_gfs_global: 'GFS (NOAA)', // REVIEW
+      pagasa: 'PAGASA iHeatMAP', // REVIEW
     },
     km: 'modelong {km} km', // REVIEW
     average: 'Average ng tatlo', // REVIEW
@@ -571,10 +575,13 @@ export const fil: Strings = {
       ecmwf_ifs: 'Datos: ECMWF (CC BY 4.0) sa pamamagitan ng', // REVIEW
       dwd_icon_global_native: 'Datos: Deutscher Wetterdienst (CC BY 4.0) sa pamamagitan ng', // REVIEW
       ncep_gfs_global: 'Datos: NOAA GFS (public domain) sa pamamagitan ng', // REVIEW
+      // PAGASA's credit is in two pieces with its web address (a link) between them.
+      pagasa: 'Forecast ng heat index: DOST-PAGASA iHeatMAP (', // REVIEW: draft
     },
     creditLink: 'Open-Meteo', // REVIEW
-    townLabel: '{town}, {province}: {heat} · {model}', // REVIEW
-    provinceLabel: '{province}: {heat} · {model}', // REVIEW
+    creditPagasaEnd: '), batay sa datos ng ECMWF. Ginamit nang walang pagbabago, para sa hindi pangkomersiyong layunin.', // REVIEW: draft
+    townLabel: '{town}, {province}: {heat} · {model} · {time}', // REVIEW
+    provinceLabel: '{province}: {heat} · {model} · {time}', // REVIEW
     degrees: '{heat} °C', // REVIEW
     degreesBand: '{heat} °C, {band}', // REVIEW
     unknown: 'hindi alam', // REVIEW
@@ -582,6 +589,15 @@ export const fil: Strings = {
     averagePart: 'average ng {used} sa {total} modelo: {range}', // REVIEW
     averageNone: 'average ng {total} modelo', // REVIEW
     mapLabel: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa heat index nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+    timeBar: 'Oras ng forecast', // REVIEW
+    today: 'Ngayon', // REVIEW
+    hourAm: '{hour}AM', // REVIEW
+    hourPm: '{hour}PM', // REVIEW
+    dayShort: '{weekday} {month}/{day}', // REVIEW
+    weekdays: ['Lin', 'Lun', 'Mar', 'Miy', 'Huw', 'Biy', 'Sab'], // REVIEW
+    noHour: 'Walang halaga ang source na ito para sa oras na ito.', // REVIEW
+    pagasaNote: 'Mga 1 km na grid', // REVIEW
+    pagasaSpacing: 'Ipinapakita ng bawat bayan ang pinakamainit nitong 1 km na parisukat.', // REVIEW
   },
 
   // Small words used by the formatting helpers.

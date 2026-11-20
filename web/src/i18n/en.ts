@@ -1,3 +1,6 @@
+// `import type` brings in a type only; it disappears when the code runs.
+import type { HeatSourceId } from '@ph-monitor/shared';
+
 // Every visible word of the web app, in English. This file is the master list:
 // fil.ts must have exactly the same keys (TypeScript checks it).
 //
@@ -52,6 +55,9 @@ export const en = {
     // Follows the "NOAA" link with no space.
     creditHeatGfsMid: "'s National Weather Service (NCEP), via",
     creditHeatGfsEnd: '. Public domain.',
+    // PAGASA heat line: lead, link text (the site's address), end.
+    creditHeatPagasa: 'Heat index forecast: DOST-PAGASA iHeatMAP (',
+    creditHeatPagasaEnd: '), based on ECMWF data. Used without changes, for a non-commercial purpose.',
     creditAlerts: 'Official alerts: © PAGASA, CC BY 4.0, from its public alert feed.',
     creditNews: 'News headlines: the outlets named beside each headline, some found through Google News.',
     creditVideo: 'Video:',
@@ -75,6 +81,7 @@ export const en = {
     news: 'headlines',
     heatMap: 'heat map',
     rainForecast: 'rain forecast',
+    pagasaHeat: 'PAGASA heat index',
   },
 
   // The language switch. The draft note is shown only when Filipino is chosen.
@@ -581,7 +588,13 @@ export const en = {
     close: 'Close heat map',
     source: 'Source',
     // By the Open-Meteo name (shared/src/heatModels.ts). A model with no name here fails the typecheck.
-    models: { ecmwf_ifs: 'ECMWF', dwd_icon_global_native: 'ICON (DWD)', ncep_gfs_global: 'GFS (NOAA)' },
+    // `satisfies Record<HeatSourceId, string>` checks every source has a name, and keeps the exact keys.
+    models: {
+      ecmwf_ifs: 'ECMWF',
+      dwd_icon_global_native: 'ICON (DWD)',
+      ncep_gfs_global: 'GFS (NOAA)',
+      pagasa: 'PAGASA iHeatMAP',
+    } satisfies Record<HeatSourceId, string>,
     km: '{km} km model',
     // The fourth choice: each town's value averaged over every model that has one.
     average: 'Average of all three',
@@ -606,11 +619,15 @@ export const en = {
       ecmwf_ifs: 'Data: ECMWF (CC BY 4.0) via',
       dwd_icon_global_native: 'Data: Deutscher Wetterdienst (CC BY 4.0) via',
       ncep_gfs_global: 'Data: NOAA GFS (public domain) via',
-    },
+      // PAGASA's credit is in two pieces with its web address (a link) between them.
+      pagasa: 'Heat index forecast: DOST-PAGASA iHeatMAP (',
+    } satisfies Record<HeatSourceId, string>,
     creditLink: 'Open-Meteo',
+    creditPagasaEnd: '), based on ECMWF data. Used without changes, for a non-commercial purpose.',
     // Hover labels. {heat} is `degrees`, `degreesBand` or `unknown`; {model} is a name from `models`.
-    townLabel: '{town}, {province}: {heat} · {model}',
-    provinceLabel: '{province}: {heat} · {model}',
+    // {time} is the shown hour, e.g. 'Sat 11/21 12PM'.
+    townLabel: '{town}, {province}: {heat} · {model} · {time}',
+    provinceLabel: '{province}: {heat} · {model} · {time}',
     degrees: '{heat} °C',
     degreesBand: '{heat} °C, {band}',
     unknown: 'unknown',
@@ -620,6 +637,17 @@ export const en = {
     averageNone: 'average of {total} models',
     // Read out by a screen reader when it reaches the map while the heat map is on.
     mapLabel: 'Map of the Philippines with each city and municipality coloured by its heat index. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
+    // The time bar under the map (HeatTimeBar.tsx): hours and days in Philippine time.
+    timeBar: 'Forecast time',
+    today: 'Today',
+    hourAm: '{hour}AM',
+    hourPm: '{hour}PM',
+    dayShort: '{weekday} {month}/{day}',
+    weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    noHour: 'This source has no value for this hour.',
+    // The PAGASA choice in the source list, and its spacing line.
+    pagasaNote: 'About 1 km grid',
+    pagasaSpacing: 'A town shows its hottest 1 km square.',
   },
 
   // Small words used by the formatting helpers.

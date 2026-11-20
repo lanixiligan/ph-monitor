@@ -11,6 +11,7 @@ import { test } from 'node:test';
 import type { HeatModelId } from '@ph-monitor/shared';
 import { fetchOpenMeteoHeat, parseHeatLocation } from '../src/fetchers/openMeteoHeat.ts';
 import type { HeatHours } from '../src/fetchers/openMeteoHeat.ts';
+import { PAGASA_HEAT_STALE_MINUTES } from '../src/freshness.ts';
 import { averageHeat, averageTowns, bandOf, combineRuns, hourShown, isHeatStale, provinceHeat } from '../src/heatMap.ts';
 import { cacheSeconds } from '../src/routes/heatmap.ts';
 
@@ -113,7 +114,8 @@ test('fetchOpenMeteoHeat: one failed request leaves its points null', async () =
   const first = new URL(urls[0] ?? '').searchParams;
   assert.equal(first.get('hourly'), 'temperature_2m,relative_humidity_2m');
   assert.equal(first.get('models'), 'ecmwf_ifs,dwd_icon_global_native,ncep_gfs_global');
-  assert.equal(first.get('forecast_hours'), '48');
+  assert.equal(first.get('forecast_hours'), '144');
+  assert.equal(first.get('past_hours'), '16');
   assert.equal(first.get('timeformat'), 'unixtime');
   // 1 good request + 2 tries of the failed one.
   assert.equal(urls.length, 3);
@@ -204,29 +206,28 @@ test('averageTowns: each town averages its value from every model, matched by ps
   ]);
 });
 
-test('combineRuns: the oldest run, stale if any source is, the hour shown if any source has it', () => {
+test('combineRuns: the oldest run, stale if any source is', () => {
   const now = new Date('2026-11-19T12:00:00Z');
   const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
-  const fresh = { fetchedAt: hoursAgo(1), hasHourShown: true };
-  const older = { fetchedAt: hoursAgo(5), hasHourShown: true };
-  assert.deepEqual(combineRuns([fresh, older, fresh], now), { fetchedAt: hoursAgo(5), hasHourShown: true, isStale: false });
+  const fresh = { fetchedAt: hoursAgo(1) };
+  const older = { fetchedAt: hoursAgo(5) };
+  assert.deepEqual(combineRuns([fresh, older, fresh], now), { fetchedAt: hoursAgo(5), isStale: false });
   // One source never ran: the others still show, but the view is marked stale.
-  const never = { fetchedAt: null, hasHourShown: false };
-  assert.deepEqual(combineRuns([fresh, never, fresh], now), { fetchedAt: hoursAgo(1), hasHourShown: true, isStale: true });
+  const never = { fetchedAt: null };
+  assert.deepEqual(combineRuns([fresh, never, fresh], now), { fetchedAt: hoursAgo(1), isStale: true });
   // One source is over 25 hours old.
-  assert.equal(combineRuns([fresh, { fetchedAt: hoursAgo(26), hasHourShown: true }], now).isStale, true);
+  assert.equal(combineRuns([fresh, { fetchedAt: hoursAgo(26) }], now).isStale, true);
   // Nothing at all.
-  assert.deepEqual(combineRuns([never, never], now), { fetchedAt: null, hasHourShown: false, isStale: true });
+  assert.deepEqual(combineRuns([never, never], now), { fetchedAt: null, isStale: true });
 });
 
-test('isHeatStale: no run, a run over 25 hours old, or no row for the hour shown', () => {
+test('isHeatStale: no run, or a run over 25 hours old (the hour shown no longer matters)', () => {
   const now = new Date('2026-11-19T12:00:00Z');
   const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
-  assert.equal(isHeatStale(hoursAgo(1), true, now), false);
-  assert.equal(isHeatStale(hoursAgo(24), true, now), false);
-  assert.equal(isHeatStale(null, false, now), true);
-  assert.equal(isHeatStale(hoursAgo(26), true, now), true);
-  assert.equal(isHeatStale(hoursAgo(1), false, now), true);
+  assert.equal(isHeatStale(null, now), true);
+  assert.equal(isHeatStale(hoursAgo(1), now), false);
+  assert.equal(isHeatStale(hoursAgo(24), now), false);
+  assert.equal(isHeatStale(hoursAgo(26), now), true);
 });
 
 test('cacheSeconds: 5 minutes, but never past the end of the hour', () => {
@@ -235,4 +236,13 @@ test('cacheSeconds: 5 minutes, but never past the end of the hour', () => {
   // 10:58:00 → 120 seconds left in the hour.
   assert.equal(cacheSeconds(new Date('2026-11-19T10:58:00Z')), 120);
   assert.equal(cacheSeconds(new Date('2026-11-19T10:59:59.500Z')), 1);
+});
+
+test('isHeatStale: PAGASA keeps its own 30 hour limit; the models keep 25', () => {
+  const now = new Date('2026-11-19T12:00:00Z');
+  const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
+  assert.equal(PAGASA_HEAT_STALE_MINUTES, 30 * 60);
+  assert.equal(isHeatStale(hoursAgo(27), now, PAGASA_HEAT_STALE_MINUTES), false);
+  assert.equal(isHeatStale(hoursAgo(31), now, PAGASA_HEAT_STALE_MINUTES), true);
+  assert.equal(isHeatStale(hoursAgo(27), now), true);
 });

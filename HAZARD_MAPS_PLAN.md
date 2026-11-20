@@ -2,7 +2,7 @@
 
 **Status:** proposal, 2026-11-19. Built so far: the heat map (Phase 4), step 0 of the build
 order (2026-11-20: the view switch with Overall, Earthquake and Heat; see the reference below)
-and step 1 (2026-11-20: Typhoon, Flood and Storm surge).
+and step 1 (2026-11-20: Typhoon, Flood and Storm surge). The Heat view also gained PAGASA iHeatMAP as a source and a time bar (2026-11-20).
 The main plan lives in [PLAN.md](PLAN.md). This file covers only the hazard buttons.
 
 ## What and why

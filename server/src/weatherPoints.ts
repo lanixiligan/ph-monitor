@@ -25,10 +25,11 @@ export const CLEAR_WEATHER_POINTS_SQL = 'TRUNCATE place_weather_points, weather_
  * Run right after CLEAR_WEATHER_POINTS_SQL: the heat map's rows are gone, so its
  * run records go too. The panel then says "no data yet" (not "updated 1 hour
  * ago"), and the heat job is due at the next hourly tick instead of up to 12
- * hours later. (Several statements in one text: allowed when it has no $1 values.)
+ * hours later. PAGASA's run record stays: its forecast is not tied to the weather points.
+ * (Several statements in one text: allowed when it has no $1 values.)
  */
 export const CLEAR_HEAT_RUNS_SQL =
-  "DELETE FROM heat_runs; DELETE FROM fetch_runs WHERE source = 'open-meteo-heat'; DELETE FROM job_tries WHERE job = 'heatMap'";
+  "DELETE FROM heat_runs WHERE model <> 'pagasa'; DELETE FROM fetch_runs WHERE source = 'open-meteo-heat'; DELETE FROM job_tries WHERE job = 'heatMap'";
 
 /** Which points a town reads its weather from. */
 export type TownPoints = { use: 'inside' | 'nearest' | 'own'; ids: number[] };
