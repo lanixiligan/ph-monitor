@@ -77,7 +77,7 @@ export function withTownHeat(shapes: PlaceCollection, heat: HeatMapData, palette
  * striped and the score's colours never show under the heat key.
  */
 export function emptyHeatMap(model: HeatViewId): HeatMapData {
-  return { model, fetchedAt: null, isStale: true, validAt: null, places: [], provinces: [] };
+  return { model, fetchedAt: null, isStale: true, validAt: null, hours: [], places: [], provinces: [] };
 }
 
 /**

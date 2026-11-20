@@ -1,3 +1,6 @@
+// `import type` brings in a type only; it disappears when the code runs.
+import type { HeatSourceId } from '@ph-monitor/shared';
+
 // Every visible word of the web app, in English. This file is the master list:
 // fil.ts must have exactly the same keys (TypeScript checks it).
 //
@@ -581,7 +584,13 @@ export const en = {
     close: 'Close heat map',
     source: 'Source',
     // By the Open-Meteo name (shared/src/heatModels.ts). A model with no name here fails the typecheck.
-    models: { ecmwf_ifs: 'ECMWF', dwd_icon_global_native: 'ICON (DWD)', ncep_gfs_global: 'GFS (NOAA)' },
+    // `satisfies Record<HeatSourceId, string>` checks every source has a name, and keeps the exact keys.
+    models: {
+      ecmwf_ifs: 'ECMWF',
+      dwd_icon_global_native: 'ICON (DWD)',
+      ncep_gfs_global: 'GFS (NOAA)',
+      pagasa: 'PAGASA iHeatMAP',
+    } satisfies Record<HeatSourceId, string>,
     km: '{km} km model',
     // The fourth choice: each town's value averaged over every model that has one.
     average: 'Average of all three',
@@ -606,7 +615,8 @@ export const en = {
       ecmwf_ifs: 'Data: ECMWF (CC BY 4.0) via',
       dwd_icon_global_native: 'Data: Deutscher Wetterdienst (CC BY 4.0) via',
       ncep_gfs_global: 'Data: NOAA GFS (public domain) via',
-    },
+      pagasa: 'Heat index forecast: DOST-PAGASA iHeatMAP (iheatmap.pagasa.dost.gov.ph), based on ECMWF data. Used without changes, for a non-commercial purpose.',
+    } satisfies Record<HeatSourceId, string>,
     creditLink: 'Open-Meteo',
     // Hover labels. {heat} is `degrees`, `degreesBand` or `unknown`; {model} is a name from `models`.
     townLabel: '{town}, {province}: {heat} · {model}',

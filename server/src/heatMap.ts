@@ -132,6 +132,23 @@ async function loadModel(model: HeatModelId, hour: Date): Promise<RunState & { t
 /** Every town's and province's heat index from one model (or their average) for the current hour. */
 export async function getHeatMap(view: HeatViewId, now: Date = new Date()): Promise<HeatMapData> {
   const hour = hourShown(now);
+  if (view === 'pagasa') {
+    // Placeholder: no PAGASA data is read yet (filled in by Task 8). Everything is unknown.
+    const [placeRows, provinceRows] = await Promise.all([
+      pool.query<{ psgc: number }>('SELECT psgc FROM places ORDER BY psgc'),
+      pool.query<{ psgc: number }>('SELECT psgc FROM provinces ORDER BY psgc'),
+    ]);
+    const unknown = (row: { psgc: number }): HeatValue => ({ psgc: row.psgc, heatIndexC: null, band: null });
+    return {
+      model: view,
+      fetchedAt: null,
+      isStale: true,
+      validAt: null,
+      hours: [],
+      places: placeRows.rows.map(unknown),
+      provinces: provinceRows.rows.map(unknown),
+    };
+  }
   const models = view === 'average' ? HEAT_MODELS.map((model) => model.id) : [view];
   const [answers, provinces] = await Promise.all([
     Promise.all(models.map((model) => loadModel(model, hour))),
@@ -145,6 +162,7 @@ export async function getHeatMap(view: HeatViewId, now: Date = new Date()): Prom
     fetchedAt: run.fetchedAt?.toISOString() ?? null,
     isStale: run.isStale,
     validAt: run.hasHourShown ? hour.toISOString() : null,
+    hours: [],
     places: towns.map((town) => {
       const value: HeatValue = { psgc: town.psgc, heatIndexC: town.heatIndexC, band: bandOf(town.heatIndexC) };
       if (town.spread !== undefined) value.spread = town.spread;

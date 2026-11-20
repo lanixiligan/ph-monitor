@@ -550,6 +550,7 @@ export const fil: Strings = {
       ecmwf_ifs: 'ECMWF', // REVIEW
       dwd_icon_global_native: 'ICON (DWD)', // REVIEW
       ncep_gfs_global: 'GFS (NOAA)', // REVIEW
+      pagasa: 'PAGASA iHeatMAP', // REVIEW
     },
     km: 'modelong {km} km', // REVIEW
     average: 'Average ng tatlo', // REVIEW
@@ -571,6 +572,7 @@ export const fil: Strings = {
       ecmwf_ifs: 'Datos: ECMWF (CC BY 4.0) sa pamamagitan ng', // REVIEW
       dwd_icon_global_native: 'Datos: Deutscher Wetterdienst (CC BY 4.0) sa pamamagitan ng', // REVIEW
       ncep_gfs_global: 'Datos: NOAA GFS (public domain) sa pamamagitan ng', // REVIEW
+      pagasa: 'Heat index forecast: DOST-PAGASA iHeatMAP (iheatmap.pagasa.dost.gov.ph), based on ECMWF data. Used without changes, for a non-commercial purpose.', // REVIEW: draft, same English text for now
     },
     creditLink: 'Open-Meteo', // REVIEW
     townLabel: '{town}, {province}: {heat} · {model}', // REVIEW

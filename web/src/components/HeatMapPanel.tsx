@@ -7,7 +7,7 @@
 // A display layer only: it never changes the score.
 
 import { HEAT_MODELS } from '@ph-monitor/shared';
-import type { HeatMapData, HeatModelId, HeatViewId } from '@ph-monitor/shared';
+import type { HeatMapData, HeatSourceId, HeatViewId } from '@ph-monitor/shared';
 import { timeAgo } from '../format.ts';
 import { fill, useStrings } from '../i18n/index.ts';
 import { useNow } from '../useNow.ts';
@@ -28,7 +28,7 @@ type Props = {
 };
 
 /** The models whose data the chosen view shows: one, or all of them for the average. */
-function creditsFor(view: HeatViewId): HeatModelId[] {
+function creditsFor(view: HeatViewId): HeatSourceId[] {
   return view === 'average' ? HEAT_MODELS.map((model) => model.id) : [view];
 }
 

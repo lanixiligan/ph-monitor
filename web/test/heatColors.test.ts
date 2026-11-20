@@ -157,6 +157,7 @@ test('emptyHeatMap: nothing known for the chosen model', () => {
     fetchedAt: null,
     isStale: true,
     validAt: null,
+    hours: [],
     places: [],
     provinces: [],
   });
