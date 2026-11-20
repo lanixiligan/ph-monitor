@@ -144,13 +144,17 @@ async function loadModel(model: HeatModelId, at: Date, now: Date): Promise<Sourc
 /** PAGASA's towns for `at`: each town takes the newest issuance that has a row for it. */
 async function loadPagasa(at: Date, now: Date): Promise<SourceAnswer & { isStale: boolean }> {
   const [towns, run, stored, newest] = await Promise.all([
-    // The subquery picks, per town, the newest issued_on that has a row at `at`.
+    // One pass: `DISTINCT ON (psgc)` keeps, per town, the newest issuance with a row at `at`
+    // (even if its value is null: the newest forecast wins). Then every town is joined to it.
     pool.query<TownHeat>(
-      `SELECT c.psgc, c.province_psgc AS "provincePsgc",
-              (SELECT p.heat_index_c FROM pagasa_heat p
-               WHERE p.psgc = c.psgc AND p.valid_at = $1
-               ORDER BY p.issued_on DESC LIMIT 1) AS "heatIndexC"
+      `SELECT c.psgc, c.province_psgc AS "provincePsgc", n.heat_index_c AS "heatIndexC"
        FROM places c
+       LEFT JOIN (
+         SELECT DISTINCT ON (psgc) psgc, heat_index_c
+         FROM pagasa_heat
+         WHERE valid_at = $1
+         ORDER BY psgc, issued_on DESC
+       ) n ON n.psgc = c.psgc
        ORDER BY c.psgc`,
       [at],
     ),
