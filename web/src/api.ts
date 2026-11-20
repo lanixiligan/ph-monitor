@@ -15,6 +15,7 @@ import type {
   PlaceShapeProperties,
   PointDetail,
   ProvinceMapProperties,
+  QuakeMap,
   StatusReport,
   Storm,
   StreamSlot,
@@ -69,6 +70,11 @@ export async function searchPlaces(query: string): Promise<PlaceMatch[]> {
 
 export async function fetchEvents(): Promise<DisasterEvent[]> {
   return (await getJson('/api/events')) as DisasterEvent[];
+}
+
+/** The quakes inside the score's time window, and how fresh the USGS feed is. */
+export async function fetchQuakes(): Promise<QuakeMap> {
+  return (await getJson('/api/quakes')) as QuakeMap;
 }
 
 export async function fetchStorms(): Promise<Storm[]> {

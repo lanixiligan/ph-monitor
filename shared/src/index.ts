@@ -9,3 +9,5 @@ export { NEWS_KEEP_DAYS, NEWS_TYPES } from './newsTypes.ts';
 export type { NewsType } from './newsTypes.ts';
 export { HEAT_MODELS, HEAT_VIEWS, DEFAULT_HEAT_MODEL } from './heatModels.ts';
 export type { HeatModel } from './heatModels.ts';
+export { DEFAULT_MAP_VIEW, MAP_VIEWS } from './mapViews.ts';
+export type { MapView } from './mapViews.ts';

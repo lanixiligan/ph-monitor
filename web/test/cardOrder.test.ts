@@ -1,11 +1,12 @@
 // Tests for the status card's small rules (src/cardOrder.ts): which events go
-// in the block above the score, and which lines an alert's title needs.
+// in the block above the score, which lines an alert's title needs, and the
+// order of the hazard rows for the pressed map view.
 // Run with: npm test
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { DisasterEvent } from '@ph-monitor/shared';
-import { alertTitleLines, isTopEvent } from '../src/cardOrder.ts';
+import { HAZARD_ROWS, alertTitleLines, hazardRowOrder, isTopEvent, viewRow, viewSection } from '../src/cardOrder.ts';
 
 // One event; each test changes only what it is about.
 function event(changes: Partial<DisasterEvent>): DisasterEvent {
@@ -61,4 +62,31 @@ test('alert title: two different lines are both shown, headline first', () => {
     'Heavy rain over Cebu tonight',
     'Rainfall Warning (Orange)',
   ]);
+});
+
+test("hazard rows: Overall keeps today's order", () => {
+  assert.deepEqual(hazardRowOrder('overall'), ['quake', 'rain', 'heat', 'event']);
+  assert.equal(viewRow('overall'), null);
+});
+
+test('hazard rows: the pressed view puts its own row first, the others keep their order', () => {
+  assert.deepEqual(hazardRowOrder('heat'), ['heat', 'quake', 'rain', 'event']);
+  assert.deepEqual(hazardRowOrder('earthquake'), ['quake', 'rain', 'heat', 'event']);
+  assert.equal(viewRow('heat'), 'heat');
+  assert.equal(viewRow('earthquake'), 'quake');
+});
+
+test('hazard rows: a view with no row of its own keeps the order, and every row stays listed', () => {
+  assert.deepEqual(hazardRowOrder('tsunami'), HAZARD_ROWS);
+  for (const view of ['overall', 'heat', 'earthquake', 'tsunami'] as const) {
+    assert.deepEqual([...hazardRowOrder(view)].sort(), [...HAZARD_ROWS].sort());
+  }
+});
+
+test('a view moves its own detail section up: Earthquake the quakes, Heat the weather', () => {
+  assert.equal(viewSection('earthquake'), 'quakes');
+  assert.equal(viewSection('heat'), 'weather');
+  // Overall and a view with no section keep the card as it is.
+  assert.equal(viewSection('overall'), null);
+  assert.equal(viewSection('tsunami'), null);
 });

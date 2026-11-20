@@ -4,6 +4,8 @@
 // locate button (under the zoom buttons) picks the spot where the reader is.
 // While the heat map is on, the same shapes are coloured by heat index instead
 // (heatColors.ts), and the hover label shows the heat index and its model.
+// While the Earthquake view is pressed, they are coloured by the earthquake
+// part of the score (quakeColors.ts), and the label says it is that part.
 //
 // MapLibre draws the map itself (outside React), so this component's job is
 // to create it once and then pass along changes: new data, new selection.
@@ -16,7 +18,7 @@ import type { StyleSpecification } from 'maplibre-gl';
 // address, which we then hand to MapLibre.
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { useEffect, useRef, useState } from 'react';
-import type { HazardLayerInfo, HeatMapData, PlaceScores } from '@ph-monitor/shared';
+import type { HazardLayerInfo, HeatMapData, MapViewId, PlaceScores, QuakeMap } from '@ph-monitor/shared';
 import { fetchPlaceShapes } from '../api.ts';
 import type { PlaceCollection, ProvinceCollection, Spot } from '../api.ts';
 import { LANDSLIDE_LAYERS, SURGE_LAYERS, useHazardZones } from '../hazardOverlay.ts';
@@ -25,6 +27,8 @@ import { EVENT_LAYERS, OVERLAY_CLICK_LAYERS, STORM_LAYERS, useOverlays } from '.
 import { MAX_BOUNDS, PH_BOUNDS, SHOW_BASEMAP } from '../mapSettings.ts';
 import type { MapLayers } from '../mapSettings.ts';
 import { provincesBox } from '../newsGeo.ts';
+import { withProvinceQuake, withTownQuake } from '../quakeColors.ts';
+import { QUAKE_LAYERS, useQuakeMarkers } from '../quakeOverlay.ts';
 import { NEWS_LAYERS, useNewsDots } from '../newsOverlay.ts';
 import { hatchImage, readPalette } from '../palette.ts';
 import { bandColors, bandFor, scoreText } from '../scoreScale.ts';
@@ -135,6 +139,10 @@ type Props = {
    * index instead of the score (the score colours are hidden). null = off.
    */
   heat: HeatMapData | null;
+  /** The pressed map view. 'earthquake' colours the shapes by the earthquake part of the score. */
+  view: MapViewId;
+  /** The quakes for the quake markers. null = not loaded (nothing drawn). */
+  quakes: QuakeMap | null;
   /** The spot the reader picked, marked with a dot. null = none. */
   spot: Spot | null;
   /** The town (or province) the picked spot is in, outlined. null = none. */
@@ -173,7 +181,7 @@ const MATCH_NONE: maplibregl.FilterSpecification = ['in', ['get', 'psgc'], ['lit
 const FADE_WITH_ZOOM: maplibregl.ExpressionSpecification = ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 0.45];
 
 export function ProvinceMap({
-  data, placeScores, heat, spot, picked, onSelect, layers, focus, goTo, onLocateResult, newsType, hazards, onZoom,
+  data, placeScores, heat, view, quakes, spot, picked, onSelect, layers, focus, goTo, onLocateResult, newsType, hazards, onZoom,
 }: Props) {
   // A "ref" holds a value that survives re-renders without causing one.
   const containerRef = useRef<HTMLDivElement>(null);
@@ -193,6 +201,10 @@ export function ProvinceMap({
   const heatRef = useRef(heat);
   heatRef.current = heat;
   const heatOn = heat !== null;
+  // The Earthquake view: the score's own colours, but for its earthquake part only.
+  const quakeOn = view === 'earthquake' && !heatOn;
+  const quakeOnRef = useRef(quakeOn);
+  quakeOnRef.current = quakeOn;
   const { theme } = useTheme();
   // The small name-and-score label, kept so it can be removed when the spot is closed.
   const popupRef = useRef<maplibregl.Popup | null>(null);
@@ -485,6 +497,12 @@ export function ProvinceMap({
             ? theMap.queryRenderedFeatures(event.point, { layers: ['town-fill'] })[0]?.properties
             : undefined;
           const heatNow = heatRef.current;
+          // Over a quake marker its own label shows instead (quakeOverlay.ts).
+          const quakeHits = QUAKE_LAYERS.filter((id) => theMap.getLayer(id));
+          if (quakeHits.length > 0 && theMap.queryRenderedFeatures(event.point, { layers: quakeHits }).length > 0) {
+            popup.remove();
+            return;
+          }
           let text: string;
           if (heatNow) {
             // The heat map is on: the heat index and its model, never the score.
@@ -508,6 +526,22 @@ export function ProvinceMap({
                   heat: heatOf(properties),
                   model: heatSource(heatNow.model, properties, t),
                 });
+          } else if (quakeOnRef.current) {
+            // The Earthquake view: the earthquake part, never the overall score.
+            const q = getI18n().t.quakes;
+            const partOf = (props: Record<string, unknown>) =>
+              scoreText(typeof props.quakeScore === 'number' ? props.quakeScore : null, props.incomplete === true);
+            // A town is named once its scores are in (the same check as Overall below).
+            text =
+              town && typeof town.quakeScore === 'number'
+                ? fill(q.townLabel, { town: town.name, province: town.province_name, score: partOf(town) })
+                : typeof properties.quake_top_place === 'string'
+                  ? fill(q.provinceTopLabel, {
+                      province: properties.name,
+                      score: partOf(properties),
+                      town: properties.quake_top_place,
+                    })
+                  : fill(q.provinceLabel, { province: properties.name, score: partOf(properties) });
           } else if (town && typeof town.score === 'number') {
             text = fill(words.townLabel, { town: town.name, province: town.province_name, score: scoreOf(town) });
           } else if (typeof properties.top_place === 'string') {
@@ -538,7 +572,7 @@ export function ProvinceMap({
         // 4 decimals is about 11 m, plenty for our purposes and tidy in links.
         theMap.on('click', 'province-fill', (event) => {
           // A click on an event, storm or headline dot opens its popup instead.
-          const hits = [...OVERLAY_CLICK_LAYERS, ...NEWS_LAYERS].filter((id) => theMap.getLayer(id));
+          const hits = [...OVERLAY_CLICK_LAYERS, ...NEWS_LAYERS, ...QUAKE_LAYERS].filter((id) => theMap.getLayer(id));
           if (hits.length > 0 && theMap.queryRenderedFeatures(event.point, { layers: hits }).length > 0) {
             return;
           }
@@ -586,17 +620,27 @@ export function ProvinceMap({
   useEffect(() => {
     if (!ready || !data) return;
     const source = mapRef.current?.getSource('provinces') as maplibregl.GeoJSONSource | undefined;
-    source?.setData(heat ? withProvinceHeat(data, heat, readPalette()) : withColors(data, theme));
-  }, [ready, data, theme, heat]);
+    source?.setData(
+      heat
+        ? withProvinceHeat(data, heat, readPalette())
+        : quakeOn
+          ? withProvinceQuake(data, theme, readPalette().noData)
+          : withColors(data, theme),
+    );
+  }, [ready, data, theme, heat, quakeOn]);
 
   // Whenever the town shapes, scores or heat values change, hand them to the map.
   useEffect(() => {
     if (!ready || !townShapes) return;
     const source = mapRef.current?.getSource('places') as maplibregl.GeoJSONSource | undefined;
     source?.setData(
-      heat ? withTownHeat(townShapes, heat, readPalette()) : withTownColors(townShapes, placeScores, theme),
+      heat
+        ? withTownHeat(townShapes, heat, readPalette())
+        : quakeOn
+          ? withTownQuake(townShapes, placeScores, theme, readPalette().noData)
+          : withTownColors(townShapes, placeScores, theme),
     );
-  }, [ready, townShapes, placeScores, theme, heat]);
+  }, [ready, townShapes, placeScores, theme, heat, quakeOn]);
 
   // Outline the picked spot's town, or its province when the town is unknown.
   useEffect(() => {
@@ -615,6 +659,8 @@ export function ProvinceMap({
 
   // Event markers and storm tracks (see mapOverlays.ts).
   useOverlays(mapRef, ready);
+  // Quake markers (see quakeOverlay.ts).
+  useQuakeMarkers(mapRef, ready, quakes);
   // Headline dots (see newsOverlay.ts).
   useNewsDots(mapRef, ready, data, newsType);
   // Fixed hazard map stripes, over the town colours (see hazardOverlay.ts).
@@ -646,8 +692,11 @@ export function ProvinceMap({
     button?.setAttribute('title', t.search.locate);
     button?.setAttribute('aria-label', t.search.locate);
     // What a screen reader says when it reaches the map itself.
-    mapRef.current?.getCanvas().setAttribute('aria-label', heatOn ? t.heat.mapLabel : t.map.label);
-  }, [ready, t, heatOn]);
+    mapRef.current?.getCanvas().setAttribute(
+      'aria-label',
+      heatOn ? t.heat.mapLabel : quakeOn ? t.quakes.mapLabel : t.map.label,
+    );
+  }, [ready, t, heatOn, quakeOn]);
 
   // Show or hide layers when a legend tick box changes.
   useEffect(() => {
@@ -658,8 +707,8 @@ export function ProvinceMap({
     // replace the province colours at every zoom, so each town shows its own
     // score, never its province's highest. The province colour stays only
     // until the towns arrive. The heat map uses the same layers, so they are
-    // on while it is, whatever the score tick box says.
-    const colorsOn = layers.scores || heatOn;
+    // on while it is, whatever the score tick box says. So does the Earthquake view.
+    const colorsOn = layers.scores || heatOn || quakeOn;
     const provinceOpacity = colorsOn && !townsShown ? fillOpacityRef.current : 0;
     const townOpacity = colorsOn && townsShown ? fillOpacityRef.current : 0;
     for (const id of ['province-fill', 'province-nodata', 'province-incomplete']) {
@@ -678,9 +727,10 @@ export function ProvinceMap({
     show(NEWS_LAYERS, layers.news);
     show(SURGE_LAYERS, layers.stormSurge);
     show(LANDSLIDE_LAYERS, layers.landslide);
+    show(QUAKE_LAYERS, layers.quakes);
     // Storm names are HTML labels, not map layers; CSS hides them.
     containerRef.current?.classList.toggle('hide-storm-labels', !layers.storms);
-  }, [ready, layers, townsShown, heatOn]);
+  }, [ready, layers, townsShown, heatOn, quakeOn]);
 
   // Whenever the picked spot changes, move the dot (or remove it).
   useEffect(() => {

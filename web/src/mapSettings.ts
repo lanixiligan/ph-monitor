@@ -36,9 +36,11 @@ export type MapLayers = {
   /** The fixed Project NOAH hazard maps. */
   landslide: boolean;
   stormSurge: boolean;
+  /** Earthquake markers (USGS), sized by magnitude. */
+  quakes: boolean;
 };
 
-/** What the page opens with: everything on except the two hazard maps. */
+/** What the page opens with: everything on except the two hazard maps and the quake markers (the Earthquake view ticks them). */
 export const DEFAULT_LAYERS: MapLayers = {
   scores: true,
   events: true,
@@ -46,6 +48,7 @@ export const DEFAULT_LAYERS: MapLayers = {
   news: true,
   landslide: false,
   stormSurge: false,
+  quakes: false,
 };
 
 /**

@@ -2,11 +2,22 @@
 // the clicked spot with the map legend under it (the legend can fold away),
 // the map in the middle, and the live news and headlines on the right.
 // The bottom line holds the "not official" notice and a link to the credits page.
+// The top bar's view switch picks what the page focuses on (Overall, Heat, …):
+// the map colours, the legend, the headline filter and the order of the status
+// card follow it. A view is display only: it never changes the score.
 
 import { useEffect, useMemo, useState } from 'react';
-import { APP_NAME } from '@ph-monitor/shared';
-import type { FeedHealth, HazardLayerInfo, HeatMapData, HeatViewId, PlaceScores } from '@ph-monitor/shared';
-import { fetchHazards, fetchHeatMap, fetchPlaceScores, fetchProvinces, fetchStatus } from './api.ts';
+import { APP_NAME, DEFAULT_HEAT_MODEL } from '@ph-monitor/shared';
+import type {
+  FeedHealth,
+  HazardLayerInfo,
+  HeatMapData,
+  HeatViewId,
+  MapViewId,
+  PlaceScores,
+  QuakeMap,
+} from '@ph-monitor/shared';
+import { fetchHazards, fetchHeatMap, fetchPlaceScores, fetchProvinces, fetchQuakes, fetchStatus } from './api.ts';
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
 import { HeatMapPanel } from './components/HeatMapPanel.tsx';
@@ -19,11 +30,13 @@ import { SpotHint } from './components/SpotHint.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
 import type { PickedArea } from './components/StatusCard.tsx';
 import { StreamsPanel } from './components/StreamsPanel.tsx';
+import { ViewSwitch } from './components/ViewSwitch.tsx';
 import { WarnIcon } from './components/WarnIcon.tsx';
 import { heatForMap } from './heatColors.ts';
 import { fill, LanguageSwitch, lookup, useStrings } from './i18n/index.ts';
-import { DEFAULT_LAYERS } from './mapSettings.ts';
+import type { MapLayers } from './mapSettings.ts';
 import { ThemeSwitch } from './theme/index.ts';
+import { changeLayers, initialViewState, mapViewById, pressView, turnOnLayer } from './viewLayers.ts';
 
 // How often the map asks the server for new scores.
 const REFRESH_MS = 5 * 60 * 1000;
@@ -56,8 +69,11 @@ export function App() {
   // How each feed is doing. null = not loaded yet; 'failed' = the check itself failed.
   const [feeds, setFeeds] = useState<FeedHealth[] | 'failed' | null>(null);
   const [spot, setSpot] = useState<Spot | null>(spotFromAddress);
-  // Which map layers the legend's tick boxes have switched on (the hazard maps start off).
-  const [layers, setLayers] = useState(DEFAULT_LAYERS);
+  // The pressed map view and the legend's tick boxes (the hazard maps start off).
+  // They change together, by the rule in viewLayers.ts.
+  const [viewState, setViewState] = useState(initialViewState);
+  const mapView = viewState.view;
+  const layers = viewState.layers;
   // The fixed hazard maps the server has loaded. null = not known yet.
   const [hazards, setHazards] = useState<HazardLayerInfo[] | null>(null);
   // The map's zoom level, for the legend's "zoom in to see zones".
@@ -72,18 +88,39 @@ export function App() {
   const [goTo, setGoTo] = useState<Spot | null>(null);
   // What went wrong with "use my location", if anything.
   const [locateProblem, setLocateProblem] = useState<'outside' | 'failed' | null>(null);
-  // The heat map's weather model, or 'average'. null = the heat map is off (the map shows the score).
-  const [heatModel, setHeatModel] = useState<HeatViewId | null>(null);
-  // The heat map answer for `heatModel`. null = off, or still loading.
+  // The heat map's weather model, or 'average'. Remembered while other views are pressed.
+  const [heatModel, setHeatModel] = useState<HeatViewId>(DEFAULT_HEAT_MODEL);
+  // The model the map shows: only while Heat is pressed. null = the heat map is off.
+  const heatChosen = mapView === 'heat' ? heatModel : null;
+  // The heat map answer for `heatChosen`. null = off, or still loading.
   const [heat, setHeat] = useState<HeatMapData | null>(null);
   // true when the last heat map load failed.
   const [heatFailed, setHeatFailed] = useState(false);
+  // The quakes for the quake markers (GET /api/quakes). null = not loaded yet.
+  const [quakes, setQuakes] = useState<QuakeMap | null>(null);
+  // true when the last quake list load failed (the legend says so).
+  const [quakesFailed, setQuakesFailed] = useState(false);
 
-  /** Turns the heat map on, switches its source, or (with null) turns it off. */
-  function chooseHeatModel(model: HeatViewId | null) {
+  /** Switches the heat map's source. */
+  function chooseHeatModel(model: HeatViewId) {
     if (model === heatModel) return;
     setHeatModel(model);
     // The answer held now is for another model: drop it.
+    setHeat(null);
+    setHeatFailed(false);
+  }
+
+  /**
+   * Presses a view in the top bar: ticks its layers (viewLayers.ts) and sets
+   * the headline filter to its kind (Overall: all). Only this way round: picking
+   * a headline filter by hand never changes the view.
+   */
+  function chooseView(id: MapViewId) {
+    const view = mapViewById(id);
+    if (view === undefined || !view.available || id === mapView) return;
+    setViewState((current) => pressView(current, view));
+    setNewsType(view.newsType ?? 'all');
+    // Any heat map answer held now is dropped; Heat loads a fresh one.
     setHeat(null);
     setHeatFailed(false);
   }
@@ -100,8 +137,8 @@ export function App() {
 
   function showOnMap(psgcs: number[]) {
     setFocus({ psgcs });
-    // Make sure the dots are on, so the reader sees them.
-    setLayers((current) => ({ ...current, news: true }));
+    // Make sure the dots are on, so the reader sees them (in Overall's ticks too).
+    setViewState((current) => turnOnLayer(current, 'news'));
     // On a small screen the map may be scrolled away; bring it back into view.
     document.querySelector('.map-area')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -146,6 +183,13 @@ export function App() {
         // The map then keeps showing provinces only; the error line above covers a dead server.
       }
       try {
+        setQuakes(await fetchQuakes());
+        setQuakesFailed(false);
+      } catch {
+        // The markers keep the last list; the legend says the list could not be loaded.
+        setQuakesFailed(true);
+      }
+      try {
         setFeeds((await fetchStatus()).feeds);
       } catch {
         setFeeds('failed');
@@ -156,12 +200,12 @@ export function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // While the heat map is on: load the chosen model's answer now, then again every few minutes.
+  // While Heat is pressed: load the chosen model's answer now, then again every few minutes.
   useEffect(() => {
-    if (heatModel === null) return;
-    const model = heatModel;
+    if (heatChosen === null) return;
+    const model = heatChosen;
     // Review Focus 4: the cleanup below sets this to false when the reader
-    // switches source or closes the panel, so an answer that arrives after
+    // switches source or leaves Heat, so an answer that arrives after
     // that (a slow, older request) is dropped instead of painting the map.
     let stillChosen = true;
     async function load() {
@@ -180,13 +224,13 @@ export function App() {
       stillChosen = false;
       clearInterval(timer);
     };
-  }, [heatModel]);
+  }, [heatChosen]);
 
   // What the map colours by: null = the score; stripes while the answer loads.
   // heatForMap also ignores an answer whose model is not the one chosen now.
   // `useMemo` keeps the same object between re-draws, so the map recolours
   // only when the heat map really changes.
-  const heatOnMap = useMemo(() => heatForMap(heatModel, heat), [heatModel, heat]);
+  const heatOnMap = useMemo(() => heatForMap(heatChosen, heat), [heatChosen, heat]);
 
   // The names of the feeds that are out of date, in the reader's language.
   const staleFeeds = Array.isArray(feeds)
@@ -203,6 +247,7 @@ export function App() {
           {APP_NAME}
         </h1>
         <p className="topbar-intro">{t.app.intro}</p>
+        <ViewSwitch view={mapView} onPress={chooseView} />
         {/* Links that jump down the page on a small screen; `#news-title` is the id of a heading. */}
         <nav className="topbar-jump">
           <a href="#streams-title">{t.app.jumpStreams}</a>
@@ -244,12 +289,14 @@ export function App() {
                   : null
             }
           />
-          {/* The map plus what floats over it (the heat map button and panel). */}
+          {/* The map plus what floats over it (the heat map panel while Heat is pressed). */}
           <div className="map-frame">
             <ProvinceMap
               data={provinces}
               placeScores={placeScores}
               heat={heatOnMap}
+              view={mapView}
+              quakes={quakes}
               spot={spot}
               picked={spot === null ? null : picked}
               // Picking a spot clears the headline outline and the old town outline.
@@ -266,28 +313,34 @@ export function App() {
               hazards={hazards}
               onZoom={setMapZoom}
             />
-            <HeatMapPanel
-              chosen={heatModel}
-              data={heat !== null && heat.model === heatModel ? heat : null}
-              failed={heatFailed}
-              onChoose={chooseHeatModel}
-            />
+            {mapView === 'heat' && (
+              <HeatMapPanel
+                chosen={heatModel}
+                data={heat !== null && heat.model === heatModel ? heat : null}
+                failed={heatFailed}
+                onChoose={chooseHeatModel}
+                onClose={() => chooseView('overall')}
+              />
+            )}
           </div>
         </main>
 
         {/* Under the map on a small screen; bottom of the left column on a wide one. */}
         <Legend
           layers={layers}
-          onChange={setLayers}
+          onChange={(next: MapLayers) => setViewState((current) => changeLayers(current, next))}
           newsType={newsType}
           hazards={hazards}
           zoom={mapZoom}
-          heatOn={heatModel !== null}
+          view={mapView}
+          heatModel={heatModel}
+          quakes={quakes}
+          quakesFailed={quakesFailed}
         />
 
         <div className="side side-spot">
           {spot !== null ? (
-            <StatusCard spot={spot} onClose={() => setSpot(null)} onArea={setPicked} />
+            <StatusCard spot={spot} onClose={() => setSpot(null)} onArea={setPicked} view={mapView} />
           ) : (
             <SpotHint provinces={provinces} onPick={pickPlace} />
           )}

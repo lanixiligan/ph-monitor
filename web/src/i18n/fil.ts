@@ -88,6 +88,21 @@ export const fil: Strings = {
   },
 
   // The map legend.
+  views: {
+    groupLabel: 'Uri ng mapa', // REVIEW
+    names: {
+      overall: 'Kabuuan', // REVIEW
+      heat: 'Init', // REVIEW
+      earthquake: 'Lindol', // REVIEW
+      tsunami: 'Tsunami', // REVIEW
+    },
+    more: 'Iba pa', // REVIEW
+    moreHolding: 'Iba pa: {view}', // REVIEW
+    notes: {
+      tsunami: 'Wala pang live feed para sa tsunami', // REVIEW
+    },
+    noData: 'Wala pang live na datos', // REVIEW
+  },
   legend: {
     title: 'Stress score (0–100)', // REVIEW
     noScore: 'Wala pang score', // REVIEW
@@ -108,6 +123,9 @@ export const fil: Strings = {
       2: 'Katamtaman', // REVIEW
       3: 'Mataas', // REVIEW
     },
+    otherLayers: 'Iba pang layer', // REVIEW
+    scoresHidden: 'Nakatago ang mga kulay ng score sa view na ito. Pindutin ang Kabuuan para makita ang mga ito.', // REVIEW
+    heatSource: 'Pinagmulan: {model}', // REVIEW
   },
 
   // The side panel before a spot is picked.
@@ -260,6 +278,7 @@ export const fil: Strings = {
     bandAtSpot: '{band} sa lugar na ito', // REVIEW
     bandInTown: '{band} sa buong {town}', // REVIEW
     hazardsTitle: 'Ayon sa uri ng banta', // REVIEW
+    onMap: 'Nasa mapa', // REVIEW
     notCovered:
       'Hindi saklaw dito: pagguho ng lupa, tsunami, wind signal at babala sa ulan ng PAGASA, alert level ng bulkan ng PHIVOLCS. Gamitin ang mga opisyal na link sa ibaba.', // REVIEW
     incomplete: 'May kulang na datos, kaya maaaring mas mataas ang totoong score.', // REVIEW
@@ -275,6 +294,7 @@ export const fil: Strings = {
     kmAway: '{km} km ang layo', // REVIEW
     kmDeep: '{km} km ang lalim', // REVIEW
     usgsPage: 'Pahina ng USGS', // REVIEW
+    quakesUnknown: 'Hindi nasuri ang mga lindol kamakailan: maaaring may kulang na bagong lindol.', // REVIEW
     weatherTitle: 'Panahon', // REVIEW
     temperature: 'Temperatura', // REVIEW
     humidity: 'Halumigmig', // REVIEW
@@ -340,6 +360,32 @@ export const fil: Strings = {
     none: 'Walang balitang maipapakita.', // REVIEW
     alsoAt: 'Makikita rin sa:', // REVIEW
     showOnMap: 'Ipakita ang {places} sa mapa', // REVIEW
+    loading: 'Naglo-load…', // REVIEW
+    titles: {
+      typhoon: 'Mga balita tungkol sa bagyo', // REVIEW
+      flood: 'Mga balita tungkol sa baha', // REVIEW
+      earthquake: 'Mga balita tungkol sa lindol', // REVIEW
+      volcano: 'Mga balita tungkol sa bulkan', // REVIEW
+      landslide: 'Mga balita tungkol sa pagguho ng lupa', // REVIEW
+      tsunami: 'Mga balita tungkol sa tsunami at daluyong', // REVIEW
+      drought: 'Mga balita tungkol sa tagtuyot', // REVIEW
+      wildfire: 'Mga balita tungkol sa sunog sa gubat', // REVIEW
+      heat: 'Mga balita tungkol sa matinding init', // REVIEW
+      general: 'Mga pangkalahatang balita', // REVIEW
+    },
+    noneOfKind: {
+      typhoon: 'Walang balita tungkol sa bagyo sa nakaraang {days} araw.', // REVIEW
+      flood: 'Walang balita tungkol sa baha sa nakaraang {days} araw.', // REVIEW
+      earthquake: 'Walang balita tungkol sa lindol sa nakaraang {days} araw.', // REVIEW
+      volcano: 'Walang balita tungkol sa bulkan sa nakaraang {days} araw.', // REVIEW
+      landslide: 'Walang balita tungkol sa pagguho ng lupa sa nakaraang {days} araw.', // REVIEW
+      tsunami: 'Walang balita tungkol sa tsunami o daluyong sa nakaraang {days} araw.', // REVIEW
+      drought: 'Walang balita tungkol sa tagtuyot sa nakaraang {days} araw.', // REVIEW
+      wildfire: 'Walang balita tungkol sa sunog sa gubat sa nakaraang {days} araw.', // REVIEW
+      heat: 'Walang balita tungkol sa matinding init sa nakaraang {days} araw.', // REVIEW
+      general: 'Walang pangkalahatang balita sa nakaraang {days} araw.', // REVIEW
+    },
+    showAll: 'Ipakita ang lahat ng balita', // REVIEW
   },
 
   // The live news panel (YouTube streams and latest videos).
@@ -411,9 +457,29 @@ export const fil: Strings = {
     averageNone: 'average ng {total} modelo', // REVIEW
   },
 
-  // The heat map: its button and panel (HeatMapPanel.tsx) and its hover labels.
+  // The Earthquake view and the quake markers (display only; they never change the score).
+  quakes: {
+    scaleTitle: 'Bahagi ng lindol sa score (0–100)', // REVIEW
+    unknownStripes: 'Guhit sa ibabaw ng kulay: hindi masuri ang lindol, maaaring mas mataas ang bahagi', // REVIEW
+    overallHidden: 'Hindi ipinapakita ang kabuuang score sa view na ito. Pindutin ang Kabuuan para makita ito.', // REVIEW
+    legend: 'Lindol (USGS; mas malaki = mas malakas)', // REVIEW
+    loading: 'Naglo-load ng mga lindol…', // REVIEW
+    loadError: 'Hindi ma-load ang listahan ng lindol ngayon.', // REVIEW
+    stale: 'Luma na ang datos ng lindol: maaaring may kulang na bagong lindol.', // REVIEW
+    none: 'Walang lindol na binilang ng score sa nakaraang {hours} oras.', // REVIEW
+    countOne: '1 lindol sa nakaraang {hours} oras.', // REVIEW
+    count: '{count} lindol sa nakaraang {hours} oras.', // REVIEW
+    townLabel: '{town}, {province}: bahagi ng lindol {score}', // REVIEW
+    provinceLabel: '{province}: bahagi ng lindol {score}', // REVIEW
+    provinceTopLabel: '{province}: bahagi ng lindol {score}, sa {town}', // REVIEW
+    popupMagnitude: 'Magnitude {magnitude}', // REVIEW
+    popupNoDepth: 'Walang ibinigay na lalim', // REVIEW
+    popupClick: 'I-click para sa pahina ng USGS', // REVIEW
+    mapLabel: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa bahagi ng lindol sa score nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+  },
+
+  // The heat map: its panel (HeatMapPanel.tsx), its key in the legend and its hover labels.
   heat: {
-    button: 'Mapa ng init', // REVIEW: unsure about "init" for heat index
     title: 'Mapa ng heat index', // REVIEW
     close: 'Isara ang mapa ng init', // REVIEW
     source: 'Pinagmulan', // REVIEW
@@ -452,7 +518,6 @@ export const fil: Strings = {
     averageAll: 'average ng {total} modelo: {range}', // REVIEW
     averagePart: 'average ng {used} sa {total} modelo: {range}', // REVIEW
     averageNone: 'average ng {total} modelo', // REVIEW
-    scoresHidden: 'Nakatago ang mga kulay ng score habang bukas ang mapa ng init.', // REVIEW
     mapLabel: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa heat index nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
   },
 

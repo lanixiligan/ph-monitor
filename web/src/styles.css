@@ -1,7 +1,7 @@
 /* The look: a sea chart. Cool sea-and-ink colours everywhere, so the warm
    score scale (scoreScale.ts) is the only thing on the page that looks hot.
    The one other warm scale, the heat map's bands (--heat-*), replaces it
-   while the heat map is on, so the two are never shown together.
+   while Heat is pressed in the view switch, so the two are never shown together.
    Titles and numbers are set in Barlow Condensed, the rest in Atkinson
    Hyperlegible. Both fonts ship with the app (see main.tsx). */
 
@@ -192,6 +192,120 @@ p {
 
 .topbar :focus-visible {
   outline-color: var(--bar-text);
+}
+
+/* ---------- View switch (ViewSwitch.tsx) ----------
+   One row of buttons in the top bar. Never warm: bar colours only. The pressed
+   one is filled with the bar's ink (its text colour), like the language switch.
+   The outer box places the More list; the inner row scrolls sideways when it
+   does not fit, so the page itself never does. */
+.view-switch {
+  position: relative;
+  /* Its own row under the rest of the bar on a narrow screen (see 900px below). */
+  order: 1;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.view-row {
+  display: flex;
+  gap: 4px;
+  /* A little room so the focus outline is not cut off by the scrolling. */
+  padding: 2px;
+  overflow-x: auto;
+}
+
+.view-button {
+  flex: none;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--bar-line);
+  border-radius: 2px;
+  color: var(--bar-text);
+  background: transparent;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.view-button:hover {
+  border-color: var(--bar-text);
+}
+
+/* "More ▾" stays on one line (the row wraps only a greyed-out view's note). */
+.view-more-button {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* Pressed (or the More button while it holds the pressed view): filled. */
+.view-button[aria-pressed='true'],
+.view-more-button.holds-pressed {
+  color: var(--bar);
+  background: var(--bar-text);
+  border-color: var(--bar-text);
+  font-weight: 700;
+}
+
+/* No data behind it: greyed out (muted ink, dashed edge), with its note. */
+.view-button[aria-disabled='true'] {
+  color: var(--bar-soft);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.view-button[aria-disabled='true']:hover {
+  border-color: var(--bar-line);
+}
+
+.view-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+/* The greyed-out view's note, on its own line under the name. */
+.view-note {
+  flex-basis: 100%;
+  font-size: 12px;
+  white-space: normal;
+}
+
+/* The More list drops under the switch, against its right edge. */
+.view-menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--bar-line);
+  background: var(--bar);
+}
+
+/* `display: flex` above would otherwise beat the `hidden` attribute. */
+.view-menu[hidden] {
+  display: none;
+}
+
+.view-menu .view-button {
+  width: 100%;
+}
+
+/* A finger needs bigger targets than a mouse pointer. */
+@media (pointer: coarse) {
+  .view-button {
+    min-height: 44px;
+  }
 }
 
 /* The language and theme switches: two buttons joined into one control. */
@@ -462,13 +576,13 @@ p {
   display: none;
 }
 
-/* The map and what floats over it (the heat map button and panel). As tall
+/* The map and what floats over it (the heat map panel). As tall
    as the map on a small screen; fills the map column on a wide one. */
 .map-frame {
   position: relative;
 }
 
-/* ---------- Heat map button and panel (HeatMapPanel.tsx) ----------
+/* ---------- Heat map panel (HeatMapPanel.tsx), while Heat is pressed ----------
    Top right, under MapLibre's zoom and locate buttons, which end 111px from
    the top (10px gap, 60px zoom pair, 10px gap, 31px locate button). */
 .heat-control {
@@ -485,24 +599,6 @@ p {
      bottom edges, so a phone never scrolls sideways; the panel scrolls instead. */
   max-width: calc(100% - 26px);
   max-height: calc(100% - 137px);
-}
-
-.heat-button {
-  flex: none;
-  padding: 4px 10px;
-  border: 1px solid var(--ink);
-  border-radius: 2px;
-  color: var(--ink);
-  background: var(--paper);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* On: filled with ink, like a chosen filter. */
-.heat-button[aria-pressed='true'] {
-  color: var(--on-ink);
-  background: var(--ink);
 }
 
 .heat-panel {
@@ -605,7 +701,20 @@ p {
   font-size: 12px;
 }
 
-/* The key's swatches: the same colours as on the map (palette.ts). */
+/* The heat key in the legend (HeatLegend.tsx). Its swatches: the same colours
+   as on the map (palette.ts). */
+.legend-heat p {
+  margin: 2px 0 0;
+}
+
+.legend-heat .tag {
+  margin-left: auto;
+}
+
+.legend-heat .heat-key {
+  margin-top: 6px;
+}
+
 .heat-below {
   background: var(--heat-below);
 }
@@ -628,7 +737,6 @@ p {
 
 /* A finger needs bigger targets than a mouse pointer. */
 @media (pointer: coarse) {
-  .heat-button,
   .heat-source {
     min-height: 44px;
   }
@@ -690,6 +798,28 @@ label.legend-row {
 /* A row with no tick box lines up with the text of the rows that have one. */
 .legend-indent {
   padding-left: 22px;
+}
+
+/* While a hazard view is pressed: the score colours are hidden, say so. */
+.legend-view-note {
+  margin: 8px 0;
+}
+
+/* "Other layers": the layers that don't belong to the pressed view, folded at first. */
+.legend-other {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 10px;
+  padding: 6px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 /* A short note under the score colours (towns appear when zoomed in). */
@@ -843,6 +973,21 @@ label.legend-row {
   font-variant-numeric: tabular-nums;
 }
 
+/* The row the pressed map view shows (moved to the top, cardOrder.ts). */
+.hazard-shown td {
+  font-weight: 700;
+}
+
+.hazard-shown .tag {
+  margin-left: 6px;
+  font-weight: 400;
+}
+
+/* "No heat headlines …" and the "Show all headlines" button under it. */
+.news-none {
+  margin: 8px 0;
+}
+
 /* Stripes over a score colour: the score is missing some data. */
 .swatch-incomplete {
   background: repeating-linear-gradient(-45deg, var(--ink-soft) 0 1px, transparent 1px 4px);
@@ -908,6 +1053,14 @@ label.legend-row {
   height: 14px;
   border: 3px solid var(--ink);
   border-radius: 50%;
+}
+
+/* A quake marker: a see-through ink disc with a thin ink ring (quakeOverlay.ts). */
+.mark-quake {
+  height: 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink-soft) 35%, transparent);
 }
 
 .mark-storm {
@@ -1301,6 +1454,12 @@ footer {
 
   .topbar-jump {
     display: none;
+  }
+
+  /* In line with the rest of the bar; it can still shrink and scroll. */
+  .view-switch {
+    order: 0;
+    flex: 0 1 auto;
   }
 
   /* Spot panel | map | feeds. The names place each column, whatever its

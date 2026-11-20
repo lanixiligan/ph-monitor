@@ -96,6 +96,19 @@ export const en = {
     and: 'and',
   },
 
+  // The top bar's view switch (ViewSwitch.tsx), by the ids in shared/src/mapViews.ts.
+  // A view with no name here fails the typecheck. A view never changes the score.
+  views: {
+    groupLabel: 'Map view',
+    names: { overall: 'Overall', heat: 'Heat', earthquake: 'Earthquake', tsunami: 'Tsunami' },
+    more: 'More',
+    // The More button while the pressed view is inside its menu.
+    moreHolding: 'More: {view}',
+    // The note beside a greyed-out view, by id; `noData` for one with no note of its own.
+    notes: { tsunami: 'No live feed for tsunamis yet' },
+    noData: 'No live data yet',
+  },
+
   // The map legend.
   legend: {
     title: 'Stress score (0–100)',
@@ -114,6 +127,12 @@ export const en = {
     zoomIn: 'Zoom in to see zones',
     hazardNote: 'Fixed maps from Project NOAH, not a forecast. They do not change the score.',
     hazardClasses: { 1: 'Low', 2: 'Medium', 3: 'High' },
+    // The folded heading over the layers that don't belong to the pressed view.
+    otherLayers: 'Other layers',
+    // In the legend while a hazard view (not Overall) is pressed.
+    scoresHidden: 'The score colours are hidden in this view. Press Overall to see them.',
+    // The heat key's source line; {model} is a name from `heat.models`, or `heat.average`.
+    heatSource: 'Source: {model}',
   },
 
   // The side panel before a spot is picked.
@@ -270,6 +289,8 @@ export const en = {
     bandAtSpot: '{band} at this spot',
     bandInTown: '{band} across {town}',
     hazardsTitle: 'By hazard',
+    // Beside the hazard row that the pressed map view shows.
+    onMap: 'On the map',
     notCovered:
       'Not covered here: landslides, tsunami, PAGASA wind signals and rainfall warnings, PHIVOLCS volcano alert levels. Use the official links below.',
     incomplete: 'Some data is missing, so the real score may be higher.',
@@ -285,6 +306,7 @@ export const en = {
     kmAway: '{km} km away',
     kmDeep: '{km} km deep',
     usgsPage: 'USGS page',
+    quakesUnknown: 'Earthquakes could not be checked lately: recent ones may be missing.',
     weatherTitle: 'Weather',
     temperature: 'Temperature',
     humidity: 'Humidity',
@@ -355,6 +377,34 @@ export const en = {
     none: 'No headlines to show.',
     alsoAt: 'Also at:',
     showOnMap: 'Show {places} on the map',
+    loading: 'Loading…',
+    // The panel title while one kind is chosen (by hand or by a map view), by NEWS_TYPES id.
+    titles: {
+      typhoon: 'Typhoon headlines',
+      flood: 'Flood headlines',
+      earthquake: 'Earthquake headlines',
+      volcano: 'Volcano headlines',
+      landslide: 'Landslide headlines',
+      tsunami: 'Tsunami and storm surge headlines',
+      drought: 'Drought headlines',
+      wildfire: 'Wildfire headlines',
+      heat: 'Heat headlines',
+      general: 'General headlines',
+    },
+    // No headline of the chosen kind. {days} is how long headlines are kept (NEWS_KEEP_DAYS).
+    noneOfKind: {
+      typhoon: 'No typhoon headlines in the last {days} days.',
+      flood: 'No flood headlines in the last {days} days.',
+      earthquake: 'No earthquake headlines in the last {days} days.',
+      volcano: 'No volcano headlines in the last {days} days.',
+      landslide: 'No landslide headlines in the last {days} days.',
+      tsunami: 'No tsunami or storm surge headlines in the last {days} days.',
+      drought: 'No drought headlines in the last {days} days.',
+      wildfire: 'No wildfire headlines in the last {days} days.',
+      heat: 'No heat headlines in the last {days} days.',
+      general: 'No general headlines in the last {days} days.',
+    },
+    showAll: 'Show all headlines',
   },
 
   // The live news panel (YouTube streams and latest videos).
@@ -425,10 +475,30 @@ export const en = {
     averageNone: 'average of {total} models',
   },
 
-  // The heat map: its button and panel (HeatMapPanel.tsx) and its hover labels.
-  // A display layer only; it never changes the score.
+  // The Earthquake view and the quake markers (display only; they never change the score).
+  quakes: {
+    scaleTitle: 'Earthquake part of the score (0–100)',
+    unknownStripes: 'Stripes over a colour: earthquakes could not be checked, the part may be higher',
+    overallHidden: 'The overall score is not shown in this view. Press Overall to see it.',
+    legend: 'Earthquake (USGS; bigger = stronger)',
+    loading: 'Loading earthquakes…',
+    loadError: 'Could not load the earthquake list right now.',
+    stale: 'The earthquake feed is out of date: recent earthquakes may be missing.',
+    none: 'No earthquakes counted by the score in the last {hours} hours.',
+    countOne: '1 earthquake in the last {hours} hours.',
+    count: '{count} earthquakes in the last {hours} hours.',
+    townLabel: '{town}, {province}: earthquake part {score}',
+    provinceLabel: '{province}: earthquake part {score}',
+    provinceTopLabel: '{province}: earthquake part {score}, in {town}',
+    popupMagnitude: 'Magnitude {magnitude}',
+    popupNoDepth: 'Depth not given',
+    popupClick: 'Click for the USGS page',
+    mapLabel: 'Map of the Philippines with each city and municipality coloured by the earthquake part of its score. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
+  },
+
+  // The heat map: its panel (HeatMapPanel.tsx, open while Heat is pressed), its
+  // key in the legend and its hover labels. A display layer only; it never changes the score.
   heat: {
-    button: 'Heat map',
     title: 'Heat index map',
     close: 'Close heat map',
     source: 'Source',
@@ -470,8 +540,6 @@ export const en = {
     averageAll: 'average of {total} models: {range}',
     averagePart: 'average of {used} of {total} models: {range}',
     averageNone: 'average of {total} models',
-    // Under the score scale in the legend while the heat map is on.
-    scoresHidden: 'Score colours are hidden while the heat map is on.',
     // Read out by a screen reader when it reaches the map while the heat map is on.
     mapLabel: 'Map of the Philippines with each city and municipality coloured by its heat index. Arrow keys move it, plus and minus zoom. To pick a place without a pointer, use the search box or the list of highest scores.',
   },
