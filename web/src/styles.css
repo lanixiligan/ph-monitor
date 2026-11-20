@@ -622,6 +622,10 @@ p {
    as the map on a small screen; fills the map column on a wide one. */
 .map-frame {
   position: relative;
+  /* Room kept at the map's bottom for the heat time bar (HeatTimeBar.tsx):
+     its 28px offset, its two rows (about 88px) and a gap. The bar and the
+     heat panel both read it, so they cannot overlap. */
+  --heat-bar-space: 124px;
 }
 
 /* ---------- Map note (MapNote.tsx) ----------
@@ -663,6 +667,11 @@ p {
      bottom edges, so a phone never scrolls sideways; the panel scrolls instead. */
   max-width: calc(100% - 26px);
   max-height: calc(100% - 137px);
+}
+
+/* The heat panel also stops above the time bar (the bar shows whenever Heat does). */
+.heat-control {
+  max-height: calc(100% - 121px - var(--heat-bar-space));
 }
 
 .heat-panel,
