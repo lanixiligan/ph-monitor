@@ -9,7 +9,7 @@ import { after, before, test } from 'node:test';
 // `import type` brings in a type only; it disappears when the code runs.
 import type { GridInfo } from '../../src/pagasaGrid.ts';
 import { lonLatToMercator, mercatorToLonLat } from '../../src/pagasaGrid.ts';
-import { ensureTownCells } from '../../src/pagasaCells.ts';
+import { ensureTownCells, forgetPagasaGrid } from '../../src/pagasaCells.ts';
 
 const origin = lonLatToMercator(121.0, 15.0);
 /** 40 × 40 squares of 5 km, top-left corner at 121.0 E, 15.0 N. Alpha City is 121.4–121.6 E, 14.4–14.6 N. */
@@ -85,4 +85,19 @@ test('squares bigger than the town: it gets the one square under its middle', as
   assert.equal(list.length, 1);
   // The point inside the town (121.5 E, 14.5 N) is in row 1, column 1.
   assert.equal(list[0], 1 * COARSE.width + 1);
+});
+
+test('after the towns are reloaded (forgetPagasaGrid) it rebuilds, even with the same count', async () => {
+  await ensureTownCells(FINE);
+  // One town goes and another comes: the count stays at 1, so the count alone would not notice.
+  await pool.query(`DELETE FROM places WHERE psgc = ${ALPHA_CITY}`);
+  await pool.query(
+    `INSERT INTO places (psgc, name, province_psgc, geo_level, geom)
+     VALUES (10198, 'New Town', ${ALPHA}, 'Mun', ST_Multi(ST_MakeEnvelope(121.4, 14.4, 121.6, 14.6, 4326)))`,
+  );
+  await forgetPagasaGrid(); // what load-places does after saving the towns
+  const cells = await ensureTownCells(FINE);
+  assert.ok((cells.get(10198) ?? []).length > 0, 'the new town has squares');
+  // Put the seeded map back for any test after this one.
+  await resetDb();
 });

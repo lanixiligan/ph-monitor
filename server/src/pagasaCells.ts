@@ -106,6 +106,15 @@ async function rebuild(grid: GridInfo): Promise<void> {
 }
 
 /**
+ * Forgets which grid the squares were built for, so the next ensureTownCells
+ * rebuilds. Call it after the towns are reloaded: a reload can swap towns
+ * while keeping the same count, which the count check alone would miss.
+ */
+export async function forgetPagasaGrid(): Promise<void> {
+  await pool.query('DELETE FROM pagasa_grid');
+}
+
+/**
  * Makes sure the saved squares match this grid (rebuilding them if not), then
  * returns every town's squares: town code → square numbers. A town outside
  * the grid gets an empty list.
