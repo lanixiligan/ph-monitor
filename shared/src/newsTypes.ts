@@ -18,3 +18,6 @@ export const NEWS_TYPES = [
 
 // `(typeof NEWS_TYPES)[number]` means "any one item of that list".
 export type NewsType = (typeof NEWS_TYPES)[number];
+
+/** How many days headlines are kept (older ones are deleted by the news job). */
+export const NEWS_KEEP_DAYS = 14;
