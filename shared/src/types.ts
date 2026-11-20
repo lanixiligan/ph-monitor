@@ -161,7 +161,8 @@ export type FeedId =
   | 'outlook'
   | 'riverFlow'
   | 'news'
-  | 'heatMap';
+  | 'heatMap'
+  | 'rainForecast';
 
 /** How one feed is doing. */
 export type FeedHealth = {
@@ -203,6 +204,16 @@ export type ProvinceMapProperties = {
   quake_top_place: string | null;
   /** True when earthquakes could not be checked ('quake' in the province's unknown signals). */
   quake_unknown: boolean;
+  /**
+   * Flood view (display only): the highest rain part among the province's
+   * towns whose rain is known; null when no town's rain is known (or it has no
+   * town scores): striped, never 0.
+   */
+  rain_top_score: number | null;
+  /** The town with that highest rain part; null when rain_top_score is null. */
+  rain_top_place: string | null;
+  /** True when some town's rain is unknown: the province shows "at least" rain_top_score. */
+  rain_unknown: boolean;
   /** A spot inside the province, where the map pins its headlines. */
   point_lat: number;
   point_lon: number;
@@ -244,6 +255,12 @@ export type PlaceScoreEntry = {
   quakeScore: number;
   /** True when earthquakes could not be checked for this town ('quake' in its unknown signals). */
   quakeUnknown: boolean;
+  /**
+   * The rain part of the score (0–100), for the Flood view. Display only.
+   * null = rain unknown (no usable weather reading, or a row saved before the
+   * parts were stored): striped, never shown as calm.
+   */
+  rainScore: number | null;
 };
 
 /** Every town's latest score. Returned by GET /api/places/scores */
@@ -552,13 +569,21 @@ export type HeatMapData = {
   provinces: HeatValue[];
 };
 
-// --- View switch and the Earthquake view (display only; they never change the score) ---
+// --- View switch and its views (display only; they never change the score) ---
 
 /** The views of the top bar's view switch (see shared/src/mapViews.ts). */
-export type MapViewId = 'overall' | 'heat' | 'earthquake' | 'tsunami';
+export type MapViewId = 'overall' | 'typhoon' | 'flood' | 'earthquake' | 'heat' | 'stormSurge' | 'tsunami';
 
 /** The map layers a view can tick (the legend's tick boxes; MapLayers in web/src/mapSettings.ts). */
-export type MapLayerName = 'scores' | 'events' | 'storms' | 'news' | 'landslide' | 'stormSurge' | 'quakes';
+export type MapLayerName =
+  | 'scores'
+  | 'events'
+  | 'storms'
+  | 'news'
+  | 'landslide'
+  | 'stormSurge'
+  | 'quakes'
+  | 'rainForecast';
 
 /** One earthquake for the map's quake markers. */
 export type QuakePoint = {
@@ -585,4 +610,41 @@ export type QuakeMap = {
   /** True when the USGS feed is past its limit: recent quakes may be missing. */
   isStale: boolean;
   quakes: QuakePoint[];
+};
+
+// --- Rain forecast field (Typhoon view; display only, never part of the score) ---
+
+/** The forecast grid: evenly spaced points, `step` degrees apart. */
+export type RainGrid = {
+  /** The south-west point (degrees). */
+  west: number;
+  south: number;
+  step: number;
+  cols: number;
+  rows: number;
+};
+
+/** One time step: the rain in the `stepHours` hours that end at `endsAt`. */
+export type RainFrame = {
+  endsAt: string;
+  /**
+   * Millimetres per grid point, row by row from the south (index = row × cols + col).
+   * null = no forecast for that point and period: drawn as "no data", never as dry.
+   */
+  mm: (number | null)[];
+};
+
+/** Returned by GET /api/rainforecast: the next 7 days of rain, 3 hours at a time. */
+export type RainForecastMap = {
+  /** The Open-Meteo model, e.g. 'ecmwf_ifs'. */
+  model: string;
+  /** Hours in each frame (3). */
+  stepHours: number;
+  grid: RainGrid;
+  /** When the forecast was fetched; null before the first good run. */
+  fetchedAt: string | null;
+  /** True when the last good run is older than its limit (freshness.ts). */
+  isStale: boolean;
+  /** From the period that holds "now" onwards. Empty before the first good run. */
+  frames: RainFrame[];
 };
