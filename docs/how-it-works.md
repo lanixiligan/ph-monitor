@@ -37,6 +37,7 @@ The scheduler (`server/src/jobs/scheduler.ts`) ticks every 15 minutes while the 
 | Feed check | 1 hour | `npm run check:sources` |
 | 7-day outlook | 6 hours | `npm run ingest:forecast` |
 | Heat map (`ingestHeatMap.ts`, all three models in one request) | 12 hours | `npm run ingest:heatmap` |
+| PAGASA iHeatMAP heat forecast (`ingestPagasaHeat.ts`; downloads only a new forecast) | 3 hours | `npm run ingest:pagasaheat` |
 
 When the server starts, it runs only the jobs that are due: a job is skipped if it last
 succeeded less than its own interval ago (`server/src/jobs/due.ts` asks the database). So
@@ -71,6 +72,9 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `hazard_coverage` | Which province's hazard file is loaded for each map, so "no hazard map here" is told apart from "not in a zone" |
 | `heat_forecasts` | The heat map: per model, weather point and hour, the temperature, humidity and heat index of the newest good run (next 48 hours). Never read by the score |
 | `heat_runs` | Each heat map model's last good run (when, how many points answered) |
+| `pagasa_heat` | PAGASA's heat index per town and hour, from the newest forecast that has the hour. Never read by the score |
+| `pagasa_town_cells` | Which PAGASA squares (about 1 km) belong to each town; rebuilt when the grid changes or towns are reloaded |
+| `pagasa_grid` | The shape of PAGASA's grid, so we know when it changed (`load-places` clears it) |
 | `job_tries` | When a job last started, even if it failed (only the heat map for now): a failed heat run waits 12 hours before the next try, even after a restart |
 
 `fetch_runs` is how the app tells "no earthquakes lately" apart from "the earthquake fetch has
@@ -99,7 +103,7 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/alerts` | Official alerts in effect (PAGASA) |
 | `GET /api/status` | When each feed last succeeded, and which are out of date |
 | `GET /api/hazards` | Which fixed hazard maps are loaded (kind, storm surge level, provinces, when), for the legend |
-| `GET /api/heatmap?model=..` | The heat map for one model (`ecmwf_ifs`, the default; `dwd_icon_global_native`; `ncep_gfs_global`) or `average` (each value also has `spread`: models used, lowest, highest): the current hour's heat index and band for every town (its hottest point) and province (its hottest town), when the run was fetched, and whether it is out of date. An unknown model gives 400 |
+| `GET /api/heatmap?model=..&at=..` | The heat map for one model (`ecmwf_ifs`, the default; `dwd_icon_global_native`; `ncep_gfs_global`) or `average` or `pagasa` (PAGASA's own forecast) (each value also has `spread`: models used, lowest, highest): the current hour's heat index and band for every town (its hottest point) and province (its hottest town), when the run was fetched, and whether it is out of date. `at` is an ISO time on a whole hour, 8 AM to 5 PM PH time, from today to today plus 5 days; anything else gives 400. Without `at` you get the default hour: this hour during the day, 8 AM before it, tomorrow 8 AM after 5 PM. The answer lists the `hours` available. An unknown model gives 400 |
 | `GET /api/rainforecast` | The rain forecast field for the Typhoon view: the grid (1.5° apart over the PAR), and the next 7 days of ECMWF rain as 3-hour totals per grid point (null = no forecast), from the period that holds now; when it was fetched and whether that is out of date |
 | `GET /api/hazards/tiles/:layer/:z/:x/:y.mvt` | Hazard zones as vector tiles (`landslide` or `surge1`…`surge4`), storm surge from zoom 4, landslide from zoom 9; empty below that |
 
@@ -163,6 +167,9 @@ The web page talks only to these addresses on our own server (port 3001).
   run. The status
   card still opens on a click. Closing the panel (or pressing Overall) turns the heat map off and brings the score
   colours back. It never changes the score.
+  A time bar at the bottom of the map (`HeatTimeBar.tsx`) picks the day (six days) and the hour
+  (8 AM to 5 PM); hours a source has no data for are greyed out, and hover labels show the time.
+  The PAGASA source carries an Official tag and its credit line.
 - **Light or dark:** follows the device setting until the reader picks one in the top bar
   (remembered in the browser). The dark theme uses a dark basemap and a score scale where
   brighter means more stress.

@@ -27,7 +27,8 @@ TypeScript is pinned to 5.9.3 on purpose (do not move to 7 without asking).
 
 ```
 shared/src/        types.ts (shared types), appInfo.ts (APP_NAME), newsTypes.ts (kinds of disaster),
-                   heatModels.ts (the heat map's weather models), mapViews.ts (the view switch's views)
+                   heatModels.ts (the heat map's weather models), mapViews.ts (the view switch's views),
+                   heatTimes.ts (the heat time bar's hours and days)
 server/db/         schema.sql (all tables; re-runnable)
 server/scripts/    migrate.ts, load-provinces.ts, load-places.ts, run-job.ts,
                    check-sources.ts, load-sample-storm.ts, pick-weather-points.ts,
@@ -42,17 +43,19 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    scoreHistory.ts (a history row only when a score changed),
                    hazardLoad.ts + hazardShapes.ts (NOAH file list, names, shape checks),
                    hazardZones.ts (fixed hazard map answer for one spot),
+                   pagasaGrid.ts (reads PAGASA's GeoTIFF heat files), pagasaCells.ts (which ~1 km squares
+                   belong to each town),
                    heatMap.ts (heat map answer: each town's hottest point, per model or averaged),
                    rainForecast.ts (rain forecast grid over the PAR, 3-hour frames; Typhoon view),
                    quakeMap.ts (quakes in the score's window, for the quake markers)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
                    jma, jtwc, openMeteoDaily, openMeteoFlood, openMeteoHeat (three models
-                   for the heat map), openMeteoRain (7 days of ECMWF rain on the forecast
+                   for the heat map), pagasaHeat (PAGASA iHeatMAP: API + files), openMeteoRain (7 days of ECMWF rain on the forecast
                    grid), rss, pagasa (official alerts), retry (one more try
                    for a failed download)
   jobs/            ingestEarthquakes, ingestWeather (weather grid), ingestEvents, ingestStorms,
                    ingestAlerts, ingestForecast, ingestNews, ingestHeatMap and
-                   ingestRainForecast (every 12 h, one after the other; never read by
+                   ingestPagasaHeat (checks every 3 h, downloads only a new forecast), ingestRainForecast (every 12 h, one after the other; never read by
                    the score), checkSources, computeScores
                    (towns, then provinces = highest town), townInputs, scheduler,
                    due (which jobs are due; every job's interval), jobTries (when a
@@ -74,6 +77,7 @@ web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (ti
                    and link helpers, "uploaded … ago"), useNow.ts (a clock for it), cardOrder.ts (what the status card shows where), mapOverlays.ts + stormGeo.ts (event markers and
                    storm tracks), hazardOverlay.ts + hazardLabels.ts (NOAH hazard zones),
                    heatColors.ts (heat band colours for towns and provinces),
+                   heatTime.ts (default hour and day list for the time bar),
                    parArea.ts (the PAR outline for the Typhoon view),
                    rainColors.ts + rainField.ts + rainOverlay.ts + useRainForecast.ts
                    (Typhoon view's rain forecast field: bands, pixels, map layer, loading),
@@ -84,6 +88,7 @@ web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (ti
                    styles.css (all colours and layout), palette.ts (CSS
                    colours for the map), components/ (ViewSwitch.tsx: the top bar view switch;
                    HeatMapPanel.tsx: the heat map's source picker; HeatLegend.tsx: its band key;
+                   HeatTimeBar.tsx: the Heat view's day and hour bar;
                    RainForecastPanel.tsx: the rain forecast's time slider;
                    MapNote.tsx: a note on the map, e.g. "No tropical cyclone tracked right now")
   i18n/            en.ts and fil.ts (every string the reader sees), language switch
@@ -109,6 +114,7 @@ npm run typecheck        tsc over all workspaces
 npm run ingest:earthquakes | ingest:weather | compute:scores   one job by hand
 npm run ingest:events | ingest:storms | ingest:forecast | ingest:news | ingest:alerts
 npm run ingest:heatmap   heat map for all three models (about 600 Open-Meteo calls)
+npm run ingest:pagasaheat   PAGASA iHeatMAP forecast (about 44 PAGASA API calls, 35 file downloads)
 npm run ingest:rainforecast   rain forecast field for the Typhoon view (256 Open-Meteo calls)
 npm run weather-points   pick extra weather points for big provinces (after load-places);
                          empties point_readings and heat_forecasts until the next runs
@@ -160,7 +166,7 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   change the score. Sections are tagged Official, Global assessment or Model estimate.
 - Data credits (USGS, Open-Meteo CC BY 4.0, NAMRIA/PSA via OCHA CC BY 3.0 IGO, OpenStreetMap,
   GDACS CC BY 4.0, NASA EONET, JMA, JTWC, GloFAS via Open-Meteo, PAGASA CC BY 4.0, Project NOAH ODbL,
-  ECMWF CC BY 4.0, DWD CC BY 4.0 and NOAA GFS public domain via Open-Meteo, the news outlets)
+  ECMWF CC BY 4.0, DWD CC BY 4.0 and NOAA GFS public domain via Open-Meteo, PAGASA iHeatMAP (based on ECMWF data), the news outlets)
   must stay
   visible in the UI and README. A new source gets its credit line in both.
 - The "not an official warning service" notice must stay on the page footer, the status card

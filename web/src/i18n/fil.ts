@@ -43,6 +43,8 @@ export const fil: Strings = {
     creditHeatGfs: 'Mapa ng heat index, pinagmulang GFS: ang Global Forecast System ng National Weather Service (NCEP) ng', // REVIEW
     creditHeatGfsMid: ', sa pamamagitan ng', // REVIEW
     creditHeatGfsEnd: '. Public domain.', // REVIEW
+    creditHeatPagasa: 'Forecast ng heat index: DOST-PAGASA iHeatMAP (', // REVIEW
+    creditHeatPagasaEnd: '), batay sa datos ng ECMWF. Ginamit nang walang pagbabago, para sa hindi pangkomersiyong layunin.', // REVIEW
     creditAlerts: 'Mga opisyal na babala: © PAGASA, CC BY 4.0, mula sa public alert feed nito.', // REVIEW
     creditNews: 'Mga headline ng balita: ang mga news outlet na nakasaad sa tabi ng bawat headline, ang ilan ay nakuha sa pamamagitan ng Google News.', // REVIEW
     creditVideo: 'Video:', // REVIEW

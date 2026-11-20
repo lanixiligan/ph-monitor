@@ -55,6 +55,9 @@ export const en = {
     // Follows the "NOAA" link with no space.
     creditHeatGfsMid: "'s National Weather Service (NCEP), via",
     creditHeatGfsEnd: '. Public domain.',
+    // PAGASA heat line: lead, link text (the site's address), end.
+    creditHeatPagasa: 'Heat index forecast: DOST-PAGASA iHeatMAP (',
+    creditHeatPagasaEnd: '), based on ECMWF data. Used without changes, for a non-commercial purpose.',
     creditAlerts: 'Official alerts: © PAGASA, CC BY 4.0, from its public alert feed.',
     creditNews: 'News headlines: the outlets named beside each headline, some found through Google News.',
     creditVideo: 'Video:',

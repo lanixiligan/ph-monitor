@@ -77,6 +77,12 @@ export function CreditsPage() {
             {t.app.creditHeatGfsMid} <a href="https://open-meteo.com/">Open-Meteo</a>
             {t.app.creditHeatGfsEnd}
           </li>
+          {/* PAGASA iHeatMAP: the credit line its use asks for. */}
+          <li>
+            {t.app.creditHeatPagasa}
+            <a href="https://iheatmap.pagasa.dost.gov.ph/">iheatmap.pagasa.dost.gov.ph</a>
+            {t.app.creditHeatPagasaEnd}
+          </li>
           <li>{t.app.creditAlerts}</li>
           <li>{t.app.creditNews}</li>
           <li>
