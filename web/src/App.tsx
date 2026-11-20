@@ -7,7 +7,7 @@
 // card follow it. A view is display only: it never changes the score.
 
 import { useEffect, useMemo, useState } from 'react';
-import { APP_NAME, DEFAULT_HEAT_MODEL } from '@ph-monitor/shared';
+import { APP_NAME, DEFAULT_HEAT_MODEL, isViewAvailable } from '@ph-monitor/shared';
 import type {
   FeedHealth,
   HazardLayerInfo,
@@ -16,15 +16,18 @@ import type {
   MapViewId,
   PlaceScores,
   QuakeMap,
+  Storm,
 } from '@ph-monitor/shared';
 import { fetchHazards, fetchHeatMap, fetchPlaceScores, fetchProvinces, fetchQuakes, fetchStatus } from './api.ts';
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
 import { HeatMapPanel } from './components/HeatMapPanel.tsx';
 import { Legend } from './components/Legend.tsx';
+import { MapNote } from './components/MapNote.tsx';
 import { NewsPanel } from './components/NewsPanel.tsx';
 import { PlaceSearch } from './components/PlaceSearch.tsx';
 import { ProvinceMap } from './components/ProvinceMap.tsx';
+import { RainForecastPanel } from './components/RainForecastPanel.tsx';
 import { Ladder } from './components/Ladder.tsx';
 import { SpotHint } from './components/SpotHint.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
@@ -32,11 +35,15 @@ import type { PickedArea } from './components/StatusCard.tsx';
 import { StreamsPanel } from './components/StreamsPanel.tsx';
 import { ViewSwitch } from './components/ViewSwitch.tsx';
 import { WarnIcon } from './components/WarnIcon.tsx';
+import { loadedMapKinds } from './hazardLabels.ts';
 import { heatForMap } from './heatColors.ts';
 import { fill, LanguageSwitch, lookup, useStrings } from './i18n/index.ts';
+import { mapNote, stormsUnsure } from './mapNotes.ts';
+import { HAZARD_MIN_ZOOM } from './mapSettings.ts';
 import type { MapLayers } from './mapSettings.ts';
 import { ThemeSwitch } from './theme/index.ts';
-import { changeLayers, initialViewState, mapViewById, pressView, turnOnLayer } from './viewLayers.ts';
+import { useRainForecast } from './useRainForecast.ts';
+import { changeLayers, initialViewState, mapViewById, pressView, tickLoadedMaps, turnOnLayer } from './viewLayers.ts';
 
 // How often the map asks the server for new scores.
 const REFRESH_MS = 5 * 60 * 1000;
@@ -76,6 +83,12 @@ export function App() {
   const layers = viewState.layers;
   // The fixed hazard maps the server has loaded. null = not known yet.
   const [hazards, setHazards] = useState<HazardLayerInfo[] | null>(null);
+  // The kinds the map can draw, for the view switch: none while unknown or after a failed load.
+  const loadedMaps = useMemo(() => loadedMapKinds(hazards), [hazards]);
+  // When the list arrives, a view pressed before it (Typhoon) ticks its hazard maps too.
+  useEffect(() => {
+    setViewState((current) => tickLoadedMaps(current, loadedMaps));
+  }, [loadedMaps]);
   // The map's zoom level, for the legend's "zoom in to see zones".
   const [mapZoom, setMapZoom] = useState(0);
   // The headline filter (a kind of disaster, 'general' or 'all'), shared by the panel and the map dots.
@@ -100,6 +113,22 @@ export function App() {
   const [quakes, setQuakes] = useState<QuakeMap | null>(null);
   // true when the last quake list load failed (the legend says so).
   const [quakesFailed, setQuakesFailed] = useState(false);
+  // The rain forecast field: Typhoon view only (a warm scale; the score colours are hidden there).
+  const rain = useRainForecast(mapView === 'typhoon' && layers.rainForecast);
+  // The storms the map draws (loaded by the map itself, mapOverlays.ts). null = not loaded yet.
+  const [storms, setStorms] = useState<Storm[] | null>(null);
+  // true when the last storm list load failed (the Typhoon view says so).
+  const [stormsFailed, setStormsFailed] = useState(false);
+
+  /** The map loaded the storm list, or failed to. A failure keeps the last list. */
+  function onStorms(result: Storm[] | 'failed') {
+    if (result === 'failed') {
+      setStormsFailed(true);
+      return;
+    }
+    setStorms(result);
+    setStormsFailed(false);
+  }
 
   /** Switches the heat map's source. */
   function chooseHeatModel(model: HeatViewId) {
@@ -117,8 +146,8 @@ export function App() {
    */
   function chooseView(id: MapViewId) {
     const view = mapViewById(id);
-    if (view === undefined || !view.available || id === mapView) return;
-    setViewState((current) => pressView(current, view));
+    if (view === undefined || !isViewAvailable(view, loadedMaps) || id === mapView) return;
+    setViewState((current) => pressView(current, view, loadedMaps));
     setNewsType(view.newsType ?? 'all');
     // Any heat map answer held now is dropped; Heat loads a fresh one.
     setHeat(null);
@@ -232,6 +261,18 @@ export function App() {
   // only when the heat map really changes.
   const heatOnMap = useMemo(() => heatForMap(heatChosen, heat), [heatChosen, heat]);
 
+  // The note over the map while the view has nothing (or not all) to show (mapNotes.ts).
+  const note = mapNote({
+    view: mapView,
+    storms,
+    stormsFailed,
+    feeds,
+    stormsTicked: layers.storms,
+    surgeTicked: layers.stormSurge,
+    zoom: mapZoom,
+    surgeMinZoom: HAZARD_MIN_ZOOM.stormSurge,
+  });
+
   // The names of the feeds that are out of date, in the reader's language.
   const staleFeeds = Array.isArray(feeds)
     ? feeds.filter((feed) => feed.isStale).map((feed) => lookup(t.feeds, feed.id))
@@ -247,7 +288,7 @@ export function App() {
           {APP_NAME}
         </h1>
         <p className="topbar-intro">{t.app.intro}</p>
-        <ViewSwitch view={mapView} onPress={chooseView} />
+        <ViewSwitch view={mapView} onPress={chooseView} loadedMaps={loadedMaps} />
         {/* Links that jump down the page on a small screen; `#news-title` is the id of a heading. */}
         <nav className="topbar-jump">
           <a href="#streams-title">{t.app.jumpStreams}</a>
@@ -289,7 +330,8 @@ export function App() {
                   : null
             }
           />
-          {/* The map plus what floats over it (the heat map panel while Heat is pressed). */}
+          {/* The map plus what floats over it (the heat map panel while Heat is pressed,
+              and a note when the pressed view has nothing to show). */}
           <div className="map-frame">
             <ProvinceMap
               data={provinces}
@@ -312,7 +354,20 @@ export function App() {
               newsType={newsType}
               hazards={hazards}
               onZoom={setMapZoom}
+              onStorms={onStorms}
+              rain={rain.frame}
             />
+            <MapNote note={note} />
+            {mapView === 'typhoon' && layers.rainForecast && (
+              <RainForecastPanel
+                data={rain.data}
+                failed={rain.failed}
+                index={rain.index}
+                onIndex={rain.setIndex}
+                playing={rain.playing}
+                onPlaying={rain.setPlaying}
+              />
+            )}
             {mapView === 'heat' && (
               <HeatMapPanel
                 chosen={heatModel}
@@ -340,7 +395,13 @@ export function App() {
 
         <div className="side side-spot">
           {spot !== null ? (
-            <StatusCard spot={spot} onClose={() => setSpot(null)} onArea={setPicked} view={mapView} />
+            <StatusCard
+              spot={spot}
+              onClose={() => setSpot(null)}
+              onArea={setPicked}
+              view={mapView}
+              stormsUnsure={stormsUnsure(stormsFailed, feeds)}
+            />
           ) : (
             <SpotHint provinces={provinces} onPick={pickPlace} />
           )}

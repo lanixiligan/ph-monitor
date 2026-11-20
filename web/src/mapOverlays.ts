@@ -1,4 +1,5 @@
-// Extra map layers: disaster event markers and storm tracks.
+// Extra map layers: disaster event markers, storm tracks, and the outline of
+// the Philippine Area of Responsibility (PAR) for the Typhoon view.
 // `useOverlays` is a React "hook": a function that runs along with a component
 // (here ProvinceMap) and can start and stop things when the component does.
 
@@ -12,12 +13,16 @@ import { formatTime, safeUrl } from './format.ts';
 import { readPalette } from './palette.ts';
 import { fill, getI18n, lookup, useStrings } from './i18n/index.ts';
 import { emptyCollection, eventsToGeoJson, stormsToGeoJson } from './stormGeo.ts';
+import { PAR_LABEL_AT, parGeoJson } from './parArea.ts';
 
 const REFRESH_MS = 5 * 60 * 1000;
 
 /** Every event layer and every storm layer, for the legend's tick boxes. */
 export const EVENT_LAYERS = ['events-dot'];
 export const STORM_LAYERS = ['storm-radii', 'storm-past', 'storm-forecast', 'storm-dots'];
+
+/** The PAR outline (Typhoon view only; its label is HTML, hidden by CSS like the storm names). */
+export const PAR_LAYERS = ['par-line'];
 
 /** Layers that react to clicks. ProvinceMap uses this to ignore clicks on them. */
 export const OVERLAY_CLICK_LAYERS = ['events-dot', 'storm-dots'];
@@ -31,6 +36,20 @@ function addLayers(map: maplibregl.Map) {
   for (const name of SOURCE_NAMES) {
     map.addSource(name, { type: 'geojson', data: emptyCollection() });
   }
+  // The PAR outline: a fixed shape, long dashes in the muted ink, under the storm tracks.
+  map.addSource('par', { type: 'geojson', data: parGeoJson() });
+  map.addLayer({
+    id: 'par-line',
+    type: 'line',
+    source: 'par',
+    layout: { visibility: 'none' },
+    paint: { 'line-color': GREY, 'line-width': 1.5, 'line-dasharray': [6, 4] },
+  });
+  // Its label, as HTML so no map fonts are needed.
+  const parLabel = document.createElement('div');
+  parLabel.className = 'par-label';
+  parLabel.textContent = getI18n().t.typhoon.parShort;
+  new maplibregl.Marker({ element: parLabel, anchor: 'bottom' }).setLngLat(PAR_LABEL_AT).addTo(map);
   map.addLayer({
     id: 'storm-radii',
     type: 'line',
@@ -160,10 +179,20 @@ function readJson(properties: Record<string, unknown> | undefined): unknown {
   }
 }
 
-/** Draws events and storms on the map and refreshes them every 5 minutes. */
-export function useOverlays(mapRef: RefObject<maplibregl.Map | null>, ready: boolean) {
+/**
+ * Draws events and storms on the map and refreshes them every 5 minutes.
+ * `onStorms` hears each storm list, or 'failed' (the Typhoon view's map note uses it).
+ */
+export function useOverlays(
+  mapRef: RefObject<maplibregl.Map | null>,
+  ready: boolean,
+  onStorms: (result: Storm[] | 'failed') => void,
+) {
   // `lang` is only read so this hook re-runs when the language changes.
   const { lang } = useStrings();
+  // Kept in a ref so a new function from the parent doesn't restart the loading.
+  const onStormsRef = useRef(onStorms);
+  onStormsRef.current = onStorms;
   // The latest storms and their labels, kept so the labels can be redrawn.
   const stormsRef = useRef<Storm[]>([]);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -212,8 +241,10 @@ export function useOverlays(mapRef: RefObject<maplibregl.Map | null>, ready: boo
         source('storm-radii')?.setData(shapes.radii);
         stormsRef.current = storms;
         if (map) drawLabels(map, storms, markers);
+        onStormsRef.current(storms);
       } catch {
-        // Keep what is already drawn.
+        // Keep what is already drawn; the Typhoon view says the list could not be loaded.
+        onStormsRef.current('failed');
       }
     }
     void refresh();

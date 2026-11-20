@@ -3,7 +3,9 @@
 // with its hazard rows, the fixed hazard map (Project NOAH), what is not
 // covered, the reasons, official links, then the details (each starts closed).
 // The hazard row of the pressed map view goes first in its table, and its detail
-// section (Earthquake: the quakes; Heat: the weather) moves up under it, open (cardOrder.ts).
+// section (Earthquake: the quakes; Heat and Flood: the weather) moves up under it,
+// open (cardOrder.ts). Typhoon keeps the storms block above the score even
+// when no storm is coming, and says so.
 
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
@@ -39,9 +41,11 @@ type Props = {
   onArea: (area: PickedArea) => void;
   /** The pressed map view: its hazard row goes first and is marked. */
   view: MapViewId;
+  /** true when the storm tracks are old or could not be loaded (Typhoon's "no storm" can't be trusted). */
+  stormsUnsure: boolean;
 };
 
-export function StatusCard({ spot, onClose, onArea, view }: Props) {
+export function StatusCard({ spot, onClose, onArea, view, stormsUnsure }: Props) {
   // `t` holds all the words in the current language.
   const { t } = useStrings();
   const { theme } = useTheme();
@@ -258,7 +262,7 @@ export function StatusCard({ spot, onClose, onArea, view }: Props) {
           <OfficialAlerts alerts={detail.conditions.officialAlerts} />
         </div>
       )}
-      <NearHere conditions={detail.conditions} />
+      <NearHere conditions={detail.conditions} stormsShown={shownSection === 'storms'} stormsUnsure={stormsUnsure} />
 
       <div className="score-row">
         {/* The number sits on its band's colour; `ink` is the text colour that reads on it. */}

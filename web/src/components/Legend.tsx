@@ -2,8 +2,9 @@
 // events, storms and the fixed hazard maps mean. Each part has a tick box that
 // shows or hides it on the map. Its title is a button that folds the legend away.
 // It follows the pressed map view: the top shows that view's scale (Overall:
-// the score; Heat: the heat bands; Earthquake: the earthquake part of the
-// score, in the score's colours), then the view's own layers. On a hazard
+// the score; Heat: the heat bands; Earthquake and Flood: that part of the
+// score, in the score's colours; Typhoon: what the tracks are; Storm surge:
+// what the fixed map is), then the view's own layers. On a hazard
 // view the other layers move under a folded "Other layers" heading; they keep
 // their tick boxes. On Overall every layer is listed, as before.
 
@@ -13,7 +14,10 @@ import { newsTypeLabel } from '../format.ts';
 import { hasMapLayer } from '../hazardLabels.ts';
 import { fill, useStrings } from '../i18n/index.ts';
 import { HAZARD_MIN_ZOOM } from '../mapSettings.ts';
+import { RAIN_BANDS, rainBandLabel } from '../rainColors.ts';
 import type { MapLayers } from '../mapSettings.ts';
+import { partViewOf, partWords } from '../partColors.ts';
+import type { PartViewId } from '../partColors.ts';
 import { bandColors, bandLabel, SCORE_BANDS } from '../scoreScale.ts';
 import { useTheme } from '../theme/index.ts';
 import { mapViewById } from '../viewLayers.ts';
@@ -64,8 +68,13 @@ export function Legend({ layers, onChange, newsType, hazards, zoom, view, heatMo
   const hazardKinds = (['stormSurge', 'landslide'] as const).filter((kind) => hasMapLayer(hazards, kind));
 
   // Every mark layer in today's order; the pressed view's own layers first, the rest under "Other layers".
-  const allMarks: MarkLayer[] = ['events', 'storms', 'news', 'quakes', ...hazardKinds];
+  // The rain forecast field is a warm scale: offered only in the Typhoon view,
+  // where the score colours are hidden, so two warm scales never show at once.
+  const rainMarks: MarkLayer[] = view === 'typhoon' ? ['rainForecast'] : [];
+  const allMarks: MarkLayer[] = ['events', 'storms', ...rainMarks, 'news', 'quakes', ...hazardKinds];
   const viewLayers = mapViewById(view)?.layers ?? [];
+  // Earthquake or Flood: the view colours towns by one part of the score. null = neither.
+  const part = partViewOf(view);
   const ownMarks = view === 'overall' ? allMarks : allMarks.filter((name) => viewLayers.includes(name));
   const otherMarks = view === 'overall' ? [] : allMarks.filter((name) => !viewLayers.includes(name));
 
@@ -93,6 +102,12 @@ export function Legend({ layers, onChange, newsType, hazards, zoom, view, heatMo
             <span className="mark mark-forecast" />
             {t.legend.stormForecast}
           </div>
+          {view === 'typhoon' && (
+            <div className="legend-row legend-indent">
+              <span className="mark mark-par" />
+              {t.typhoon.par}
+            </div>
+          )}
         </Fragment>
       );
     }
@@ -117,6 +132,18 @@ export function Legend({ layers, onChange, newsType, hazards, zoom, view, heatMo
           {/* On the Earthquake view the status sits under its scale instead, whatever this tick box says. */}
           {layers.quakes && view !== 'earthquake' && <QuakeStatus quakes={quakes} failed={quakesFailed} />}
         </Fragment>
+      );
+    }
+    if (name === 'rainForecast') {
+      return (
+        <div key={name}>
+          <label className="legend-row">
+            <input type="checkbox" checked={layers.rainForecast} onChange={() => toggle('rainForecast')} />
+            {t.rain.title}
+            <span className="tag">{t.tiers.model}</span>
+          </label>
+          <RainKey />
+        </div>
       );
     }
     // A fixed hazard map (Project NOAH): off at first, and only those the server has.
@@ -202,12 +229,15 @@ export function Legend({ layers, onChange, newsType, hazards, zoom, view, heatMo
             {view === 'heat' && <HeatLegend model={heatModel} />}
             {view === 'earthquake' && (
               <>
-                <QuakeScale />
+                <PartScale view="earthquake" />
                 <QuakeStatus quakes={quakes} failed={quakesFailed} />
               </>
             )}
+            {view === 'flood' && <PartScale view="flood" />}
+            {view === 'typhoon' && <TyphoonKey />}
+            {view === 'stormSurge' && <SurgeKey />}
             <p className="legend-view-note muted">
-              {view === 'earthquake' ? t.quakes.overallHidden : t.legend.scoresHidden}
+              {part === null ? t.legend.scoresHidden : partWords(part, t).overallHidden}
             </p>
           </>
         )}
@@ -236,13 +266,25 @@ export function Legend({ layers, onChange, newsType, hazards, zoom, view, heatMo
   );
 }
 
-/** The Earthquake view's scale: the score's own colours, for the earthquake part only. */
-function QuakeScale() {
+/**
+ * A part view's scale (Earthquake, Flood): the score's own colours, for that
+ * part only. Flood carries the "Model estimate" tag (rain is modelled).
+ */
+function PartScale({ view }: { view: PartViewId }) {
   const { t } = useStrings();
   const { theme } = useTheme();
+  const words = partWords(view, t);
   return (
     <>
-      <strong className="legend-row">{t.quakes.scaleTitle}</strong>
+      {view === 'flood' ? (
+        <div className="legend-row legend-key-title">
+          <strong>{words.scaleTitle}</strong>
+          <span className="tag">{t.tiers.model}</span>
+        </div>
+      ) : (
+        <strong className="legend-row">{words.scaleTitle}</strong>
+      )}
+      {view === 'flood' && <p className="legend-key-about muted">{t.flood.about}</p>}
       <ul className="scale">
         {SCORE_BANDS.map((band) => (
           <li key={band.id}>
@@ -256,12 +298,71 @@ function QuakeScale() {
       </ul>
       <div className="legend-row legend-indent">
         <span className="swatch swatch-nodata" />
-        {t.legend.noScore}
+        {view === 'flood' ? t.flood.noValue : t.legend.noScore}
       </div>
       <div className="legend-row legend-indent">
         <span className="swatch swatch-incomplete" />
-        {t.quakes.unknownStripes}
+        {words.unknownStripes}
       </div>
+    </>
+  );
+}
+
+/**
+ * The Typhoon view's key: the tracks are a global assessment (JMA, JTWC);
+ * there is no wind data for towns yet; PAGASA's own alerts are on the card.
+ * The track marks themselves are the storm layer's rows just below.
+ */
+function TyphoonKey() {
+  const { t } = useStrings();
+  return (
+    <>
+      <div className="legend-row legend-key-title">
+        <strong>{t.typhoon.title}</strong>
+        <span className="tag">{t.tiers.global}</span>
+      </div>
+      <p className="legend-key-about muted">{t.typhoon.sources}</p>
+      <p className="legend-key-about muted">{t.typhoon.noWind}</p>
+      <p className="legend-key-about muted">
+        {t.typhoon.alertsNote} <span className="tag">{fill(t.tiers.official, { agency: 'PAGASA' })}</span>
+      </p>
+    </>
+  );
+}
+
+/** The rain forecast's colour key: one swatch per band (mm in 3 hours), then "no forecast". */
+function RainKey() {
+  const { t } = useStrings();
+  return (
+    <>
+      <ul className="rain-key">
+        {RAIN_BANDS.map((_, band) => (
+          <li key={band}>
+            {/* The colour comes from the CSS variable, so it follows the theme. */}
+            <span className="swatch-rain" style={{ background: `var(--rain-${band + 1})` }} />
+            {rainBandLabel(band)}
+          </li>
+        ))}
+      </ul>
+      <div className="legend-row">
+        <span className="swatch swatch-nodata" />
+        {t.rain.noValue}
+      </div>
+      <p className="legend-note muted">{t.rain.about}</p>
+    </>
+  );
+}
+
+/** The Storm surge view's key: a fixed map of where a surge could reach, not a live surge. */
+function SurgeKey() {
+  const { t } = useStrings();
+  return (
+    <>
+      <div className="legend-row legend-key-title">
+        <strong>{t.stormSurge.title}</strong>
+        <span className="tag">{t.tiers.hazardMap}</span>
+      </div>
+      <p className="legend-key-about muted">{t.stormSurge.about}</p>
     </>
   );
 }

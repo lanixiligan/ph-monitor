@@ -1,7 +1,8 @@
 /* The look: a sea chart. Cool sea-and-ink colours everywhere, so the warm
    score scale (scoreScale.ts) is the only thing on the page that looks hot.
-   The one other warm scale, the heat map's bands (--heat-*), replaces it
-   while Heat is pressed in the view switch, so the two are never shown together.
+   The other warm scales replace it, so two are never shown together: the heat
+   map's bands (--heat-*) while Heat is pressed, and the rain forecast field
+   (--rain-*) in the Typhoon view, where the score colours are hidden.
    Titles and numbers are set in Barlow Condensed, the rest in Atkinson
    Hyperlegible. Both fonts ship with the app (see main.tsx). */
 
@@ -37,6 +38,20 @@
   --heat-extreme-caution: #eb7d1f;
   --heat-danger: #d42d1d;
   --heat-extreme-danger: #730a24;
+  /* The rain forecast field (Typhoon view), the third warm scale, approved by
+     the owner 2026-11-20: the forecasters' usual blue → green → yellow → red →
+     magenta, one colour per band of rain in 3 hours (rainColors.ts). Shown only
+     while the score colours are hidden. Below 0.5 mm nothing is drawn. */
+  --rain-1: #a9d7f2; /* 0.5–1 mm */
+  --rain-2: #5fb3ea; /* 1–2 */
+  --rain-3: #2172cc; /* 2–5 */
+  --rain-4: #1aa9a0; /* 5–10 */
+  --rain-5: #37a943; /* 10–15 */
+  --rain-6: #a6c92c; /* 15–20 */
+  --rain-7: #f0cc1f; /* 20–30 */
+  --rain-8: #ee8619; /* 30–50 */
+  --rain-9: #d9302a; /* 50–80 */
+  --rain-10: #c43bbd; /* 80 and more */
   --bar: #10313b; /* the top bar */
   --bar-text: #ffffff;
   --bar-soft: #c3d3d7; /* secondary text in the top bar */
@@ -73,6 +88,17 @@
   --heat-extreme-caution: #a24f15;
   --heat-danger: #d33a26;
   --heat-extreme-danger: #ff9480;
+  /* The same order of hues, a little brighter, so the pale bands show on the dark map. */
+  --rain-1: #7fc4ef;
+  --rain-2: #4aa6ef;
+  --rain-3: #2f7ff0;
+  --rain-4: #21c2b8;
+  --rain-5: #45c853;
+  --rain-6: #b9df3a;
+  --rain-7: #ffdc2e;
+  --rain-8: #ff9a2a;
+  --rain-9: #ff4a3d;
+  --rain-10: #e95ae0;
   --bar: #08161b;
   --bar-text: #e3ecee;
   --bar-soft: #9db2b8;
@@ -576,16 +602,54 @@ p {
   display: none;
 }
 
+/* The PAR outline's label (Typhoon view): quiet, so the storm names stand out. */
+.par-label {
+  padding: 0 4px 2px;
+  color: var(--ink-soft);
+  font-family: var(--font-title);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hide-par .par-label {
+  display: none;
+}
+
 /* The map and what floats over it (the heat map panel). As tall
    as the map on a small screen; fills the map column on a wide one. */
 .map-frame {
   position: relative;
 }
 
+/* ---------- Map note (MapNote.tsx) ----------
+   While the pressed view has nothing (or not all) to show: top left of the
+   map (under the search box on a wide screen, see below), clear of the zoom
+   buttons (top right) and the map's credit line, which can run along the
+   whole bottom edge. Ink on paper, never a warm colour. */
+.map-note {
+  position: absolute;
+  /* Under the search box, so its list of matches drops over the note. */
+  z-index: 1;
+  left: 10px;
+  top: 10px;
+  /* Leaves room for the zoom buttons; never wider than the map (16px gutter). */
+  max-width: min(360px, calc(100% - 68px));
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+}
+
 /* ---------- Heat map panel (HeatMapPanel.tsx), while Heat is pressed ----------
    Top right, under MapLibre's zoom and locate buttons, which end 111px from
    the top (10px gap, 60px zoom pair, 10px gap, 31px locate button). */
-.heat-control {
+.heat-control,
+.rain-control {
   position: absolute;
   /* Under the search box, so its list of matches drops over the panel. */
   z-index: 1;
@@ -601,7 +665,8 @@ p {
   max-height: calc(100% - 137px);
 }
 
-.heat-panel {
+.heat-panel,
+.rain-panel {
   /* min-height 0 lets it shrink to the space left and scroll. */
   min-height: 0;
   overflow-y: auto;
@@ -614,7 +679,8 @@ p {
   overflow-wrap: anywhere;
 }
 
-.heat-head {
+.heat-head,
+.rain-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -622,7 +688,8 @@ p {
   margin-bottom: 4px;
 }
 
-.heat-head h2 {
+.heat-head h2,
+.rain-head h2 {
   margin: 0;
   font-size: 19px;
 }
@@ -663,16 +730,19 @@ p {
   font-size: 12px;
 }
 
-.heat-status {
+.heat-status,
+.rain-status {
   margin-top: 8px;
 }
 
-.heat-status p {
+.heat-status p,
+.rain-status p {
   margin: 0 0 4px;
 }
 
 /* No data or out of date: ink, the icon and words (like .error). */
-.heat-warn {
+.heat-warn,
+.rain-warn {
   font-weight: 700;
 }
 
@@ -696,9 +766,70 @@ p {
   font-variant-numeric: tabular-nums;
 }
 
-.heat-note {
+.heat-note,
+.rain-note {
   margin: 8px 0 0;
   font-size: 12px;
+}
+
+/* ---------- Rain forecast panel (RainForecastPanel.tsx), Typhoon view ----------
+   The same place and look as the heat map panel (rules above): the time shown,
+   play and pause, and a slider through the 7 days. */
+.rain-time {
+  margin: 6px 0 4px;
+  font-family: var(--font-title);
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.rain-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rain-controls input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--ink);
+}
+
+/* Under 900px the map is short: the "about" line goes (the legend has it too). */
+@media (max-width: 899px) {
+  .rain-about {
+    display: none;
+  }
+}
+
+/* The first and last day under the slider. */
+.rain-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+/* ---------- Rain forecast key in the legend (Typhoon view) ---------- */
+.rain-key {
+  display: grid;
+  /* Five bands a row, so the ten fit in two rows. */
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rain-key li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rain-key .swatch-rain {
+  height: 10px;
 }
 
 /* The heat key in the legend (HeatLegend.tsx). Its swatches: the same colours
@@ -798,6 +929,16 @@ label.legend-row {
 /* A row with no tick box lines up with the text of the rows that have one. */
 .legend-indent {
   padding-left: 22px;
+}
+
+/* A view's key title with its tag (Flood, Typhoon, Storm surge): the tag sits at the right. */
+.legend-key-title .tag {
+  margin-left: auto;
+}
+
+/* A line under that title saying what the view shows. */
+.legend-key-about {
+  margin: 2px 0 0;
 }
 
 /* While a hazard view is pressed: the score colours are hidden, say so. */
@@ -1069,6 +1210,11 @@ label.legend-row {
 
 .mark-forecast {
   border-top: 2px dashed var(--ink);
+}
+
+/* The PAR outline: longer dashes in the muted ink (the map draws it the same way). */
+.mark-par {
+  border-top: 2px dashed var(--ink-soft);
 }
 
 .mark-news {
@@ -1509,6 +1655,12 @@ footer {
     left: -1px;
     right: -1px;
     top: 100%;
+  }
+
+  /* The map note goes just under the floating search box (12px + its height + 10px). */
+  .map-note {
+    left: 12px;
+    top: 78px;
   }
 
   /* The legend closes off the bottom of the left column. */

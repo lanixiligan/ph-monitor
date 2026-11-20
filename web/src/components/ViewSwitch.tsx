@@ -1,14 +1,15 @@
 // The top bar's view switch: Overall, then one button per hazard, in the order
 // of MAP_VIEWS (shared/src/mapViews.ts). Only one is pressed at a time, so two
 // warm colour scales never show at once. Views marked 'more' sit in a small
-// "More" menu. A view with no data behind it is greyed out with a note and
-// can't be pressed. Display only: pressing a button never changes the score.
+// "More" menu. A view with no data behind it (or whose fixed hazard map is not
+// loaded) is greyed out with a note and can't be pressed (isViewAvailable).
+// Display only: pressing a button never changes the score.
 
 import { useEffect, useRef, useState } from 'react';
 // `import type` brings in types only; they vanish when the code runs.
 import type { ReactNode } from 'react';
-import { MAP_VIEWS } from '@ph-monitor/shared';
-import type { MapView, MapViewId } from '@ph-monitor/shared';
+import { isViewAvailable, MAP_VIEWS } from '@ph-monitor/shared';
+import type { HazardMapKind, MapView, MapViewId } from '@ph-monitor/shared';
 import { fill, lookup, useStrings } from '../i18n/index.ts';
 
 type Props = {
@@ -16,6 +17,8 @@ type Props = {
   view: MapViewId;
   /** Called with the view the reader presses (never with a greyed-out one). */
   onPress: (view: MapViewId) => void;
+  /** The fixed hazard maps the server has loaded; a view needing another one is greyed out. */
+  loadedMaps: HazardMapKind[];
 };
 
 /** The id of a view's button, so other parts can move the keyboard back to it. */
@@ -35,8 +38,27 @@ const ICONS: Record<MapView['icon'], ReactNode> = {
       <circle cx="8" cy="12" r="1.2" fill="currentColor" stroke="none" />
     </>
   ),
+  // A cyclone swirl: an eye with two curling arms.
+  typhoon: (
+    <>
+      <circle cx="8" cy="8" r="2.2" strokeWidth="1.5" />
+      <path d="M10.2 8c0-3.6-2.6-6-6.7-5.6M5.8 8c0 3.6 2.6 6 6.7 5.6" strokeWidth="1.5" strokeLinecap="round" />
+    </>
+  ),
+  // Rain falling on rising water.
+  flood: (
+    <path
+      d="M4.5 1.5 3.5 4.5M8.5 1.5l-1 3M12.5 1.5l-1 3M1 9c1.75 0 1.75-1.5 3.5-1.5S6.25 9 8 9s1.75-1.5 3.5-1.5S13.25 9 15 9M1 13c1.75 0 1.75-1.5 3.5-1.5S6.25 13 8 13s1.75-1.5 3.5-1.5S13.25 13 15 13"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+  ),
   // A seismograph line.
   earthquake: <path d="M1 8.5h3l1.5-4 2 8 2-10 1.5 6H15" strokeWidth="1.5" />,
+  // A wave rising up onto a sloping shore.
+  stormSurge: (
+    <path d="M1 14.5h5.5L15 10M1 11c2.2 0 3-5.5 6.5-5.5 1.6 0 2.6 1.1 2.4 2.5-1-.6-2.2-.2-2.4.9" strokeWidth="1.5" strokeLinecap="round" />
+  ),
   // Two waves.
   tsunami: (
     <path d="M1 7c1.75 0 1.75-2 3.5-2S6.25 7 8 7s1.75-2 3.5-2S13.25 7 15 7M1 12c1.75 0 1.75-2 3.5-2s1.75 2 3.5 2 1.75-2 3.5-2 1.75 2 3.5 2" strokeWidth="1.5" />
@@ -52,8 +74,11 @@ function ViewIcon({ name }: { name: MapView['icon'] }) {
   );
 }
 
+/** What each view's button needs to know. */
+type ButtonProps = { view: MapView; pressed: boolean; available: boolean; onPress: (id: MapViewId) => void };
+
 /** One view's button: icon and word; a greyed-out view also shows its note. */
-function ViewButton({ view, pressed, onPress }: { view: MapView; pressed: boolean; onPress: (id: MapViewId) => void }) {
+function ViewButton({ view, pressed, available, onPress }: ButtonProps) {
   const { t } = useStrings();
   return (
     <button
@@ -62,21 +87,28 @@ function ViewButton({ view, pressed, onPress }: { view: MapView; pressed: boolea
       className="view-button"
       // aria-disabled (not `disabled`) keeps a greyed-out button reachable by
       // the keyboard, so its note can still be read.
-      aria-pressed={view.available ? pressed : undefined}
-      aria-disabled={view.available ? undefined : true}
+      aria-pressed={available ? pressed : undefined}
+      aria-disabled={available ? undefined : true}
       onClick={() => {
-        if (view.available) onPress(view.id);
+        if (available) onPress(view.id);
       }}
     >
       <ViewIcon name={view.icon} />
       <span>{t.views.names[view.id]}</span>
-      {!view.available && <span className="view-note">{lookup(t.views.notes, view.id, t.views.noData)}</span>}
+      {!available && <span className="view-note">{lookup(t.views.notes, view.id, t.views.noData)}</span>}
     </button>
   );
 }
 
 /** "More ▾": a button that opens a small list of the other views. */
-function MoreMenu({ views, current, onPress }: { views: MapView[]; current: MapViewId; onPress: (id: MapViewId) => void }) {
+type MoreProps = {
+  views: MapView[];
+  current: MapViewId;
+  loadedMaps: HazardMapKind[];
+  onPress: (id: MapViewId) => void;
+};
+
+function MoreMenu({ views, current, loadedMaps, onPress }: MoreProps) {
   const { t } = useStrings();
   const [open, setOpen] = useState(false);
   // `<HTMLDivElement>` says what the ref will hold: a div.
@@ -137,7 +169,12 @@ function MoreMenu({ views, current, onPress }: { views: MapView[]; current: MapV
       <ul id="view-more-list" className="view-menu" hidden={!open}>
         {views.map((view) => (
           <li key={view.id}>
-            <ViewButton view={view} pressed={view.id === current} onPress={press} />
+            <ViewButton
+              view={view}
+              pressed={view.id === current}
+              available={isViewAvailable(view, loadedMaps)}
+              onPress={press}
+            />
           </li>
         ))}
       </ul>
@@ -145,7 +182,7 @@ function MoreMenu({ views, current, onPress }: { views: MapView[]; current: MapV
   );
 }
 
-export function ViewSwitch({ view, onPress }: Props) {
+export function ViewSwitch({ view, onPress, loadedMaps }: Props) {
   const { t } = useStrings();
   const row = MAP_VIEWS.filter((item) => item.place === 'row');
   const more = MAP_VIEWS.filter((item) => item.place === 'more');
@@ -155,9 +192,15 @@ export function ViewSwitch({ view, onPress }: Props) {
     <div className="view-switch">
       <div className="view-row" role="group" aria-label={t.views.groupLabel}>
         {row.map((item) => (
-          <ViewButton key={item.id} view={item} pressed={item.id === view} onPress={onPress} />
+          <ViewButton
+            key={item.id}
+            view={item}
+            pressed={item.id === view}
+            available={isViewAvailable(item, loadedMaps)}
+            onPress={onPress}
+          />
         ))}
-        {more.length > 0 && <MoreMenu views={more} current={view} onPress={onPress} />}
+        {more.length > 0 && <MoreMenu views={more} current={view} loadedMaps={loadedMaps} onPress={onPress} />}
       </div>
     </div>
   );
