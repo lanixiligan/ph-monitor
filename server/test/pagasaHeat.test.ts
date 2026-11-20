@@ -60,3 +60,9 @@ test('asks for a link, then downloads it', async () => {
   assert.equal(asked[1], s3);
   assert.deepEqual([...new Uint8Array(bytes)], [1, 2, 3]);
 });
+
+test('rejects look-alike hosts and plain http', () => {
+  assert.throws(() => parsePresigned({ url: 'https://iheatmap.s3.ap-southeast-1.amazonaws.com.evil.example/x.tif' }));
+  assert.throws(() => parsePresigned({ url: 'http://iheatmap.s3.ap-southeast-1.amazonaws.com/x.tif' }));
+  assert.throws(() => parsePresigned({ url: 'not a url' }));
+});

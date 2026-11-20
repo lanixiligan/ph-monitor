@@ -63,7 +63,12 @@ export function parseTifFiles(json: unknown): { issuedOn: string; hours: PagasaH
 /** The download link from a presigned answer. Throws unless it is on PAGASA's bucket. */
 export function parsePresigned(json: unknown): string {
   const { url } = presignedSchema.parse(json);
-  if (!url.startsWith(PAGASA_HEAT_FILES)) throw new Error('PAGASA download link is not on the expected host');
+  // `new URL` splits the link into parts (and throws on a malformed one), so a look-alike
+  // host such as '…amazonaws.com.evil.example' cannot pass a plain text prefix check.
+  const link = new URL(url);
+  if (link.protocol !== 'https:' || link.origin !== new URL(PAGASA_HEAT_FILES).origin) {
+    throw new Error('PAGASA download link is not on the expected host');
+  }
   return url;
 }
 
