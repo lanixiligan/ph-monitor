@@ -22,6 +22,7 @@ import { fetchHazards, fetchHeatMap, fetchPlaceScores, fetchProvinces, fetchQuak
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
 import { HeatMapPanel } from './components/HeatMapPanel.tsx';
+import { HeatTimeBar } from './components/HeatTimeBar.tsx';
 import { Legend } from './components/Legend.tsx';
 import { MapNote } from './components/MapNote.tsx';
 import { NewsPanel } from './components/NewsPanel.tsx';
@@ -37,6 +38,8 @@ import { ViewSwitch } from './components/ViewSwitch.tsx';
 import { WarnIcon } from './components/WarnIcon.tsx';
 import { loadedMapKinds } from './hazardLabels.ts';
 import { heatForMap } from './heatColors.ts';
+import { keepOrDefault } from './heatTime.ts';
+import { useNow } from './useNow.ts';
 import { fill, LanguageSwitch, lookup, useStrings } from './i18n/index.ts';
 import { mapNote, stormsUnsure } from './mapNotes.ts';
 import { HAZARD_MIN_ZOOM } from './mapSettings.ts';
@@ -103,6 +106,12 @@ export function App() {
   const [locateProblem, setLocateProblem] = useState<'outside' | 'failed' | null>(null);
   // The heat map's weather model, or 'average'. Remembered while other views are pressed.
   const [heatModel, setHeatModel] = useState<HeatViewId>(DEFAULT_HEAT_MODEL);
+  // The forecast time the reader pressed in the time bar (ISO); null = none yet. Remembered like heatModel.
+  const [heatAt, setHeatAt] = useState<string | null>(null);
+  // The clock, so a page left open across 5 PM or midnight moves to the default time.
+  const nowMs = useNow(30_000);
+  // The time sent to the API: the pressed one while it is still on the bar, else the default.
+  const heatTime = keepOrDefault(heatAt, new Date(nowMs));
   // The model the map shows: only while Heat is pressed. null = the heat map is off.
   const heatChosen = mapView === 'heat' ? heatModel : null;
   // The heat map answer for `heatChosen`. null = off, or still loading.
@@ -128,6 +137,12 @@ export function App() {
     }
     setStorms(result);
     setStormsFailed(false);
+  }
+
+  /** Picks a forecast time on the bar. */
+  function chooseHeatTime(iso: string) {
+    if (iso === heatTime) return;
+    setHeatAt(iso);
   }
 
   /** Switches the heat map's source. */
@@ -233,13 +248,16 @@ export function App() {
   useEffect(() => {
     if (heatChosen === null) return;
     const model = heatChosen;
+    const at = heatTime;
+    // A new source or time: the answer held now is for another one, so drop it (the map stripes until the new one arrives).
+    setHeat(null);
     // Review Focus 4: the cleanup below sets this to false when the reader
     // switches source or leaves Heat, so an answer that arrives after
     // that (a slow, older request) is dropped instead of painting the map.
     let stillChosen = true;
     async function load() {
       try {
-        const answer = await fetchHeatMap(model);
+        const answer = await fetchHeatMap(model, at);
         if (!stillChosen) return;
         setHeat(answer);
         setHeatFailed(false);
@@ -253,7 +271,7 @@ export function App() {
       stillChosen = false;
       clearInterval(timer);
     };
-  }, [heatChosen]);
+  }, [heatChosen, heatTime]);
 
   // What the map colours by: null = the score; stripes while the answer loads.
   // heatForMap also ignores an answer whose model is not the one chosen now.
@@ -375,6 +393,14 @@ export function App() {
                 failed={heatFailed}
                 onChoose={chooseHeatModel}
                 onClose={() => chooseView('overall')}
+              />
+            )}
+            {mapView === 'heat' && (
+              <HeatTimeBar
+                chosen={heatTime}
+                hours={heat !== null && heat.model === heatModel ? heat.hours : null}
+                now={new Date(nowMs)}
+                onChoose={chooseHeatTime}
               />
             )}
           </div>

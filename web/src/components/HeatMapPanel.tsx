@@ -7,8 +7,9 @@
 // A display layer only: it never changes the score.
 
 import { HEAT_MODELS } from '@ph-monitor/shared';
-import type { HeatMapData, HeatModelId, HeatViewId } from '@ph-monitor/shared';
+import type { HeatMapData, HeatSourceId, HeatViewId } from '@ph-monitor/shared';
 import { timeAgo } from '../format.ts';
+import { heatTier } from '../heatColors.ts';
 import { fill, useStrings } from '../i18n/index.ts';
 import { useNow } from '../useNow.ts';
 import { viewButtonId } from './ViewSwitch.tsx';
@@ -28,7 +29,7 @@ type Props = {
 };
 
 /** The models whose data the chosen view shows: one, or all of them for the average. */
-function creditsFor(view: HeatViewId): HeatModelId[] {
+function creditsFor(view: HeatViewId): HeatSourceId[] {
   return view === 'average' ? HEAT_MODELS.map((model) => model.id) : [view];
 }
 
@@ -54,6 +55,11 @@ function HeatStatus({ data, failed }: { data: HeatMapData | null; failed: boolea
         {data !== null && data.fetchedAt === null && (
           <p className="notice heat-warn">
             <WarnIcon /> {t.heat.noData}
+          </p>
+        )}
+        {data !== null && data.fetchedAt !== null && data.validAt === null && (
+          <p className="notice heat-warn">
+            <WarnIcon /> {t.heat.noHour}
           </p>
         )}
         {data !== null && data.fetchedAt !== null && data.isStale && (
@@ -84,7 +90,9 @@ export function HeatMapPanel({ chosen, data, failed, onChoose, onClose }: Props)
             {t.card.close}
           </button>
         </div>
-        <span className="tag">{t.tiers.model}</span>
+        <span className="tag">
+          {heatTier(chosen, t)}
+        </span>
 
         <fieldset className="heat-sources">
           <legend>{t.heat.source}</legend>
@@ -104,6 +112,16 @@ export function HeatMapPanel({ chosen, data, failed, onChoose, onClose }: Props)
             <input
               type="radio"
               name="heat-model"
+              checked={chosen === 'pagasa'}
+              onChange={() => onChoose('pagasa')}
+            />
+            <span>{t.heat.models.pagasa}</span>
+            <span className="muted">{t.heat.pagasaNote}</span>
+          </label>
+          <label className="heat-source">
+            <input
+              type="radio"
+              name="heat-model"
               checked={chosen === 'average'}
               onChange={() => onChoose('average')}
             />
@@ -117,10 +135,21 @@ export function HeatMapPanel({ chosen, data, failed, onChoose, onClose }: Props)
         {/* The source's credit, next to its data (DWD and Open-Meteo ask for it here). The average credits every model. */}
         {creditsFor(chosen).map((model) => (
           <p key={model} className="heat-note muted">
-            {t.heat.credit[model]} <a href="https://open-meteo.com/">{t.heat.creditLink}</a>
+            {t.heat.credit[model]}
+            {model === 'pagasa' ? (
+              <>
+                <a href="https://iheatmap.pagasa.dost.gov.ph/">iheatmap.pagasa.dost.gov.ph</a>
+                {t.heat.creditPagasaEnd}
+              </>
+            ) : (
+              <>
+                {' '}
+                <a href="https://open-meteo.com/">{t.heat.creditLink}</a>
+              </>
+            )}
           </p>
         ))}
-        <p className="heat-note muted">{t.heat.spacing}</p>
+        <p className="heat-note muted">{chosen === 'pagasa' ? t.heat.pagasaSpacing : t.heat.spacing}</p>
         <p className="heat-note muted">{t.heat.cardDiffers}</p>
       </section>
     </div>

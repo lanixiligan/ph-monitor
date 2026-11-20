@@ -16,7 +16,7 @@ hazard: Typhoon shows the storm tracks, the Philippine Area of Responsibility an
 forecast (ECMWF) with a time slider; Flood colours the towns by the rain part of their
 score; Earthquake colours them by the earthquake part and draws the quakes; Storm surge shows
 Project NOAH's fixed surge zones; Heat recolours the map by the heat index from a weather model you pick (ECMWF, DWD ICON
-or NOAA GFS) or their average. Views are shown only and never change the score. The page can be read in English or Filipino (the Filipino
+or NOAA GFS), PAGASA's own iHeatMAP forecast, or the models' average, for any hour from 8 AM to 5 PM over six days (a time bar at the bottom of the map). Views are shown only and never change the score. The page can be read in English or Filipino (the Filipino
 text is a draft under review). Expect rough edges, and scores that change as the formula is
 tuned.
 
@@ -62,7 +62,7 @@ A link can open a spot directly: `http://localhost:5173/?lat=10.3157&lon=123.885
 | `npm run replay` | Replay past disasters through the score formula and print a results table (see `docs/replay-results.md`) |
 | `npm run typecheck` | Check all TypeScript |
 | `npm run ingest:earthquakes` / `ingest:weather` / `compute:scores` | Run one job by hand |
-| `npm run ingest:events` / `ingest:storms` / `ingest:forecast` / `ingest:news` / `ingest:alerts` / `ingest:heatmap` | Run one of the newer jobs by hand |
+| `npm run ingest:events` / `ingest:storms` / `ingest:forecast` / `ingest:news` / `ingest:alerts` / `ingest:heatmap` / `ingest:pagasaheat` | Run one of the newer jobs by hand |
 | `npm run check:sources` | Check every news feed and stream link and print a table |
 | `npm run sample-storm` (add `-- remove` to delete it) | Load a sample storm track, clearly labelled as not real |
 | `npm run build` | Build the web app into `web/dist` |
@@ -96,6 +96,7 @@ data flows through the app, and its limits.
 | Heat index map (ECMWF source) and rain forecast field (modelled; shown only, not in the score) | Based on data and products of the European Centre for Medium-Range Weather Forecasts ([ECMWF](https://www.ecmwf.int/)): IFS HRES [open data](https://www.ecmwf.int/en/forecasts/datasets/open-data), via [Open-Meteo](https://open-meteo.com/). Changed: we work out the heat index from its temperature and humidity, and add up the rain in 3-hour steps | CC BY 4.0 |
 | Heat index map, ICON source (same) | Based on data from [Deutscher Wetterdienst](https://www.dwd.de/) (DWD), gridded data reproduced graphically: the ICON global model, via [Open-Meteo](https://open-meteo.com/) | CC BY 4.0 |
 | Heat index map, GFS source (same) | Global Forecast System of [NOAA](https://www.noaa.gov/)'s National Weather Service (NCEP), via [Open-Meteo](https://open-meteo.com/) | Public domain |
+| Heat index map, PAGASA source (shown only, not in the score) | Heat index forecast: [DOST-PAGASA iHeatMAP](https://iheatmap.pagasa.dost.gov.ph/) (iheatmap.pagasa.dost.gov.ph), based on ECMWF data. Used without changes, for a non-commercial purpose | Philippine government work (RA 8293 Sec. 176); credit given, non-commercial use |
 | News headlines (headline, outlet, time and link only) | RSS feeds of the outlets listed in `server/src/sources.ts`, and [Google News](https://news.google.com/) search | Headlines belong to their outlets; each links to the original article |
 | Live streams and latest videos | [YouTube](https://www.youtube.com/) channels listed in `server/src/sources.ts` | Shown only in YouTube's own player |
 | Basemap: roads and place names (switch in `web/src/mapSettings.ts`) | [OpenFreeMap](https://openfreemap.org/), © OpenMapTiles, data © OpenStreetMap contributors | ODbL (OpenStreetMap data) |

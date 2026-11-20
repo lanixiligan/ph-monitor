@@ -355,6 +355,35 @@ CREATE TABLE IF NOT EXISTS heat_runs (
   last_total INTEGER NOT NULL                  -- points asked about
 );
 
+-- ---------- PAGASA heat index forecast (Heat view's time bar; display only) ----------
+-- DOST-PAGASA iHeatMAP, per town and hour. heat_index_c NULL = no value for that
+-- town and hour (unknown, never 0). No scoring code reads these tables.
+CREATE TABLE IF NOT EXISTS pagasa_heat (
+  issued_on    DATE NOT NULL,                  -- the forecast day PAGASA issued it
+  psgc         BIGINT NOT NULL REFERENCES places(psgc) ON DELETE CASCADE,
+  valid_at     TIMESTAMPTZ NOT NULL,
+  heat_index_c REAL,
+  PRIMARY KEY (issued_on, psgc, valid_at)
+);
+
+-- Which squares of PAGASA's map grid each town covers: cell = row * width + col.
+CREATE TABLE IF NOT EXISTS pagasa_town_cells (
+  psgc BIGINT NOT NULL REFERENCES places(psgc) ON DELETE CASCADE,
+  cell INTEGER NOT NULL,
+  PRIMARY KEY (psgc, cell)
+);
+
+-- The grid pagasa_town_cells was built for, and how many towns existed then.
+CREATE TABLE IF NOT EXISTS pagasa_grid (
+  id         INTEGER PRIMARY KEY CHECK (id = 1),
+  width      INTEGER NOT NULL,
+  height     INTEGER NOT NULL,
+  origin_x   DOUBLE PRECISION NOT NULL,
+  origin_y   DOUBLE PRECISION NOT NULL,
+  pixel_size DOUBLE PRECISION NOT NULL,
+  towns      INTEGER NOT NULL
+);
+
 -- ---------- Rain forecast field (Typhoon view; display only) ----------
 -- The next 7 days of hourly rain (ECMWF via Open-Meteo, CC BY 4.0) on a fixed
 -- 1.5° grid over the Philippine Area of Responsibility (RAIN_GRID in

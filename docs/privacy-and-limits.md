@@ -37,6 +37,7 @@ The hazard map tiles (Project NOAH zones) and the heat map come from our own `/a
 | Service | Free limit | What we use |
 |---|---|---|
 | Open-Meteo | about 10,000 calls a day | Weather job about 7,200 a day (about 600 points, every 2 hours); outlook about 700 a day; heat map about 1,200 a day (the same points, all three models in one request, every 12 hours); rain forecast field 512 a day (256 grid points, every 12 hours); together about 9,600, leaving about 400 for clicked spots (reused for 30 minutes per 5 km cell) |
+| PAGASA iHeatMAP | none stated | About 44 API calls a day (about 8 date checks, 1 file list, 35 download links) and 35 file downloads from PAGASA's storage bucket |
 | YouTube Data API | 10,000 units a day | About 1,900 units a day, at most about 7,500 (only 1-unit calls) |
 
 Open-Meteo's free tier is for non-commercial use. This project is non-commercial.
@@ -45,6 +46,9 @@ Open-Meteo's free tier is for non-commercial use. This project is non-commercial
 
 - **This is not a warning service.** The score is an untuned estimate and has not been checked
   against past events.
+- **The heat map's model sources show only 8 AM to 5 PM.** The night hours are no longer shown.
+- **PAGASA's heat API is internal** and may change or stop; then the PAGASA source goes out of
+  date. About 20 small island towns and Kalayaan never get a PAGASA value and show as unknown.
 - **Weather and the outlook are modelled**, not measured, and sampled at one point per province.
 - **USGS misses small quakes** near the Philippines; PHIVOLCS records many more.
 - **GDACS alert levels are global estimates** for aid agencies. PAGASA wind signals and

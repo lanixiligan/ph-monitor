@@ -1,4 +1,4 @@
-// Fetches the next 48 hours of temperature and humidity for the heat map, from
+// Fetches six days of temperature and humidity for the heat map, from
 // several weather models in one request (Open-Meteo, CC BY 4.0, non-commercial).
 // Display only: the score never reads this; it has its own fetch (openMeteo.ts).
 //
@@ -16,13 +16,20 @@ const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 /** Same as the weather job: keeps the URL a sensible length. */
 const POINTS_PER_REQUEST = 50;
 
-/** Every fetch holds two days, so the current hour is still there 12 hours later. */
-const FORECAST_HOURS = 48;
+/** Hours ahead: 6 days, so the Heat view's time bar reaches day 6 at 5 PM. */
+export const FORECAST_HOURS = 144;
+
+/**
+ * Hours back from the current hour. 16 always reaches today's 8 AM
+ * Philippine time (at 11 PM, 16 hours back starts at 7 AM, so 8 AM is always
+ * inside), so the bar's earlier hours of today stay available.
+ */
+export const PAST_HOURS = 16;
 
 /** One model's hours at one point; null = no value for that hour. */
 export type HeatHours = { tempC: (number | null)[]; humidityPct: (number | null)[] };
 
-/** One point's 48 hours. A model is left out when it sent no hour with both values (for example, only nulls). */
+/** One point's hours (16 past, 144 ahead). A model is left out when it sent no hour with both values (for example, only nulls). */
 export type HeatLocation = {
   times: Date[];
   // `Partial<Record<K, V>>` = an object that may have any of the keys K.
@@ -126,6 +133,7 @@ export async function fetchOpenMeteoHeat(
       hourly: 'temperature_2m,relative_humidity_2m',
       // Always named, never Open-Meteo's default blend.
       models: models.join(','),
+      past_hours: String(PAST_HOURS),
       forecast_hours: String(FORECAST_HOURS),
       timeformat: 'unixtime',
     });

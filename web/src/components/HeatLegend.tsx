@@ -1,10 +1,11 @@
 // The top of the legend while Heat is pressed: PAGASA's heat index bands, the
-// chosen source and the "Model estimate" tag. The only place the band key is
+// chosen source and its tag (Official for PAGASA, else Model estimate). The only place the band key is
 // shown. A display layer only: it never changes the score.
 
 // `import type` brings in types only; they vanish when the code runs.
 import type { HeatBandName, HeatViewId } from '@ph-monitor/shared';
 import { capitalise } from '../format.ts';
+import { heatTier } from '../heatColors.ts';
 import { fill, useStrings } from '../i18n/index.ts';
 
 // The band key, mildest first: PAGASA's ranges in °C (`to: null` = no top),
@@ -25,7 +26,7 @@ export function HeatLegend({ model }: { model: HeatViewId }) {
     <div className="legend-heat">
       <div className="legend-row">
         <strong>{t.heat.keyTitle}</strong>
-        <span className="tag">{t.tiers.model}</span>
+        <span className="tag">{heatTier(model, t)}</span>
       </div>
       <p className="muted">{fill(t.legend.heatSource, { model: source })}</p>
       <ul className="heat-key">

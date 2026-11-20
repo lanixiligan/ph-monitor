@@ -162,7 +162,8 @@ export type FeedId =
   | 'riverFlow'
   | 'news'
   | 'heatMap'
-  | 'rainForecast';
+  | 'rainForecast'
+  | 'pagasaHeat';
 
 /** How one feed is doing. */
 export type FeedHealth = {
@@ -544,8 +545,11 @@ export type HeatModelId = 'ecmwf_ifs' | 'dwd_icon_global_native' | 'ncep_gfs_glo
 /** PAGASA's heat index bands (27 °C and up). */
 export type HeatBandName = 'caution' | 'extreme caution' | 'danger' | 'extreme danger';
 
-/** What the heat map can show: one model, or the average of all of them. */
-export type HeatViewId = HeatModelId | 'average';
+/** A source of heat index values: a weather model, or PAGASA's own iHeatMAP forecast. */
+export type HeatSourceId = HeatModelId | 'pagasa';
+
+/** What the heat map can show: one source, or the average of all of them. */
+export type HeatViewId = HeatSourceId | 'average';
 
 /** Average view only: how many models had a value, and the lowest and highest of them. */
 export type HeatSpread = { used: number; lowC: number; highC: number };
@@ -563,8 +567,10 @@ export type HeatMapData = {
   /** The newest good run for this model (the average: the oldest of its sources' runs); null = none yet. */
   fetchedAt: string | null;
   isStale: boolean;
-  /** The hour shown (the current hour, ISO); null when nothing is stored for it. */
+  /** The hour shown (ISO); null when this source has no value for it. */
   validAt: string | null;
+  /** The hours in the time bar's window this source has a value for (ISO instants). */
+  hours: string[];
   places: HeatValue[];
   provinces: HeatValue[];
 };

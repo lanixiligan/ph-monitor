@@ -17,7 +17,8 @@ export type JobName =
   | 'feedCheck'
   | 'outlook'
   | 'heatMap'
-  | 'rainForecast';
+  | 'rainForecast'
+  | 'pagasaHeat';
 
 /**
  * The heat map runs every 12 hours. The rule says 11.5: a run is stamped when it
@@ -28,6 +29,9 @@ export type JobName =
  * The scheduler also uses this to space out tries after a failure.
  */
 export const HEAT_MAP_EVERY_MINUTES = 12 * 60 - 30;
+
+/** PAGASA's heat forecast is checked every 3 hours; a failed try also waits 3 hours. */
+export const PAGASA_HEAT_EVERY_MINUTES = 180;
 
 type JobRule = {
   job: JobName;
@@ -62,6 +66,8 @@ export const JOB_RULES: JobRule[] = [
   { job: 'heatMap', everyMinutes: HEAT_MAP_EVERY_MINUTES, sources: ['open-meteo-heat'], needs: 'all' },
   // Same rhythm as the heat map (and run right after it: see scheduler.ts).
   { job: 'rainForecast', everyMinutes: HEAT_MAP_EVERY_MINUTES, sources: ['open-meteo-rain'], needs: 'all' },
+  // PAGASA's own heat index forecast: a small download, checked every 3 hours.
+  { job: 'pagasaHeat', everyMinutes: PAGASA_HEAT_EVERY_MINUTES, sources: ['pagasa-heat'], needs: 'all' },
 ];
 
 const MINUTE_MS = 60 * 1000;
