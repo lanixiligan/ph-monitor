@@ -194,6 +194,15 @@ export type ProvinceMapProperties = {
   incomplete: boolean;
   /** The town whose score the province shows (its highest); null when it has no towns. */
   top_place: string | null;
+  /**
+   * Earthquake view (display only): the highest earthquake part among the
+   * province's towns (the province's own when it has no town scores); null before the first score run.
+   */
+  quake_top_score: number | null;
+  /** The town with that highest earthquake part; null when it has no town scores. */
+  quake_top_place: string | null;
+  /** True when earthquakes could not be checked ('quake' in the province's unknown signals). */
+  quake_unknown: boolean;
   /** A spot inside the province, where the map pins its headlines. */
   point_lat: number;
   point_lon: number;
@@ -231,6 +240,10 @@ export type PlaceScoreEntry = {
   score: number;
   /** True when a signal could not be checked: the score is "at least" this much. */
   incomplete: boolean;
+  /** The earthquake part of the score (0–100), for the Earthquake view. Display only. */
+  quakeScore: number;
+  /** True when earthquakes could not be checked for this town ('quake' in its unknown signals). */
+  quakeUnknown: boolean;
 };
 
 /** Every town's latest score. Returned by GET /api/places/scores */
@@ -537,4 +550,39 @@ export type HeatMapData = {
   validAt: string | null;
   places: HeatValue[];
   provinces: HeatValue[];
+};
+
+// --- View switch and the Earthquake view (display only; they never change the score) ---
+
+/** The views of the top bar's view switch (see shared/src/mapViews.ts). */
+export type MapViewId = 'overall' | 'heat' | 'earthquake' | 'tsunami';
+
+/** The map layers a view can tick (the legend's tick boxes; MapLayers in web/src/mapSettings.ts). */
+export type MapLayerName = 'scores' | 'events' | 'storms' | 'news' | 'landslide' | 'stormSurge' | 'quakes';
+
+/** One earthquake for the map's quake markers. */
+export type QuakePoint = {
+  /** USGS event id. */
+  id: string;
+  magnitude: number;
+  depthKm: number | null;
+  /** Human description from USGS, e.g. "7 km SE of Tagbina, Philippines". */
+  place: string | null;
+  occurredAt: string;
+  /** The USGS event page. */
+  url: string | null;
+  /** The epicentre. */
+  lat: number;
+  lon: number;
+};
+
+/** Returned by GET /api/quakes: the quakes inside the score's time window, newest first. */
+export type QuakeMap = {
+  /** The score's quake window (WEIGHTS.quake.windowHours). */
+  windowHours: number;
+  /** Last successful USGS fetch; null if it has never succeeded. */
+  fetchedAt: string | null;
+  /** True when the USGS feed is past its limit: recent quakes may be missing. */
+  isStale: boolean;
+  quakes: QuakePoint[];
 };

@@ -58,10 +58,22 @@ provincesRouter.get('/', async (_req, res) => {
     event_score: number;
     unknown_signals: SignalName[];
     top_place: string | null;
+    quake_top_score: number | null;
+    quake_top_place: string | null;
   }>(
+    // The LATERAL part picks, for each province, its town with the highest
+    // earthquake part (read only, for the Earthquake view).
     `SELECT s.province_psgc, s.score, s.quake_score, s.weather_score, s.event_score, s.unknown_signals,
-            c.name AS top_place
-     FROM province_scores s LEFT JOIN places c ON c.psgc = s.top_place_psgc`,
+            c.name AS top_place, q.quake_score AS quake_top_score, q.name AS quake_top_place
+     FROM province_scores s
+     LEFT JOIN places c ON c.psgc = s.top_place_psgc
+     LEFT JOIN LATERAL (
+       SELECT ps.quake_score, pl.name
+       FROM place_scores ps JOIN places pl ON pl.psgc = ps.place_psgc
+       WHERE pl.province_psgc = s.province_psgc
+       ORDER BY ps.quake_score DESC, pl.psgc
+       LIMIT 1
+     ) q ON true`,
   );
 
   const scoreByPsgc = new Map(scores.rows.map((row) => [row.province_psgc, row]));
@@ -78,6 +90,10 @@ provincesRouter.get('/', async (_req, res) => {
       event_score: score?.event_score ?? null,
       incomplete: (score?.unknown_signals.length ?? 0) > 0,
       top_place: score?.top_place ?? null,
+      // A province with no town scores falls back to its own earthquake part.
+      quake_top_score: score?.quake_top_score ?? score?.quake_score ?? null,
+      quake_top_place: score?.quake_top_place ?? null,
+      quake_unknown: score?.unknown_signals.includes('quake') ?? false,
       point_lat: shape.point_lat,
       point_lon: shape.point_lon,
     };

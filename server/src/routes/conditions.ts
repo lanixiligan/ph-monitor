@@ -1,5 +1,6 @@
 // API routes for the Phase 2 data (none of it changes the score):
 //   GET /api/events     → current disaster events (for map markers)
+//   GET /api/quakes     → earthquakes inside the score's time window, with the feed's freshness
 //   GET /api/storms     → active storms with their tracks (for the map)
 //   GET /api/news       → latest disaster headlines; ?type=flood (or general)  ?category=tv  ?psgc=...  ?limit=...
 //   GET /api/streams    → live stream slots the page may show
@@ -23,6 +24,7 @@ import {
 import type { EventRow, NewsRow } from '../conditions.ts';
 import { pool } from '../db.ts';
 import { getFeedHealth } from '../freshness.ts';
+import { getQuakeMap } from '../quakeMap.ts';
 import { refreshStreams } from '../jobs/streamRefresh.ts';
 import { BULLETIN_LINKS, OUTLET_CATEGORIES } from '../sources.ts';
 
@@ -33,6 +35,10 @@ conditionsRouter.get('/events', async (_req, res) => {
     `SELECT ${EVENT_COLUMNS} FROM events e WHERE ${CURRENT_EVENT_SQL} ORDER BY e.started_at DESC`,
   );
   res.json(result.rows.map(toDisasterEvent));
+});
+
+conditionsRouter.get('/quakes', async (_req, res) => {
+  res.json(await getQuakeMap());
 });
 
 conditionsRouter.get('/storms', async (_req, res) => {
