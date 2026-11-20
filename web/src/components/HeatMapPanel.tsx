@@ -135,11 +135,17 @@ export function HeatMapPanel({ chosen, data, failed, onChoose, onClose }: Props)
         {/* The source's credit, next to its data (DWD and Open-Meteo ask for it here). The average credits every model. */}
         {creditsFor(chosen).map((model) => (
           <p key={model} className="heat-note muted">
-            {t.heat.credit[model]}{' '}
+            {t.heat.credit[model]}
             {model === 'pagasa' ? (
-              <a href="https://iheatmap.pagasa.dost.gov.ph/">{t.heat.models.pagasa}</a>
+              <>
+                <a href="https://iheatmap.pagasa.dost.gov.ph/">iheatmap.pagasa.dost.gov.ph</a>
+                {t.heat.creditPagasaEnd}
+              </>
             ) : (
-              <a href="https://open-meteo.com/">{t.heat.creditLink}</a>
+              <>
+                {' '}
+                <a href="https://open-meteo.com/">{t.heat.creditLink}</a>
+              </>
             )}
           </p>
         ))}

@@ -50,8 +50,10 @@ test('names a file', () => {
 test('asks for a link, then downloads it', async () => {
   const asked: string[] = [];
   const s3 = `${PAGASA_HEAT_FILES}20261121/x.tif?sig=1`;
-  const fetcher = async (url: string): Promise<Response> => {
+  const inits: (RequestInit | undefined)[] = [];
+  const fetcher = async (url: string, init?: RequestInit): Promise<Response> => {
     asked.push(url);
+    inits.push(init);
     if (url.startsWith(PAGASA_HEAT_API)) return new Response(JSON.stringify({ url: s3 }));
     return new Response(new Uint8Array([1, 2, 3]));
   };
@@ -59,6 +61,8 @@ test('asks for a link, then downloads it', async () => {
   assert.equal(asked[0], `${PAGASA_HEAT_API}presigned-tif?date=20261121&file=20261121_1200_cog.tif`);
   assert.equal(asked[1], s3);
   assert.deepEqual([...new Uint8Array(bytes)], [1, 2, 3]);
+  // Redirects are refused, so a link cannot send us to another host.
+  assert.deepEqual(inits.map((init) => init?.redirect), ['error', 'error']);
 });
 
 test('rejects look-alike hosts and plain http', () => {

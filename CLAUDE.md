@@ -10,7 +10,8 @@ GDACS alert levels count in the score), storm tracks (JMA, JTWC), a 7-day outloo
 and YouTube stream links. The page shows them as map layers, extra status card sections, a
 headlines panel and a live news panel (YouTube streams).
 Phase 4 (built): the Heat view (top bar view switch) recolours the map by the heat index from a chosen
-weather model (ECMWF, DWD ICON, NOAA GFS) or their average. Display only: it never changes the score.
+weather model (ECMWF, DWD ICON, NOAA GFS) or their average. It also offers PAGASA iHeatMAP (official,
+about 1 km) and a time bar (8 AM–5 PM, today plus 5 days). Display only: it never changes the score.
 Non-commercial. Plan and decisions: `PLAN.md`. Score formula: `METHODOLOGY.md`.
 Hazard views (`HAZARD_MAPS_PLAN.md`): a top bar view switch (Overall, Typhoon, Flood, Earthquake,
 Heat, and Storm surge under More; built steps 0 and 1); the other hazards are proposals.
@@ -43,20 +44,21 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    scoreHistory.ts (a history row only when a score changed),
                    hazardLoad.ts + hazardShapes.ts (NOAH file list, names, shape checks),
                    hazardZones.ts (fixed hazard map answer for one spot),
-                   pagasaGrid.ts (reads PAGASA's GeoTIFF heat files), pagasaCells.ts (which ~1 km squares
-                   belong to each town),
+                   pagasaGrid.ts (reads PAGASA's GeoTIFF heat files), pagasaCells.ts (which ~1 km
+                   squares belong to each town),
                    heatMap.ts (heat map answer: each town's hottest point, per model or averaged),
                    rainForecast.ts (rain forecast grid over the PAR, 3-hour frames; Typhoon view),
                    quakeMap.ts (quakes in the score's window, for the quake markers)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
                    jma, jtwc, openMeteoDaily, openMeteoFlood, openMeteoHeat (three models
-                   for the heat map), pagasaHeat (PAGASA iHeatMAP: API + files), openMeteoRain (7 days of ECMWF rain on the forecast
-                   grid), rss, pagasa (official alerts), retry (one more try
-                   for a failed download)
+                   for the heat map), pagasaHeat (PAGASA iHeatMAP: API + files),
+                   openMeteoRain (7 days of ECMWF rain on the forecast grid), rss,
+                   pagasa (official alerts), retry (one more try for a failed download)
   jobs/            ingestEarthquakes, ingestWeather (weather grid), ingestEvents, ingestStorms,
                    ingestAlerts, ingestForecast, ingestNews, ingestHeatMap and
-                   ingestPagasaHeat (checks every 3 h, downloads only a new forecast), ingestRainForecast (every 12 h, one after the other; never read by
-                   the score), checkSources, computeScores
+                   ingestRainForecast (every 12 h, one after the other; never read by
+                   the score), ingestPagasaHeat (on its own: checks every 3 h, downloads
+                   only a new forecast; never read by the score), checkSources, computeScores
                    (towns, then provinces = highest town), townInputs, scheduler,
                    due (which jobs are due; every job's interval), jobTries (when a
                    job last started; spaces out heat map retries)

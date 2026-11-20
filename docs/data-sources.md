@@ -123,7 +123,7 @@ Events from both sources are removed 30 days after they end. The page shows an e
 
 - **Address:** `https://api.open-meteo.com/v1/forecast` with the models named in `models=`,
   never Open-Meteo's default blend.
-- **What we ask for:** hourly temperature and humidity for the next 48 hours, for all three
+- **What we ask for:** hourly temperature and humidity from PH midnight today through day 6 (16 past hours and 144 forecast hours), for all three
   models in one request, at the same ~600 weather points as the score's weather. 50 points per
   request, 20 seconds apart (half the weather job's pace, so the two together stay well under
   Open-Meteo's 600 calls a minute; a run takes about 4 minutes). Three models cost the same as
@@ -174,7 +174,7 @@ Events from both sources are removed 30 days after they end. The page shows an e
   21:00 PH time, dated the next day). A forecast has 35 files: days 1 to 3 every hour from
   8 AM to 5 PM, day 4 at 8, 11, 14 and 17, day 5 at 8 AM. About 150 KB each.
 - **What we keep:** per town, the hottest square inside it (a small town with no square
-  centre takes the squares it touches). A forecast is saved only when all files came and at
+  centre takes the one square under a point inside it, `ST_PointOnSurface`). A forecast is saved only when all files came and at
   least 90% of towns have a value; otherwise the old one stays. We keep the newest forecast
   and drop ones older than yesterday. Today's hours come from yesterday's forecast.
 - **Limits:** about 20 small island towns and Kalayaan have no PAGASA value and show as unknown.

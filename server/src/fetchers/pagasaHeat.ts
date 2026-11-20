@@ -1,4 +1,5 @@
-// Fetches PAGASA's iHeatMAP heat index forecast (DOST-PAGASA, CC BY 4.0, non-commercial).
+// Fetches PAGASA's iHeatMAP heat index forecast (DOST-PAGASA; a Philippine government work,
+// RA 8293 Sec. 176: credited, non-commercial use; based on ECMWF data).
 // Three calls: the latest date, the list of forecast files, and a short-lived
 // download link per file. Display only: the score never reads this.
 // The API is "internal" (not a published feed) and may change, so every answer is checked.
@@ -81,8 +82,8 @@ export function pagasaFileName(hour: PagasaHour): string {
 async function getJson(path: string, fetcher?: Fetcher): Promise<unknown> {
   const response = await fetchWithRetry(
     `${PAGASA_HEAT_API}${path}`,
-    // A function so every try gets a fresh timeout.
-    () => ({ headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) }),
+    // A function so every try gets a fresh timeout. `redirect: 'error'` refuses redirects, so the two-host rule holds.
+    () => ({ headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS), redirect: 'error' }),
     { fetcher },
   );
   return response.json();
@@ -104,7 +105,7 @@ export async function fetchPagasaFile(issuedOn: string, hour: PagasaHour, fetche
   const link = parsePresigned(await getJson(query, fetcher));
   const response = await fetchWithRetry(
     link,
-    () => ({ headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) }),
+    () => ({ headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS), redirect: 'error' }),
     { fetcher },
   );
   return response.arrayBuffer();

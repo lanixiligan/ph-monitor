@@ -619,9 +619,11 @@ export const en = {
       ecmwf_ifs: 'Data: ECMWF (CC BY 4.0) via',
       dwd_icon_global_native: 'Data: Deutscher Wetterdienst (CC BY 4.0) via',
       ncep_gfs_global: 'Data: NOAA GFS (public domain) via',
-      pagasa: 'Heat index forecast: DOST-PAGASA iHeatMAP (iheatmap.pagasa.dost.gov.ph), based on ECMWF data. Used without changes, for a non-commercial purpose.',
+      // PAGASA's credit is in two pieces with its web address (a link) between them.
+      pagasa: 'Heat index forecast: DOST-PAGASA iHeatMAP (',
     } satisfies Record<HeatSourceId, string>,
     creditLink: 'Open-Meteo',
+    creditPagasaEnd: '), based on ECMWF data. Used without changes, for a non-commercial purpose.',
     // Hover labels. {heat} is `degrees`, `degreesBand` or `unknown`; {model} is a name from `models`.
     // {time} is the shown hour, e.g. 'Sat 11/21 12PM'.
     townLabel: '{town}, {province}: {heat} · {model} · {time}',

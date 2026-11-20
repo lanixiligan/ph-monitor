@@ -575,9 +575,11 @@ export const fil: Strings = {
       ecmwf_ifs: 'Datos: ECMWF (CC BY 4.0) sa pamamagitan ng', // REVIEW
       dwd_icon_global_native: 'Datos: Deutscher Wetterdienst (CC BY 4.0) sa pamamagitan ng', // REVIEW
       ncep_gfs_global: 'Datos: NOAA GFS (public domain) sa pamamagitan ng', // REVIEW
-      pagasa: 'Heat index forecast: DOST-PAGASA iHeatMAP (iheatmap.pagasa.dost.gov.ph), based on ECMWF data. Used without changes, for a non-commercial purpose.', // REVIEW: draft, same English text for now
+      // PAGASA's credit is in two pieces with its web address (a link) between them.
+      pagasa: 'Forecast ng heat index: DOST-PAGASA iHeatMAP (', // REVIEW: draft
     },
     creditLink: 'Open-Meteo', // REVIEW
+    creditPagasaEnd: '), batay sa datos ng ECMWF. Ginamit nang walang pagbabago, para sa hindi pangkomersiyong layunin.', // REVIEW: draft
     townLabel: '{town}, {province}: {heat} · {model} · {time}', // REVIEW
     provinceLabel: '{province}: {heat} · {model} · {time}', // REVIEW
     degrees: '{heat} °C', // REVIEW

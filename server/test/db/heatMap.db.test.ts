@@ -590,15 +590,21 @@ test('weather-points: its TRUNCATE works with readings and heat forecasts saved,
   );
   await pool.query(`INSERT INTO heat_runs (model, last_ok_at, last_saved, last_total) VALUES ('ecmwf_ifs', now(), 1, 1)
      ON CONFLICT (model) DO NOTHING`);
+  // PAGASA's run record is not tied to the weather points: it must survive.
+  await pool.query(`INSERT INTO heat_runs (model, last_ok_at, last_saved, last_total) VALUES ('pagasa', now(), 1, 1)
+     ON CONFLICT (model) DO NOTHING`);
   await markTried('heatMap');
 
   await pool.query(CLEAR_WEATHER_POINTS_SQL);
   await pool.query(CLEAR_HEAT_RUNS_SQL);
 
-  for (const table of ['weather_points', 'place_weather_points', 'point_readings', 'heat_forecasts', 'heat_runs', 'job_tries']) {
+  for (const table of ['weather_points', 'place_weather_points', 'point_readings', 'heat_forecasts', 'job_tries']) {
     const left = await pool.query<{ n: number }>(`SELECT count(*)::int AS n FROM ${table}`);
     assert.equal(left.rows[0]?.n, 0, `${table} is not empty`);
   }
+  const kept = await pool.query<{ model: string }>('SELECT model FROM heat_runs');
+  assert.deepEqual(kept.rows.map((row) => row.model), ['pagasa']);
+  await pool.query("DELETE FROM heat_runs WHERE model = 'pagasa'");
   // The heat job is due again; the weather feed's own record is left alone.
   const runs = await pool.query<{ source: string }>('SELECT source FROM fetch_runs ORDER BY source');
   const sources = runs.rows.map((row) => row.source);

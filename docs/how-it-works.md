@@ -70,12 +70,12 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `fetch_runs` | When each feed last succeeded |
 | `hazard_zones` | Project NOAH hazard zones (landslide, storm surge levels 1–4), class 1–3, in small pieces; kept apart from the score tables (ODbL) |
 | `hazard_coverage` | Which province's hazard file is loaded for each map, so "no hazard map here" is told apart from "not in a zone" |
-| `heat_forecasts` | The heat map: per model, weather point and hour, the temperature, humidity and heat index of the newest good run (next 48 hours). Never read by the score |
+| `heat_forecasts` | The heat map: per model, weather point and hour, the temperature, humidity and heat index of the newest good run (today's hours from PH midnight through day 6: 16 past and 144 forecast hours fetched). Never read by the score |
 | `heat_runs` | Each heat map model's last good run (when, how many points answered) |
 | `pagasa_heat` | PAGASA's heat index per town and hour, from the newest forecast that has the hour. Never read by the score |
 | `pagasa_town_cells` | Which PAGASA squares (about 1 km) belong to each town; rebuilt when the grid changes or towns are reloaded |
 | `pagasa_grid` | The shape of PAGASA's grid, so we know when it changed (`load-places` clears it) |
-| `job_tries` | When a job last started, even if it failed (only the heat map for now): a failed heat run waits 12 hours before the next try, even after a restart |
+| `job_tries` | When a job last started, even if it failed (the heat map, the rain forecast and PAGASA heat): a failed heat run waits 12 hours before the next try (PAGASA heat, 3 hours), even after a restart |
 
 `fetch_runs` is how the app tells "no earthquakes lately" apart from "the earthquake fetch has
 been failing". A banner on the page names every feed that is past its own limit, and a score
@@ -103,7 +103,7 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/alerts` | Official alerts in effect (PAGASA) |
 | `GET /api/status` | When each feed last succeeded, and which are out of date |
 | `GET /api/hazards` | Which fixed hazard maps are loaded (kind, storm surge level, provinces, when), for the legend |
-| `GET /api/heatmap?model=..&at=..` | The heat map for one model (`ecmwf_ifs`, the default; `dwd_icon_global_native`; `ncep_gfs_global`) or `average` or `pagasa` (PAGASA's own forecast) (each value also has `spread`: models used, lowest, highest): the current hour's heat index and band for every town (its hottest point) and province (its hottest town), when the run was fetched, and whether it is out of date. `at` is an ISO time on a whole hour, 8 AM to 5 PM PH time, from today to today plus 5 days; anything else gives 400. Without `at` you get the default hour: this hour during the day, 8 AM before it, tomorrow 8 AM after 5 PM. The answer lists the `hours` available. An unknown model gives 400 |
+| `GET /api/heatmap?model=..&at=..` | The heat map for one model (`ecmwf_ifs`, the default; `dwd_icon_global_native`; `ncep_gfs_global`) or `average` or `pagasa` (PAGASA's own forecast). It gives the heat index and band at the chosen hour for every town (its hottest point) and province (its hottest town), when the run was fetched, and whether it is out of date. For `average`, each value also has `spread` (models used, lowest, highest). `at` is an ISO time on a whole hour, 8 AM to 5 PM PH time, from today to today plus 5 days; anything else gives 400. Without `at` you get the default hour: this hour during the day, 8 AM before it, tomorrow 8 AM after 5 PM. The answer lists the `hours` available. An unknown model gives 400 |
 | `GET /api/rainforecast` | The rain forecast field for the Typhoon view: the grid (1.5° apart over the PAR), and the next 7 days of ECMWF rain as 3-hour totals per grid point (null = no forecast), from the period that holds now; when it was fetched and whether that is out of date |
 | `GET /api/hazards/tiles/:layer/:z/:x/:y.mvt` | Hazard zones as vector tiles (`landslide` or `surge1`…`surge4`), storm surge from zoom 4, landslide from zoom 9; empty below that |
 

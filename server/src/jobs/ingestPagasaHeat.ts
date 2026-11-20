@@ -137,10 +137,11 @@ async function isSaved(issuedOn: string): Promise<boolean> {
  * (or a grid that differs from the first) skips the whole forecast: nothing is
  * saved and the last good one stays. Files are read one at a time, so only one grid is in memory.
  */
+// `fetcher?: Fetcher` = an optional parameter: it may be left out (then the real `fetch` is used).
 async function fetchAndSave(issuedOn: string, hours: PagasaHour[], fetcher?: Fetcher): Promise<void> {
   try {
     const values: PagasaHourValues[] = [];
-    // `let x: A | null` = x holds an A, or null until the first file is read.
+    // `A | null` is a union: the value is an A, or null until the first file is read.
     let first: GridInfo | null = null;
     let cells = new Map<number, number[]>();
     for (const hour of hours) {

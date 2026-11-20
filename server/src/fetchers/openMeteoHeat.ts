@@ -21,8 +21,8 @@ export const FORECAST_HOURS = 144;
 
 /**
  * Hours back from the current hour. 16 always reaches today's 8 AM
- * Philippine time (even at 11:59 PM, 16 hours back is 8 AM), so the bar's
- * earlier hours of today stay available.
+ * Philippine time (at 11 PM, 16 hours back starts at 7 AM, so 8 AM is always
+ * inside), so the bar's earlier hours of today stay available.
  */
 export const PAST_HOURS = 16;
 
