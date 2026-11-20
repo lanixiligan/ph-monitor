@@ -193,3 +193,17 @@ test('forecasts older than yesterday (PH date) are deleted', async () => {
   assert.equal((await rowsFor('2026-11-20')).rows, 0);
   assert.equal((await rowsFor('2026-11-21')).hours, 35);
 });
+
+test('the newest saved forecast is never deleted, however old', async () => {
+  await pool.query('DELETE FROM pagasa_heat');
+  await savePagasaIssuance('2026-11-21', madeUpHours(35), 1);
+  // 10 AM on 2026-11-24 PH time: 2026-11-21 is past the cutoff but is the newest saved.
+  const now = new Date('2026-11-24T02:00:00Z');
+  await prunePagasaIssuances(now);
+  assert.equal((await rowsFor('2026-11-21')).rows, 10);
+  // With an older forecast saved too, only the older one goes.
+  await savePagasaIssuance('2026-11-20', madeUpHours(30), 1);
+  await prunePagasaIssuances(now);
+  assert.equal((await rowsFor('2026-11-20')).rows, 0);
+  assert.equal((await rowsFor('2026-11-21')).rows, 10);
+});

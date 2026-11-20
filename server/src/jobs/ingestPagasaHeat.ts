@@ -112,10 +112,18 @@ export function isFullListing(issuedOn: string, hours: PagasaHour[]): boolean {
   return true;
 }
 
-/** Deletes forecasts issued before yesterday (PH date). */
+/**
+ * Deletes forecasts issued before yesterday (PH date), but never the newest saved one:
+ * if PAGASA stops publishing, it stays (shown as out of date) instead of being
+ * deleted and downloaded again on every try.
+ */
 export async function prunePagasaIssuances(now: Date): Promise<void> {
   const yesterday = phDate(new Date(now.getTime() - DAY_MS));
-  await pool.query('DELETE FROM pagasa_heat WHERE issued_on < $1::date', [yesterday]);
+  await pool.query(
+    `DELETE FROM pagasa_heat
+     WHERE issued_on < $1::date AND issued_on < (SELECT max(issued_on) FROM pagasa_heat)`,
+    [yesterday],
+  );
 }
 
 /** True when this forecast has rows saved. */
