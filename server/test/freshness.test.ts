@@ -12,7 +12,7 @@ const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60 * 
 function allFresh(): Map<string, Date> {
   const names = [
     'usgs', 'open-meteo', 'pagasa', 'gdacs', 'eonet', 'jma', 'jtwc', 'open-meteo-daily', 'open-meteo-flood', 'news',
-    'open-meteo-heat', 'open-meteo-rain',
+    'open-meteo-heat', 'open-meteo-rain', 'pagasa-heat',
   ];
   return new Map(names.map((name) => [name, minutesAgo(5)]));
 }
@@ -28,7 +28,7 @@ test('every feed is listed, and none is stale when all were just fetched', () =>
   const health = buildFeedHealth(allFresh(), now);
   assert.deepEqual(
     health.map((entry) => entry.id),
-    ['earthquakes', 'weather', 'officialAlerts', 'events', 'naturalEvents', 'storms', 'outlook', 'riverFlow', 'heatMap', 'rainForecast', 'news'],
+    ['earthquakes', 'weather', 'officialAlerts', 'events', 'naturalEvents', 'storms', 'outlook', 'riverFlow', 'heatMap', 'rainForecast', 'pagasaHeat', 'news'],
   );
   assert.ok(health.every((entry) => !entry.isStale));
 });
@@ -95,4 +95,12 @@ test('a weather run counts as fresh only when at least 90% of provinces were sav
   assert.equal(isFreshEnough(80, 88), true);
   assert.equal(isFreshEnough(79, 88), false);
   assert.equal(isFreshEnough(0, 0), false);
+});
+
+test('the PAGASA heat feed is stale after 30 hours', () => {
+  const lastOk = allFresh();
+  lastOk.set('pagasa-heat', minutesAgo(29 * 60));
+  assert.equal(feed(buildFeedHealth(lastOk, now), 'pagasaHeat').isStale, false);
+  lastOk.set('pagasa-heat', minutesAgo(31 * 60));
+  assert.equal(feed(buildFeedHealth(lastOk, now), 'pagasaHeat').isStale, true);
 });

@@ -162,7 +162,8 @@ export type FeedId =
   | 'riverFlow'
   | 'news'
   | 'heatMap'
-  | 'rainForecast';
+  | 'rainForecast'
+  | 'pagasaHeat';
 
 /** How one feed is doing. */
 export type FeedHealth = {

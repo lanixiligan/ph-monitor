@@ -3,11 +3,14 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { barDays, barTime, barTimes, defaultBarTime, isBarTime, phDate } from '@ph-monitor/shared';
+import { barDays, barTime, barTimes, defaultBarTime, isBarTime, phDate, phHour } from '@ph-monitor/shared';
 
 test('phDate: PH date, not UTC', () => {
   assert.equal(phDate(new Date('2026-11-20T15:59:00Z')), '2026-11-20');
   assert.equal(phDate(new Date('2026-11-20T16:00:00Z')), '2026-11-21');
+});
+test('phHour: PH hour of day, not UTC', () => {
+  assert.equal(phHour(new Date('2026-11-20T16:30:00Z')), 0); // PH 00:30 on 11/21
 });
 test('barDays: six days from PH today', () => {
   assert.deepEqual(barDays(new Date('2026-11-20T16:30:00Z')),

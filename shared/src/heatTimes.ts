@@ -54,6 +54,7 @@ export function isBarTime(at: Date, now: Date): boolean {
 export function defaultBarTime(now: Date): Date {
   const [today, tomorrow] = barDays(now);
   const hour = phHour(now);
+  // A trailing `!` tells TypeScript the value is not undefined (the list is never empty).
   if (hour < BAR_HOURS[0]!) return barTime(today!, BAR_HOURS[0]!);
   if (hour > BAR_HOURS[BAR_HOURS.length - 1]!) return barTime(tomorrow!, BAR_HOURS[0]!);
   // The start of the current hour (PH hours line up with UTC hours).

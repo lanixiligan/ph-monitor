@@ -66,6 +66,7 @@ export const fil: Strings = {
     news: 'mga balita', // REVIEW
     heatMap: 'mapa ng heat index', // REVIEW
     rainForecast: 'forecast ng ulan', // REVIEW
+    pagasaHeat: 'heat index ng PAGASA', // REVIEW
   },
 
   // The language switch. The draft note is shown only when Filipino is chosen.

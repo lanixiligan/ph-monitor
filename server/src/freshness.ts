@@ -41,6 +41,8 @@ export const FEED_RULES: FeedRule[] = [
   { id: 'heatMap', sources: ['open-meteo-heat'], staleAfterMinutes: HEAT_MAP_STALE_MINUTES },
   // The rain forecast runs every 12 hours too (right after the heat map).
   { id: 'rainForecast', sources: ['open-meteo-rain'], staleAfterMinutes: 25 * 60 },
+  // PAGASA's heat forecast is fetched every 3 hours but published about once a day.
+  { id: 'pagasaHeat', sources: ['pagasa-heat'], staleAfterMinutes: 30 * 60 },
   { id: 'news', sources: ['news'], staleAfterMinutes: 60 },
 ];
 

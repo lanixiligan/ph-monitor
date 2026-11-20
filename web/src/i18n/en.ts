@@ -78,6 +78,7 @@ export const en = {
     news: 'headlines',
     heatMap: 'heat map',
     rainForecast: 'rain forecast',
+    pagasaHeat: 'PAGASA heat index',
   },
 
   // The language switch. The draft note is shown only when Filipino is chosen.
