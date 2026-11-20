@@ -12,7 +12,13 @@ import { after, before, test } from 'node:test';
 // `import type` brings in a type only; it disappears when the code runs.
 import type { Fetcher } from '../../src/fetchers/retry.ts';
 import type { PagasaHourValues } from '../../src/jobs/ingestPagasaHeat.ts';
-import { ingestPagasaHeat, prunePagasaIssuances, savePagasaIssuance } from '../../src/jobs/ingestPagasaHeat.ts';
+import {
+  ingestPagasaHeat,
+  isFullListing,
+  prunePagasaIssuances,
+  savePagasaIssuance,
+} from '../../src/jobs/ingestPagasaHeat.ts';
+import { markTried, spacedEnough } from '../../src/jobs/jobTries.ts';
 
 const FIXTURES = path.join(import.meta.dirname, '..', 'fixtures', 'pagasa-heat');
 
@@ -44,9 +50,24 @@ async function hasFetchRun(): Promise<boolean> {
 /** A pretend fetcher that answers like PAGASA, with the saved answers. */
 type Pretend = { fetcher: Fetcher; presignedCalls: () => number };
 
-async function pretendPagasa(options: { failFile?: string } = {}): Promise<Pretend> {
+/** The saved file list cut down to its first day only (10 hours), as if caught mid-publish. */
+async function firstDayListing(): Promise<string> {
+  // `as { ... }` tells TypeScript the shape of the parsed JSON.
+  const full = JSON.parse(await readFile(path.join(FIXTURES, 'tif-files.json'), 'utf8')) as {
+    files: string[];
+    availability: Record<string, string[]>;
+  };
+  const first = Object.keys(full.availability).sort()[0]!;
+  return JSON.stringify({
+    ...full,
+    files: full.files.filter((file) => file.includes(`${first}_`)),
+    availability: { [first]: full.availability[first] },
+  });
+}
+
+async function pretendPagasa(options: { failFile?: string; tifFiles?: string } = {}): Promise<Pretend> {
   const currentDate = await readFile(path.join(FIXTURES, 'current-date.json'), 'utf8');
-  const tifFiles = await readFile(path.join(FIXTURES, 'tif-files.json'), 'utf8');
+  const tifFiles = options.tifFiles ?? (await readFile(path.join(FIXTURES, 'tif-files.json'), 'utf8'));
   const presigned = await readFile(path.join(FIXTURES, 'presigned.json'), 'utf8');
   const tif = await readFile(path.join(FIXTURES, '20261121_1200_cog.tif'));
   let presignedCalls = 0;
@@ -101,6 +122,26 @@ test('a forecast with a missing file saves nothing and the run fails', async () 
   assert.equal(await hasFetchRun(), false);
 });
 
+test('a file list with only the first day is not saved, so the run fails and is tried again', async () => {
+  const pretend = await pretendPagasa({ tifFiles: await firstDayListing() });
+  await assert.rejects(ingestPagasaHeat(pretend.fetcher, new Date('2026-11-21T02:00:00Z')));
+  assert.equal((await rowsFor('2026-11-21')).rows, 0);
+  assert.equal(await hasFetchRun(), false);
+  assert.equal(pretend.presignedCalls(), 0, 'nothing downloaded');
+});
+
+test('isFullListing: needs the issue date first and all ten hours on days 1 to 3', () => {
+  const day = (date: string) => ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00']
+    .map((time) => ({ date, time }));
+  const three = [...day('2026-11-21'), ...day('2026-11-22'), ...day('2026-11-23')];
+  assert.equal(isFullListing('2026-11-21', three), true);
+  // Days 4 and 5 may have any number of hours.
+  assert.equal(isFullListing('2026-11-21', [...three, { date: '2026-11-24', time: '08:00' }]), true);
+  assert.equal(isFullListing('2026-11-21', three.slice(0, 29)), false, 'day 3 short one hour');
+  assert.equal(isFullListing('2026-11-22', three), false, 'starts on another date');
+  assert.equal(isFullListing('2026-11-21', []), false);
+});
+
 test('a full run saves today (from yesterday) and the latest forecast, then downloads nothing more', async () => {
   const pretend = await pretendPagasa();
   // 9:30 PM on 2026-11-20 PH time; PAGASA's latest forecast is 2026-11-21.
@@ -124,6 +165,26 @@ test('a full run saves today (from yesterday) and the latest forecast, then down
   const again = await pretendPagasa();
   await ingestPagasaHeat(again.fetcher, now);
   assert.equal(again.presignedCalls(), 0);
+});
+
+test('when PAGASA is late (newest forecast older than today) the feed is not marked fresh', async () => {
+  const before = await pool.query<{ at: Date }>("SELECT last_ok_at AS at FROM fetch_runs WHERE source = 'pagasa-heat'");
+  const pretend = await pretendPagasa();
+  // 10 AM on 2026-11-22 PH time, two days after the full run; PAGASA still says 2026-11-21.
+  await ingestPagasaHeat(pretend.fetcher, new Date('2026-11-22T02:00:00Z'));
+  const after = await pool.query<{ at: Date }>("SELECT last_ok_at AS at FROM fetch_runs WHERE source = 'pagasa-heat'");
+  assert.equal(after.rows[0]?.at.getTime(), before.rows[0]?.at.getTime());
+  assert.equal(pretend.presignedCalls(), 0);
+});
+
+test('job_tries spacing: a PAGASA try waits 3 hours before the next', async () => {
+  await pool.query('DELETE FROM job_tries');
+  assert.equal(await spacedEnough('pagasaHeat', 180, new Date()), true, 'never tried');
+  await markTried('pagasaHeat');
+  assert.equal(await spacedEnough('pagasaHeat', 180, new Date()), false, 'just tried');
+  assert.equal(await spacedEnough('pagasaHeat', 180, new Date(Date.now() + 180 * 60 * 1000)), true, '3 hours later');
+  // The heat map's longer wait is unchanged by this.
+  assert.equal(await spacedEnough('heatMap', 690, new Date()), true);
 });
 
 test('forecasts older than yesterday (PH date) are deleted', async () => {

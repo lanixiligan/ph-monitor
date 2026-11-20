@@ -90,6 +90,28 @@ export async function savePagasaIssuance(
   return true;
 }
 
+/** The date `days` after 'YYYY-MM-DD', as 'YYYY-MM-DD'. */
+function addDays(date: string, days: number): string {
+  return new Date(new Date(`${date}T00:00:00Z`).getTime() + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/**
+ * True when a file list looks complete: it starts on the issue date, and the first
+ * three days each have all ten hours (8 AM to 5 PM). Days 4 and 5 are not checked
+ * (PAGASA may list fewer hours there). A list caught half-published fails, so the
+ * forecast is not saved short and is tried again later.
+ */
+export function isFullListing(issuedOn: string, hours: PagasaHour[]): boolean {
+  if (hours[0]?.date !== issuedOn) return false;
+  for (let day = 0; day < 3; day++) {
+    const date = addDays(issuedOn, day);
+    for (const time of DAY_ONE_TIMES) {
+      if (!hours.some((hour) => hour.date === date && hour.time === time)) return false;
+    }
+  }
+  return true;
+}
+
 /** Deletes forecasts issued before yesterday (PH date). */
 export async function prunePagasaIssuances(now: Date): Promise<void> {
   const yesterday = phDate(new Date(now.getTime() - DAY_MS));
@@ -173,12 +195,23 @@ export async function ingestPagasaHeat(fetcher?: Fetcher, now: Date = new Date()
     console.log(`PAGASA heat: forecast ${latest} already saved.`);
   } else {
     const listing = await fetchPagasaListing(fetcher);
-    if (listing.issuedOn === latest) await fetchAndSave(latest, listing.hours, fetcher);
-    else console.warn(`PAGASA heat: the file list is for ${listing.issuedOn}, not ${latest}; skipped.`);
+    if (listing.issuedOn !== latest) {
+      console.warn(`PAGASA heat: the file list is for ${listing.issuedOn}, not ${latest}; skipped.`);
+    } else if (!isFullListing(latest, listing.hours)) {
+      console.warn(`PAGASA heat: the file list for ${latest} is incomplete (${listing.hours.length} hours); skipped.`);
+    } else {
+      await fetchAndSave(latest, listing.hours, fetcher);
+    }
   }
 
   await prunePagasaIssuances(now);
 
   if (!(await isSaved(latest))) throw new Error(`PAGASA heat: newest forecast ${latest} could not be saved.`);
+  // A newest forecast older than today means PAGASA is late. Nothing failed here,
+  // so no error, but the feed is not marked fresh: after 30 hours the page says it is out of date.
+  if (latest < today) {
+    console.warn(`PAGASA heat: newest forecast ${latest} is older than today ${today}; not marked as fresh.`);
+    return;
+  }
   await recordFetchRun(latest);
 }

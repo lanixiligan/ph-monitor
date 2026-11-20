@@ -15,8 +15,8 @@
 import cron from 'node-cron';
 import { checkFeeds, checkStreams } from './checkSources.ts';
 import { computeScores } from './computeScores.ts';
-import { HEAT_MAP_EVERY_MINUTES, isDue, jobsOnTick, readDueJobs, SLOW_JOBS } from './due.ts';
-import { lastTried, markTried } from './jobTries.ts';
+import { HEAT_MAP_EVERY_MINUTES, jobsOnTick, PAGASA_HEAT_EVERY_MINUTES, readDueJobs, SLOW_JOBS } from './due.ts';
+import { markTried, spacedEnough } from './jobTries.ts';
 // `import type` brings in a type only; it disappears when the code runs.
 import type { JobName } from './due.ts';
 import { ingestAlerts } from './ingestAlerts.ts';
@@ -82,7 +82,10 @@ async function runExtras(wanted: JobName[]): Promise<void> {
     if (wanted.includes('feedCheck')) await runJob('feed check', checkFeeds);
     if (wanted.includes('outlook')) await runJob('outlook', ingestForecast);
     // About 1 call when nothing is new; about 72 for a new forecast (PAGASA, not Open-Meteo).
-    if (wanted.includes('pagasaHeat')) await runJob('PAGASA heat', ingestPagasaHeat);
+    // Spaced out like the heat map, so a half-published forecast is not downloaded every hour.
+    if (wanted.includes('pagasaHeat')) {
+      await runSpacedOut('pagasaHeat', 'PAGASA heat', PAGASA_HEAT_EVERY_MINUTES, ingestPagasaHeat);
+    }
   } finally {
     extrasRunning = false;
   }
@@ -99,23 +102,27 @@ async function runModelLane(wanted: JobName[]): Promise<void> {
   if (modelRunning) return;
   modelRunning = true;
   try {
-    if (wanted.includes('heatMap')) await runOnceIn12Hours('heatMap', 'heat map', ingestHeatMap);
-    if (wanted.includes('rainForecast')) await runOnceIn12Hours('rainForecast', 'rain forecast', ingestRainForecast);
+    if (wanted.includes('heatMap')) await runSpacedOut('heatMap', 'heat map', HEAT_MAP_EVERY_MINUTES, ingestHeatMap);
+    if (wanted.includes('rainForecast')) {
+      await runSpacedOut('rainForecast', 'rain forecast', HEAT_MAP_EVERY_MINUTES, ingestRainForecast);
+    }
   } finally {
     modelRunning = false;
   }
 }
 
 /**
- * A try is not repeated for 12 hours, even when it failed or the server
- * restarted mid-run (job_tries keeps the time): each try costs hundreds of
- * Open-Meteo calls, and trying every hour could use up the calls the score's
- * weather job needs. The last good run stays on the map meanwhile (out of date after 25 hours).
+ * A try is not repeated for `everyMinutes` (12 hours for the heat map and rain
+ * field, 3 for PAGASA heat), even when it failed or the server restarted mid-run
+ * (job_tries keeps the time). A heat map try costs hundreds of Open-Meteo calls,
+ * and trying every hour could use up the calls the score's weather job needs; a
+ * PAGASA try can cost about 72 PAGASA calls. The last good run stays meanwhile.
  */
-async function runOnceIn12Hours(job: JobName, label: string, run: () => Promise<void>): Promise<void> {
+async function runSpacedOut(job: JobName, label: string, everyMinutes: number, run: () => Promise<void>): Promise<void> {
   try {
-    if (!isDue(await lastTried(job), HEAT_MAP_EVERY_MINUTES, new Date())) {
-      console.warn(`Scheduler: ${label} tried less than 12 hours ago; waiting.`);
+    if (!(await spacedEnough(job, everyMinutes, new Date()))) {
+      // 690 minutes (11.5 h) reads as "12 hours", 180 as "3 hours".
+      console.warn(`Scheduler: ${label} tried less than ${Math.round(everyMinutes / 60)} hours ago; waiting.`);
       return;
     }
     await markTried(job);
