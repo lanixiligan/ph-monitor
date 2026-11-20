@@ -205,29 +205,28 @@ test('averageTowns: each town averages its value from every model, matched by ps
   ]);
 });
 
-test('combineRuns: the oldest run, stale if any source is, the hour shown if any source has it', () => {
+test('combineRuns: the oldest run, stale if any source is', () => {
   const now = new Date('2026-11-19T12:00:00Z');
   const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
-  const fresh = { fetchedAt: hoursAgo(1), hasHourShown: true };
-  const older = { fetchedAt: hoursAgo(5), hasHourShown: true };
-  assert.deepEqual(combineRuns([fresh, older, fresh], now), { fetchedAt: hoursAgo(5), hasHourShown: true, isStale: false });
+  const fresh = { fetchedAt: hoursAgo(1) };
+  const older = { fetchedAt: hoursAgo(5) };
+  assert.deepEqual(combineRuns([fresh, older, fresh], now), { fetchedAt: hoursAgo(5), isStale: false });
   // One source never ran: the others still show, but the view is marked stale.
-  const never = { fetchedAt: null, hasHourShown: false };
-  assert.deepEqual(combineRuns([fresh, never, fresh], now), { fetchedAt: hoursAgo(1), hasHourShown: true, isStale: true });
+  const never = { fetchedAt: null };
+  assert.deepEqual(combineRuns([fresh, never, fresh], now), { fetchedAt: hoursAgo(1), isStale: true });
   // One source is over 25 hours old.
-  assert.equal(combineRuns([fresh, { fetchedAt: hoursAgo(26), hasHourShown: true }], now).isStale, true);
+  assert.equal(combineRuns([fresh, { fetchedAt: hoursAgo(26) }], now).isStale, true);
   // Nothing at all.
-  assert.deepEqual(combineRuns([never, never], now), { fetchedAt: null, hasHourShown: false, isStale: true });
+  assert.deepEqual(combineRuns([never, never], now), { fetchedAt: null, isStale: true });
 });
 
-test('isHeatStale: no run, a run over 25 hours old, or no row for the hour shown', () => {
+test('isHeatStale: no run, or a run over 25 hours old (the hour shown no longer matters)', () => {
   const now = new Date('2026-11-19T12:00:00Z');
   const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
-  assert.equal(isHeatStale(hoursAgo(1), true, now), false);
-  assert.equal(isHeatStale(hoursAgo(24), true, now), false);
-  assert.equal(isHeatStale(null, false, now), true);
-  assert.equal(isHeatStale(hoursAgo(26), true, now), true);
-  assert.equal(isHeatStale(hoursAgo(1), false, now), true);
+  assert.equal(isHeatStale(null, now), true);
+  assert.equal(isHeatStale(hoursAgo(1), now), false);
+  assert.equal(isHeatStale(hoursAgo(24), now), false);
+  assert.equal(isHeatStale(hoursAgo(26), now), true);
 });
 
 test('cacheSeconds: 5 minutes, but never past the end of the hour', () => {
