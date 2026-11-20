@@ -34,6 +34,8 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 - **Shown from the original record:** PAGER alert, strongest estimated shaking (MMI) and the
   tsunami information flag, read and checked when the card asks (`quakeImpact.ts`). Shown only,
   not scored.
+- **Map:** the quakes inside the score's 72-hour window are drawn as markers sized by magnitude
+  (`GET /api/quakes`; a legend tick box, ticked by the Earthquake view).
 - **Licence:** public domain.
 - **Limits:** USGS is a global catalogue. Near the Philippines it reliably reports only about
   magnitude 4 and above, sometimes late. PHIVOLCS records many more.

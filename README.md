@@ -11,9 +11,10 @@ that exact spot, with the reasons and the raw events behind it.
 **Status: work in progress.** The map and score use earthquakes, weather and disaster event
 alert levels. The page also shows disaster events and storm tracks on the map, a 7-day outlook
 and links to official bulletins on the status card, disaster headlines, and live streams or
-latest videos from news channels. A "Heat map" button recolours the map by the heat index from
-a weather model you pick (ECMWF, DWD ICON or NOAA GFS) or their average; it is shown only and
-never changes the score. The page can be read in English or Filipino (the Filipino
+latest videos from news channels. A view switch in the top bar puts the page's focus on one
+hazard: Earthquake colours the towns by the earthquake part of their score and draws the
+quakes; Heat recolours the map by the heat index from a weather model you pick (ECMWF, DWD ICON
+or NOAA GFS) or their average. Views are shown only and never change the score. The page can be read in English or Filipino (the Filipino
 text is a draft under review). Expect rough edges, and scores that change as the formula is
 tuned.
 

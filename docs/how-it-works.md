@@ -84,13 +84,14 @@ The web page talks only to these addresses on our own server (port 3001).
 | Address | Returns |
 |---|---|
 | `GET /api/health` | Whether the server and database are up |
-| `GET /api/provinces` | Every province's shape and score, for the map |
+| `GET /api/provinces` | Every province's shape and score, for the map; also the highest earthquake part among its towns and that town (`quake_top_score`, `quake_top_place`) and `quake_unknown`, for the Earthquake view |
 | `GET /api/provinces/:psgc` | One province in detail |
 | `GET /api/point?lat=..&lon=..` | The clicked town's saved score (the card's main number) and the exact spot's score, worked out on demand |
 | `GET /api/places?q=..` | Place search: cities, municipalities and provinces by name, from our own database |
 | `GET /api/places/shapes` | Every town's shape (downloaded once, when the map first loads) |
-| `GET /api/places/scores` | Every town's latest score, for the map colours |
+| `GET /api/places/scores` | Every town's latest score, for the map colours, plus its earthquake part (`quakeScore`) and whether earthquakes were unknown for it (`quakeUnknown`), for the Earthquake view |
 | `GET /api/events` | Current disaster events, for map markers |
+| `GET /api/quakes` | The earthquakes inside the score's window (`WEIGHTS.quake.windowHours`, magnitude from `WEIGHTS.quake.minMagnitude`), newest first: position, magnitude, depth, time, USGS link; plus when USGS last answered and whether that is out of date. For the quake markers |
 | `GET /api/storms` | Active storms with their tracks |
 | `GET /api/news` | Latest headlines; optional `type` (a kind of disaster or `general`), `category`, `psgc`, `limit` (1–100, default 30) |
 | `GET /api/streams` | Stream slots the page may show |
@@ -110,10 +111,24 @@ The web page talks only to these addresses on our own server (port 3001).
   widest level, SSA 4) can be switched on in the legend; they show as cool-toned stripes from
   zoom 9, denser for a higher class. Storm surge also shows further out, as coloured zone
   outlines along the coast; landslide starts at zoom 9.
-- **Heat map:** a "Heat map" button at the top right of the map turns it on and opens a small
-  panel. The panel lists the sources (ECMWF, DWD ICON, NOAA GFS) with each model's grid size,
+- **View switch:** a row of buttons in the top bar: Overall (the default), Earthquake and Heat,
+  plus "More" with Tsunami greyed out ("No live feed for tsunamis yet"). Only one is pressed at
+  a time. Pressing a hazard ticks its legend layers, sets the headline filter to that kind
+  (with the panel title "Earthquake headlines", or "No … headlines in the last 14 days" and a
+  "Show all headlines" link), and moves that hazard's row and section to the top of the status
+  card. The legend shows that view's scale; the layers that don't belong to it fold under
+  "Other layers". Overall gives back the reader's own tick boxes. Picking a headline filter by
+  hand never changes the view. Display only: no view changes the score.
+- **Earthquake view:** towns are coloured by the earthquake part of their score (provinces, until
+  the towns load, by the highest earthquake part among their towns), in the score's own colours; the hover label says
+  "earthquake part". A town where earthquakes could not be checked keeps the "at least"
+  stripes. Quake markers (a legend tick box, off on Overall) are sized by magnitude; hovering
+  shows magnitude, depth and how long ago, a click adds the USGS link. Under the tick box the
+  legend says how many quakes are drawn, or that there are none, or that the feed is out of date.
+- **Heat map:** the Heat button in the view switch turns it on and opens a small
+  panel over the map. The panel lists the sources (ECMWF, DWD ICON, NOAA GFS) with each model's grid size,
   then "Average of all three"; the reader can switch at any time and the map recolours straight away. It also shows the
-  "Model estimate" tag, when the data was updated, and the band key. While it is on, the score
+  "Model estimate" tag and when the data was updated; the band key is in the legend. While it is on, the score
   colours are hidden (the legend says so), and the same town and province shapes are coloured
   by PAGASA's heat bands instead: a pale neutral fill below 27 °C, then caution, extreme
   caution, danger and extreme danger. A shape with no value is striped, never cool. The hover
@@ -123,7 +138,7 @@ The web page talks only to these addresses on our own server (port 3001).
   "average of 2 of 3 models" when one is missing. A town with no model at all is striped. The
   view is marked out of date if any of its sources is, and "Updated" gives the oldest source's
   run. The status
-  card still opens on a click. Closing the panel turns the heat map off and brings the score
+  card still opens on a click. Closing the panel (or pressing Overall) turns the heat map off and brings the score
   colours back. It never changes the score.
 - **Light or dark:** follows the device setting until the reader picks one in the top bar
   (remembered in the browser). The dark theme uses a dark basemap and a score scale where
