@@ -255,3 +255,7 @@ test('styles.css: dark heat colours get brighter with each band, like the dark s
   const values = heatColorsIn(":root[data-theme='dark']").map(luminance);
   for (let i = 1; i < values.length; i++) assert.ok(values[i]! > values[i - 1]!, HEAT_NAMES[i]);
 });
+
+test('heatSource: PAGASA gives its own name', () => {
+  assert.equal(heatSource('pagasa', {}, en), 'PAGASA iHeatMAP');
+});

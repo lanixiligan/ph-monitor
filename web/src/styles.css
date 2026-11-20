@@ -622,6 +622,10 @@ p {
    as the map on a small screen; fills the map column on a wide one. */
 .map-frame {
   position: relative;
+  /* Room kept at the map's bottom for the heat time bar (HeatTimeBar.tsx):
+     its 28px offset, its two rows (about 88px) and a gap. The bar and the
+     heat panel both read it, so they cannot overlap. */
+  --heat-bar-space: 124px;
 }
 
 /* ---------- Map note (MapNote.tsx) ----------
@@ -663,6 +667,11 @@ p {
      bottom edges, so a phone never scrolls sideways; the panel scrolls instead. */
   max-width: calc(100% - 26px);
   max-height: calc(100% - 137px);
+}
+
+/* The heat panel also stops above the time bar (the bar shows whenever Heat does). */
+.heat-control {
+  max-height: calc(100% - 121px - var(--heat-bar-space));
 }
 
 .heat-panel,
@@ -1727,4 +1736,33 @@ footer {
   .workspace {
     grid-template-columns: 380px minmax(0, 1fr) 400px;
   }
+}
+
+/* ---------- Heat time bar (HeatTimeBar.tsx), while Heat is pressed ----------
+   Along the bottom of the map, above its credit line. Two rows of the usual
+   .filter buttons; each row scrolls sideways on a narrow screen, never the page. */
+.heat-time {
+  position: absolute;
+  z-index: 1;
+  left: 10px;
+  right: 10px;
+  bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  font-size: 13px;
+}
+
+/* A greyed hour says "not allowed", not "busy" (.filter:disabled's cursor). */
+.heat-time .filter:disabled {
+  cursor: not-allowed;
+}
+
+.heat-time-row {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
 }

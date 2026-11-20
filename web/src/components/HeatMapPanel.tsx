@@ -56,6 +56,11 @@ function HeatStatus({ data, failed }: { data: HeatMapData | null; failed: boolea
             <WarnIcon /> {t.heat.noData}
           </p>
         )}
+        {data !== null && data.fetchedAt !== null && data.validAt === null && (
+          <p className="notice heat-warn">
+            <WarnIcon /> {t.heat.noHour}
+          </p>
+        )}
         {data !== null && data.fetchedAt !== null && data.isStale && (
           <p className="notice heat-warn">
             <WarnIcon /> {data.model === 'average' ? t.heat.staleSome : t.heat.stale}
@@ -84,7 +89,9 @@ export function HeatMapPanel({ chosen, data, failed, onChoose, onClose }: Props)
             {t.card.close}
           </button>
         </div>
-        <span className="tag">{t.tiers.model}</span>
+        <span className="tag">
+          {chosen === 'pagasa' ? fill(t.tiers.official, { agency: 'PAGASA' }) : t.tiers.model}
+        </span>
 
         <fieldset className="heat-sources">
           <legend>{t.heat.source}</legend>
@@ -104,6 +111,16 @@ export function HeatMapPanel({ chosen, data, failed, onChoose, onClose }: Props)
             <input
               type="radio"
               name="heat-model"
+              checked={chosen === 'pagasa'}
+              onChange={() => onChoose('pagasa')}
+            />
+            <span>{t.heat.models.pagasa}</span>
+            <span className="muted">{t.heat.pagasaNote}</span>
+          </label>
+          <label className="heat-source">
+            <input
+              type="radio"
+              name="heat-model"
               checked={chosen === 'average'}
               onChange={() => onChoose('average')}
             />
@@ -117,10 +134,15 @@ export function HeatMapPanel({ chosen, data, failed, onChoose, onClose }: Props)
         {/* The source's credit, next to its data (DWD and Open-Meteo ask for it here). The average credits every model. */}
         {creditsFor(chosen).map((model) => (
           <p key={model} className="heat-note muted">
-            {t.heat.credit[model]} <a href="https://open-meteo.com/">{t.heat.creditLink}</a>
+            {t.heat.credit[model]}{' '}
+            {model === 'pagasa' ? (
+              <a href="https://iheatmap.pagasa.dost.gov.ph/">{t.heat.models.pagasa}</a>
+            ) : (
+              <a href="https://open-meteo.com/">{t.heat.creditLink}</a>
+            )}
           </p>
         ))}
-        <p className="heat-note muted">{t.heat.spacing}</p>
+        <p className="heat-note muted">{chosen === 'pagasa' ? t.heat.pagasaSpacing : t.heat.spacing}</p>
         <p className="heat-note muted">{t.heat.cardDiffers}</p>
       </section>
     </div>

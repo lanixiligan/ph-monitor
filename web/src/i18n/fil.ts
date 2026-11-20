@@ -576,8 +576,8 @@ export const fil: Strings = {
       pagasa: 'Heat index forecast: DOST-PAGASA iHeatMAP (iheatmap.pagasa.dost.gov.ph), based on ECMWF data. Used without changes, for a non-commercial purpose.', // REVIEW: draft, same English text for now
     },
     creditLink: 'Open-Meteo', // REVIEW
-    townLabel: '{town}, {province}: {heat} · {model}', // REVIEW
-    provinceLabel: '{province}: {heat} · {model}', // REVIEW
+    townLabel: '{town}, {province}: {heat} · {model} · {time}', // REVIEW
+    provinceLabel: '{province}: {heat} · {model} · {time}', // REVIEW
     degrees: '{heat} °C', // REVIEW
     degreesBand: '{heat} °C, {band}', // REVIEW
     unknown: 'hindi alam', // REVIEW
@@ -585,6 +585,15 @@ export const fil: Strings = {
     averagePart: 'average ng {used} sa {total} modelo: {range}', // REVIEW
     averageNone: 'average ng {total} modelo', // REVIEW
     mapLabel: 'Mapa ng Pilipinas, may kulay ang bawat lungsod at bayan ayon sa heat index nito. Ginagalaw ito ng mga arrow key, at nagzo-zoom ang plus at minus. Para pumili ng lugar nang walang pointer, gamitin ang search box o ang listahan ng pinakamataas na score.', // REVIEW
+    timeBar: 'Oras ng forecast', // REVIEW
+    today: 'Ngayon', // REVIEW
+    hourAm: '{hour}AM', // REVIEW
+    hourPm: '{hour}PM', // REVIEW
+    dayShort: '{weekday} {month}/{day}', // REVIEW
+    weekdays: ['Lin', 'Lun', 'Mar', 'Miy', 'Huw', 'Biy', 'Sab'], // REVIEW
+    noHour: 'Walang halaga ang source na ito para sa oras na ito.', // REVIEW
+    pagasaNote: 'Mga 1 km na grid', // REVIEW
+    pagasaSpacing: 'Ipinapakita ng bawat bayan ang pinakamainit nitong 1 km na parisukat.', // REVIEW
   },
 
   // Small words used by the formatting helpers.
