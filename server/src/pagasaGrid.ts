@@ -60,6 +60,8 @@ export function cellAt(grid: GridInfo, lon: number, lat: number): number | null 
   const { x, y } = lonLatToMercator(lon, lat);
   const col = Math.floor((x - grid.originX) / grid.pixelSize);
   const row = Math.floor((grid.originY - y) / grid.pixelSize);
+  // NaN (a missing spot, or a latitude past the pole) is not a cell either.
+  if (!Number.isFinite(col) || !Number.isFinite(row)) return null;
   if (col < 0 || col >= grid.width || row < 0 || row >= grid.height) return null;
   return row * grid.width + col;
 }

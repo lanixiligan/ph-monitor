@@ -62,3 +62,18 @@ test('sameGrid compares size, origin and pixel size', () => {
   assert.ok(!sameGrid(a, { ...a, originX: 100.5 }));
   assert.ok(!sameGrid(a, { ...a, width: 3 }));
 });
+
+test('cellAt gives null for a spot that is not a real number', () => {
+  const grid = { width: 2, height: 2, originX: 0, originY: 300000, pixelSize: 150000 };
+  assert.equal(cellAt(grid, NaN, 14), null);
+  assert.equal(cellAt(grid, 1, 95), null); // a latitude past the pole
+});
+
+test('cellAt gives null exactly on the right edge', () => {
+  // Pick the pixel size so the right edge (originX + width * pixelSize) is exactly 2 E.
+  const edgeX = lonLatToMercator(2, 0).x;
+  const grid = { width: 2, height: 2, originX: 0, originY: edgeX, pixelSize: edgeX / 2 };
+  assert.equal(grid.originX + grid.width * grid.pixelSize, edgeX);
+  assert.equal(cellAt(grid, 2, 0.5), null);
+  assert.equal(cellAt(grid, 1.99, 0.5), 1 * grid.width + 1);
+});
