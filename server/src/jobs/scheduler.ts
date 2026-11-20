@@ -4,8 +4,9 @@
 //   earthquakes every 15 minutes, weather every 2 hours, then the scores.
 // Extras cycle (shown on the page; only GDACS alert levels reach the score), every 15 minutes:
 //   official alerts and news every 15 minutes; events, storms and the live stream check every 30;
-//   feed link check every hour; the 7-day outlook every 6 hours; the heat map and then the
-//   rain forecast field every 12 hours (display only: they never change the score).
+//   feed link check every hour; the 7-day outlook every 6 hours; PAGASA's heat forecast every
+//   3 hours; the heat map and then the rain forecast field every 12 hours (display only: they
+//   never change the score).
 // How often each job runs is set in due.ts (JOB_RULES).
 //
 // At start, only the jobs that are due run (see due.ts), so restarting the
@@ -24,6 +25,7 @@ import { ingestEvents } from './ingestEvents.ts';
 import { ingestForecast } from './ingestForecast.ts';
 import { ingestHeatMap } from './ingestHeatMap.ts';
 import { ingestNews } from './ingestNews.ts';
+import { ingestPagasaHeat } from './ingestPagasaHeat.ts';
 import { ingestRainForecast } from './ingestRainForecast.ts';
 import { ingestStorms } from './ingestStorms.ts';
 import { ingestWeather } from './ingestWeather.ts';
@@ -79,6 +81,8 @@ async function runExtras(wanted: JobName[]): Promise<void> {
     if (wanted.includes('streamCheck')) await runJob('stream check', checkStreams);
     if (wanted.includes('feedCheck')) await runJob('feed check', checkFeeds);
     if (wanted.includes('outlook')) await runJob('outlook', ingestForecast);
+    // About 1 call when nothing is new; about 72 for a new forecast (PAGASA, not Open-Meteo).
+    if (wanted.includes('pagasaHeat')) await runJob('PAGASA heat', ingestPagasaHeat);
   } finally {
     extrasRunning = false;
   }
@@ -159,6 +163,6 @@ export function startScheduler(): void {
   void runAtStart();
   console.log(
     'Scheduler: started (earthquakes, official alerts and news every 15 min; weather every 2 hours; events, storms and streams every 30 min; ' +
-      'feed check hourly; outlook every 6 hours; heat map and rain forecast every 12 hours).',
+      'feed check hourly; PAGASA heat every 3 hours; outlook every 6 hours; heat map and rain forecast every 12 hours).',
   );
 }

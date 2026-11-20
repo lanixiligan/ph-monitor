@@ -22,6 +22,7 @@
     "ingest:alerts": "tsx scripts/run-job.ts alerts",
     "ingest:heatmap": "tsx scripts/run-job.ts heatmap",
     "ingest:rainforecast": "tsx scripts/run-job.ts rainforecast",
+    "ingest:pagasaheat": "tsx scripts/run-job.ts pagasaheat",
     "weather-points": "tsx scripts/pick-weather-points.ts",
     "check:sources": "tsx scripts/check-sources.ts",
     "measure:news": "tsx scripts/measure-news.ts",
