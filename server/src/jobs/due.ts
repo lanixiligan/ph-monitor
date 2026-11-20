@@ -30,6 +30,9 @@ export type JobName =
  */
 export const HEAT_MAP_EVERY_MINUTES = 12 * 60 - 30;
 
+/** PAGASA's heat forecast is checked every 3 hours; a failed try also waits 3 hours. */
+export const PAGASA_HEAT_EVERY_MINUTES = 180;
+
 type JobRule = {
   job: JobName;
   everyMinutes: number;
@@ -64,7 +67,7 @@ export const JOB_RULES: JobRule[] = [
   // Same rhythm as the heat map (and run right after it: see scheduler.ts).
   { job: 'rainForecast', everyMinutes: HEAT_MAP_EVERY_MINUTES, sources: ['open-meteo-rain'], needs: 'all' },
   // PAGASA's own heat index forecast: a small download, checked every 3 hours.
-  { job: 'pagasaHeat', everyMinutes: 180, sources: ['pagasa-heat'], needs: 'all' },
+  { job: 'pagasaHeat', everyMinutes: PAGASA_HEAT_EVERY_MINUTES, sources: ['pagasa-heat'], needs: 'all' },
 ];
 
 const MINUTE_MS = 60 * 1000;

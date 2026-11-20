@@ -9,6 +9,7 @@
 import { z } from 'zod';
 import { pool } from '../src/db.ts';
 import { getBoundaryFile } from './boundaryFiles.ts';
+import { forgetPagasaGrid } from '../src/pagasaCells.ts';
 
 // What one city or municipality must look like in the file.
 const featureSchema = z.object({
@@ -79,6 +80,9 @@ try {
       saved += 1;
     }
   }
+
+  // The towns may have changed: make the PAGASA heat job rebuild its squares per town.
+  await forgetPagasaGrid();
 
   const total = await pool.query<{ count: number }>('SELECT count(*) FROM places');
   console.log(`Saved ${saved} cities and municipalities, skipped ${skipped}.`);
