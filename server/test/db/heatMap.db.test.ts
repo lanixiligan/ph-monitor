@@ -14,6 +14,7 @@ import express from 'express';
 import type { HeatMapData, HeatModelId } from '@ph-monitor/shared';
 import type { HeatLocation } from '../../src/fetchers/openMeteoHeat.ts';
 import { heatIndexC } from '../../src/heatIndex.ts';
+import { barTime, defaultBarTime } from '@ph-monitor/shared';
 import { getHeatMap, hourShown } from '../../src/heatMap.ts';
 import { saveHeatRun } from '../../src/jobs/ingestHeatMap.ts';
 import type { WeatherPoint } from '../../src/jobs/ingestWeather.ts';
@@ -266,7 +267,7 @@ test('getHeatMap: a town takes its hottest point, and a province its hottest tow
   const ranAt = hoursAgo(1);
   await markRun('ecmwf_ifs', ranAt);
 
-  const heat = await getHeatMap('ecmwf_ifs', now);
+  const heat = await getHeatMap('ecmwf_ifs', hourShown(now), now);
   assert.deepEqual(valueOf(heat.places, ALPHA_CITY), { psgc: ALPHA_CITY, heatIndexC: 43, band: 'danger' });
   assert.deepEqual(valueOf(heat.provinces, ALPHA), { psgc: ALPHA, heatIndexC: 43, band: 'danger' });
   assert.equal(heat.validAt, hour.toISOString());
@@ -284,7 +285,7 @@ test('getHeatMap: a point with no row this hour makes a town null', async () => 
   await addHeat('ecmwf_ifs', points[2]?.id, inHours(hour, 1), 40);
   await markRun('ecmwf_ifs', hoursAgo(1));
 
-  const heat = await getHeatMap('ecmwf_ifs', now);
+  const heat = await getHeatMap('ecmwf_ifs', hourShown(now), now);
   assert.deepEqual(valueOf(heat.places, BRAVO_TOWN), { psgc: BRAVO_TOWN, heatIndexC: null, band: null });
   assert.deepEqual(valueOf(heat.provinces, BRAVO), { psgc: BRAVO, heatIndexC: null, band: null });
   // A province with no towns at all is listed too, as unknown.
@@ -295,7 +296,7 @@ test('getHeatMap: a point with no row this hour makes a town null', async () => 
 
 test('getHeatMap: empty table (before the first heat run): no time, stale, every value null', async () => {
   await clearHeat();
-  const heat = await getHeatMap('ecmwf_ifs');
+  const heat = await getHeatMap('ecmwf_ifs', thisHour());
   assert.equal(heat.model, 'ecmwf_ifs');
   assert.equal(heat.fetchedAt, null);
   assert.equal(heat.isStale, true);
@@ -316,7 +317,7 @@ test('getHeatMap: old forecast (the job stopped over 48 hours ago): no hour show
   }
   await markRun('ecmwf_ifs', hoursAgo(50));
 
-  const heat = await getHeatMap('ecmwf_ifs', now);
+  const heat = await getHeatMap('ecmwf_ifs', hourShown(now), now);
   assert.equal(heat.validAt, null);
   assert.equal(heat.isStale, true);
   assert.ok(heat.fetchedAt !== null);
@@ -329,7 +330,7 @@ test('getHeatMap: a run over 25 hours old still shows its values, marked stale',
   await addHeat('ecmwf_ifs', points[0]?.id, hourShown(now), 36);
   await markRun('ecmwf_ifs', hoursAgo(26));
 
-  const heat = await getHeatMap('ecmwf_ifs', now);
+  const heat = await getHeatMap('ecmwf_ifs', hourShown(now), now);
   assert.equal(heat.isStale, true);
   assert.equal(valueOf(heat.places, ALPHA_CITY).heatIndexC, 36);
 });
@@ -339,12 +340,12 @@ test('getHeatMap: a model that only sent nulls answers fetchedAt null, not an er
   const iconNulls = () => forecast({ ecmwf_ifs: 33, dwd_icon_global_native: null, ncep_gfs_global: 33 });
   await saveHeatRun(points, [iconNulls(), iconNulls(), iconNulls()], ALL_MODELS);
 
-  const icon = await getHeatMap('dwd_icon_global_native');
+  const icon = await getHeatMap('dwd_icon_global_native', thisHour());
   assert.equal(icon.fetchedAt, null);
   assert.equal(icon.isStale, true);
   assert.ok(icon.places.every((entry) => entry.heatIndexC === null));
 
-  const ecmwf = await getHeatMap('ecmwf_ifs');
+  const ecmwf = await getHeatMap('ecmwf_ifs', thisHour());
   assert.ok(ecmwf.fetchedAt !== null);
   assert.equal(ecmwf.isStale, false);
   assert.equal(valueOf(ecmwf.places, ALPHA_CITY).heatIndexC, heatIndexC(33, 60));
@@ -372,7 +373,7 @@ test('getHeatMap average: each town averages its hottest point from every model;
   const oldest = hoursAgo(3);
   await pool.query(`UPDATE heat_runs SET last_ok_at = $1 WHERE model = 'ecmwf_ifs'`, [oldest]);
 
-  const heat = await getHeatMap('average', now);
+  const heat = await getHeatMap('average', hourShown(now), now);
   assert.equal(heat.model, 'average');
   assert.equal(heat.isStale, false);
   assert.equal(heat.validAt, hour.toISOString());
@@ -408,7 +409,7 @@ test('getHeatMap average: a model with no run marks the view stale, the others s
   await markRun('ecmwf_ifs', hoursAgo(1));
   await markRun('ncep_gfs_global', hoursAgo(1));
 
-  const heat = await getHeatMap('average', now);
+  const heat = await getHeatMap('average', hourShown(now), now);
   assert.equal(heat.isStale, true);
   assert.deepEqual(valueOf(heat.places, ALPHA_CITY).spread, { used: 2, lowC: 36, highC: 38 });
   // No model has a value for Bravo Town: unknown, and no spread.
@@ -439,6 +440,137 @@ test('GET /api/heatmap with no model gives the default model (ECMWF), cached for
 });
 
 // ---------- When the heat job last started (job_tries) ----------
+
+// ---------- Any bar hour, and the PAGASA source (own block) ----------
+
+/** Adds one PAGASA value for one town (`issuedOn` is 'YYYY-MM-DD'). */
+async function addPagasa(issuedOn: string, psgc: number, validAt: Date, heat: number | null): Promise<void> {
+  await pool.query('INSERT INTO pagasa_heat (issued_on, psgc, valid_at, heat_index_c) VALUES ($1, $2, $3, $4)', [
+    issuedOn,
+    psgc,
+    validAt,
+    heat,
+  ]);
+}
+
+/** Marks PAGASA's last good run (a heat_runs row, like a model's). */
+async function markPagasaRun(lastOkAt: Date): Promise<void> {
+  await pool.query(
+    `INSERT INTO heat_runs (model, last_ok_at, last_saved, last_total) VALUES ('pagasa', $1, 3, 3)
+     ON CONFLICT (model) DO UPDATE SET last_ok_at = EXCLUDED.last_ok_at`,
+    [lastOkAt],
+  );
+}
+
+/** Empties both heat tables and the runs. */
+async function clearAllHeat(): Promise<void> {
+  await clearHeat();
+  await pool.query('DELETE FROM pagasa_heat');
+}
+
+test('getHeatMap: a model answers for the chosen bar hour and lists the bar hours it has', async () => {
+  await clearAllHeat();
+  const now = new Date('2026-11-20T02:00:00Z'); // 10 AM in the Philippines
+  const eightAm = barTime('2026-11-20', 8);
+  const nineAm = barTime('2026-11-20', 9);
+  await addHeat('ecmwf_ifs', points[0]?.id, eightAm, 35);
+  await addHeat('ecmwf_ifs', points[0]?.id, nineAm, 41);
+  // 6 PM is not on the bar, so it is not listed.
+  await addHeat('ecmwf_ifs', points[0]?.id, barTime('2026-11-20', 18), 44);
+  await markRun('ecmwf_ifs', inHours(now, -1));
+
+  const heat = await getHeatMap('ecmwf_ifs', nineAm, now);
+  assert.equal(valueOf(heat.places, ALPHA_CITY).heatIndexC, 41);
+  assert.equal(heat.validAt, nineAm.toISOString());
+  assert.deepEqual(heat.hours, [eightAm.toISOString(), nineAm.toISOString()]);
+});
+
+test('getHeatMap: an hour with no rows is validAt null and every town null, not stale if the run is fresh', async () => {
+  await clearAllHeat();
+  const now = new Date('2026-11-20T02:00:00Z');
+  await addHeat('ecmwf_ifs', points[0]?.id, barTime('2026-11-20', 8), 35);
+  await markRun('ecmwf_ifs', inHours(now, -1));
+
+  const heat = await getHeatMap('ecmwf_ifs', barTime('2026-11-20', 12), now);
+  assert.equal(heat.validAt, null);
+  assert.equal(valueOf(heat.places, ALPHA_CITY).heatIndexC, null);
+  assert.equal(heat.isStale, false);
+});
+
+test('getHeatMap average: hours are the union over the models', async () => {
+  await clearAllHeat();
+  const now = new Date('2026-11-20T02:00:00Z');
+  const eightAm = barTime('2026-11-20', 8);
+  const nineAm = barTime('2026-11-20', 9);
+  await addHeat('ecmwf_ifs', points[0]?.id, eightAm, 35);
+  await addHeat('ncep_gfs_global', points[0]?.id, nineAm, 37);
+  const heat = await getHeatMap('average', nineAm, now);
+  assert.deepEqual(heat.hours, [eightAm.toISOString(), nineAm.toISOString()]);
+});
+
+test('getHeatMap pagasa: each town takes the newest issuance that has its hour', async () => {
+  await clearAllHeat();
+  const now = new Date('2026-11-20T02:00:00Z');
+  const tomorrowNoon = barTime('2026-11-21', 12);
+  const todayNoon = barTime('2026-11-20', 12);
+  await addPagasa('2026-11-20', ALPHA_CITY, tomorrowNoon, 33);
+  await addPagasa('2026-11-21', ALPHA_CITY, tomorrowNoon, 36);
+  await addPagasa('2026-11-20', ALPHA_CITY, todayNoon, 33);
+  await markPagasaRun(inHours(now, -1));
+
+  const tomorrow = await getHeatMap('pagasa', tomorrowNoon, now);
+  assert.equal(tomorrow.model, 'pagasa');
+  assert.equal(valueOf(tomorrow.places, ALPHA_CITY).heatIndexC, 36);
+  assert.equal(valueOf(tomorrow.provinces, ALPHA).heatIndexC, 36);
+  assert.equal(tomorrow.validAt, tomorrowNoon.toISOString());
+  assert.deepEqual(tomorrow.hours, [todayNoon.toISOString(), tomorrowNoon.toISOString()]);
+  assert.equal(tomorrow.fetchedAt, inHours(now, -1).toISOString());
+  assert.equal(tomorrow.isStale, false);
+  // Bravo Town has no PAGASA row: unknown.
+  assert.equal(valueOf(tomorrow.places, BRAVO_TOWN).heatIndexC, null);
+
+  const today = await getHeatMap('pagasa', todayNoon, now);
+  assert.equal(valueOf(today.places, ALPHA_CITY).heatIndexC, 33);
+});
+
+test('getHeatMap pagasa: stale when the newest issuance is before today, or there is no run', async () => {
+  await clearAllHeat();
+  const now = new Date('2026-11-20T02:00:00Z');
+  const noon = barTime('2026-11-20', 12);
+  await addPagasa('2026-11-19', ALPHA_CITY, noon, 33);
+  await markPagasaRun(inHours(now, -1));
+  assert.equal((await getHeatMap('pagasa', noon, now)).isStale, true);
+
+  await addPagasa('2026-11-20', ALPHA_CITY, noon, 34);
+  assert.equal((await getHeatMap('pagasa', noon, now)).isStale, false);
+
+  await pool.query(`DELETE FROM heat_runs WHERE model = 'pagasa'`);
+  const never = await getHeatMap('pagasa', noon, now);
+  assert.equal(never.isStale, true);
+  assert.equal(never.fetchedAt, null);
+});
+
+test('GET /api/heatmap: a time off the bar or not a date gives 400, model=pagasa gives 200', async () => {
+  // 10:00 UTC is 6 PM in the Philippines: never a bar hour.
+  const late = await fetch(`${baseUrl}/api/heatmap?at=2026-11-20T10:00:00Z`);
+  assert.equal(late.status, 400);
+  assert.deepEqual(await late.json(), { error: 'bad time' });
+  assert.equal((await fetch(`${baseUrl}/api/heatmap?at=nonsense`)).status, 400);
+  const pagasa = await fetch(`${baseUrl}/api/heatmap?model=pagasa`);
+  assert.equal(pagasa.status, 200);
+  assert.equal(((await pagasa.json()) as HeatMapData).model, 'pagasa');
+});
+
+test('GET /api/heatmap with no time answers for the default bar hour', async () => {
+  await clearAllHeat();
+  const at = defaultBarTime(new Date());
+  await addHeat('ecmwf_ifs', points[0]?.id, at, 36);
+  await markRun('ecmwf_ifs', new Date());
+  const heat = (await (await fetch(`${baseUrl}/api/heatmap`)).json()) as HeatMapData;
+  assert.equal(heat.validAt, at.toISOString());
+  assert.equal(valueOf(heat.places, ALPHA_CITY).heatIndexC, 36);
+});
+// (This block sits before the weather-points test, which empties the points.)
 
 test('job_tries: a heat try is remembered in the database', async () => {
   await pool.query('DELETE FROM job_tries');
