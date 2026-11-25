@@ -5,14 +5,15 @@
 // Extras cycle (shown on the page; only GDACS alert levels reach the score), every 15 minutes:
 //   official alerts and news every 15 minutes; events, storms and the live stream check every 30;
 //   feed link check every hour; the 7-day outlook every 6 hours; PAGASA's heat forecast every
-//   3 hours; the heat map and then the rain forecast field every 12 hours (display only: they
-//   never change the score).
+//   3 hours; the heat map and then the rain forecast field every 12 hours; the radio station
+//   list once a day and its stream check every 6 hours (display only: they never change the score).
 // How often each job runs is set in due.ts (JOB_RULES).
 //
 // At start, only the jobs that are due run (see due.ts), so restarting the
 // server again and again does not hammer the feeds.
 
 import cron from 'node-cron';
+import { checkRadio } from './checkRadio.ts';
 import { checkFeeds, checkStreams } from './checkSources.ts';
 import { computeScores } from './computeScores.ts';
 import { HEAT_MAP_EVERY_MINUTES, jobsOnTick, PAGASA_HEAT_EVERY_MINUTES, readDueJobs, SLOW_JOBS } from './due.ts';
@@ -26,6 +27,7 @@ import { ingestForecast } from './ingestForecast.ts';
 import { ingestHeatMap } from './ingestHeatMap.ts';
 import { ingestNews } from './ingestNews.ts';
 import { ingestPagasaHeat } from './ingestPagasaHeat.ts';
+import { ingestRadio } from './ingestRadio.ts';
 import { ingestRainForecast } from './ingestRainForecast.ts';
 import { ingestStorms } from './ingestStorms.ts';
 import { ingestWeather } from './ingestWeather.ts';
@@ -37,6 +39,7 @@ const EVERY_15_MINUTES = '*/15 * * * *';
 let coreRunning = false;
 let extrasRunning = false;
 let modelRunning = false;
+let radioCheckRunning = false;
 
 /** Runs one job; a failure is logged but doesn't stop the jobs after it. */
 async function runJob(name: string, job: () => Promise<void>): Promise<void> {
@@ -81,6 +84,7 @@ async function runExtras(wanted: JobName[]): Promise<void> {
     if (wanted.includes('streamCheck')) await runJob('stream check', checkStreams);
     if (wanted.includes('feedCheck')) await runJob('feed check', checkFeeds);
     if (wanted.includes('outlook')) await runJob('outlook', ingestForecast);
+    if (wanted.includes('radioList')) await runJob('radio list', ingestRadio);
     // About 1 call when nothing is new; about 72 for a new forecast (PAGASA, not Open-Meteo).
     // Spaced out like the heat map, so a half-published forecast is not downloaded every hour.
     if (wanted.includes('pagasaHeat')) {
@@ -92,6 +96,19 @@ async function runExtras(wanted: JobName[]): Promise<void> {
   // Started after the outlook, so their Open-Meteo calls don't pile up, but not
   // waited for: their minutes must not make the next tick skip alerts and news.
   if (wanted.includes('heatMap') || wanted.includes('rainForecast')) void runModelLane(wanted);
+  // The radio check takes minutes (hundreds of streams), so it has a lane of its own too.
+  if (wanted.includes('radioCheck')) void runRadioCheck();
+}
+
+/** The radio stream check, never two at once. Display only: it never changes the score. */
+async function runRadioCheck(): Promise<void> {
+  if (radioCheckRunning) return;
+  radioCheckRunning = true;
+  try {
+    await runJob('radio check', checkRadio);
+  } finally {
+    radioCheckRunning = false;
+  }
 }
 
 /**
@@ -170,6 +187,6 @@ export function startScheduler(): void {
   void runAtStart();
   console.log(
     'Scheduler: started (earthquakes, official alerts and news every 15 min; weather every 2 hours; events, storms and streams every 30 min; ' +
-      'feed check hourly; PAGASA heat every 3 hours; outlook every 6 hours; heat map and rain forecast every 12 hours).',
+      'feed check hourly; PAGASA heat every 3 hours; outlook every 6 hours; heat map and rain forecast every 12 hours; radio list daily, radio check every 6 hours).',
   );
 }

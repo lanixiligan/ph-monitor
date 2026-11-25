@@ -139,6 +139,30 @@ export const STREAM_SLOTS: StreamSlotConfig[] = [
   { id: 'stream-bombo', outlet: 'Bombo Radyo Philippines', category: 'regional', links: [{ channelId: 'UCVVw9u0pZ3nnWxx7WyE8YkQ' }] },
 ];
 
+/** A radio station in the panel's "News & Emergency" group, shown first. */
+export type RadioNewsStation = {
+  /** Radio Browser's stationuuid (the station list comes from there). */
+  stationId: string;
+  /** The name shown on the page (Radio Browser's own names are uneven). */
+  label: string;
+};
+
+// Radio streams play straight from the station's server; they are never re-streamed.
+// Each id was found on Radio Browser on 2026-11-25; DZRH, RP1 and DWIZ were also
+// opened and sent audio. Not on Radio Browser: DZBB Manila, Radyo Veritas.
+// DZMM and RMN Cebu come through third-party relay servers, not the stations' own.
+export const RADIO_NEWS: RadioNewsStation[] = [
+  { stationId: '2940f5dc-195e-4547-ab7a-f33ae2f70f41', label: 'DZRH' },
+  { stationId: 'bc0f2ac2-5186-4116-affc-4b6d4a969f5a', label: 'Radyo Pilipinas 1 (RP1 News)' },
+  { stationId: '8d904cc7-0de7-4931-9211-f5f5d161d490', label: 'Radyo Pilipinas Davao' },
+  { stationId: '4363d380-c4c0-435c-b62e-da4ecec75c3e', label: 'DWIZ 882' },
+  { stationId: 'caf06089-a877-4ac4-8e59-693037bfd50a', label: 'DZAS 702' },
+  { stationId: '206c295b-1221-4208-b1ac-0f31942781f6', label: 'DZRJ-AM' },
+  { stationId: 'e3e06b8c-f725-4d3d-8e8f-3fde8704adff', label: 'DZMM Radyo Patrol 630' },
+  { stationId: '27993f09-c8ba-4369-9e42-2e4729e8cd45', label: 'DYHP RMN Cebu 612' },
+  { stationId: '8ebd45b1-24e4-41a7-830c-8c7917188a48', label: 'Brigada News FM Mega Manila' },
+];
+
 /** Official bulletin pages, shown as plain links on the status card. */
 export const BULLETIN_LINKS: BulletinLink[] = [
   { id: 'pagasa-cyclone', agency: 'PAGASA', label: 'Tropical cyclone bulletin', url: 'https://www.pagasa.dost.gov.ph/tropical-cyclone/severe-weather-bulletin' },

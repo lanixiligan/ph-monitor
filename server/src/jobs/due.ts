@@ -18,7 +18,9 @@ export type JobName =
   | 'outlook'
   | 'heatMap'
   | 'rainForecast'
-  | 'pagasaHeat';
+  | 'pagasaHeat'
+  | 'radioList'
+  | 'radioCheck';
 
 /**
  * The heat map runs every 12 hours. The rule says 11.5: a run is stamped when it
@@ -68,6 +70,10 @@ export const JOB_RULES: JobRule[] = [
   { job: 'rainForecast', everyMinutes: HEAT_MAP_EVERY_MINUTES, sources: ['open-meteo-rain'], needs: 'all' },
   // PAGASA's own heat index forecast: a small download, checked every 3 hours.
   { job: 'pagasaHeat', everyMinutes: PAGASA_HEAT_EVERY_MINUTES, sources: ['pagasa-heat'], needs: 'all' },
+  // The radio station list (Radio Browser): one download a day. A failed one is tried again hourly.
+  { job: 'radioList', everyMinutes: 24 * 60, sources: ['radio-browser'], needs: 'all' },
+  // Our own check of every radio stream: every 6 hours, about 10 minutes a run.
+  { job: 'radioCheck', everyMinutes: 6 * 60, sources: ['radio-check'], needs: 'all' },
 ];
 
 const MINUTE_MS = 60 * 1000;

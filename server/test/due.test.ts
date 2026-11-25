@@ -13,7 +13,7 @@ function allRecent(): Map<string, Date> {
   const names = [
     'usgs', 'open-meteo', 'pagasa', 'news', 'gdacs', 'eonet', 'jma', 'jtwc',
     'open-meteo-daily', 'check:feed', 'check:stream', 'open-meteo-heat', 'open-meteo-rain',
-    'pagasa-heat',
+    'pagasa-heat', 'radio-browser', 'radio-check',
   ];
   return new Map(names.map((name) => [name, minutesAgo(5)]));
 }
@@ -38,7 +38,7 @@ test('dueJobs: nothing is due right after everything ran (a restart fetches noth
 
 test('dueJobs: with an empty database every job is due', () => {
   assert.deepEqual(dueJobs(new Map(), now), [
-    'earthquakes', 'weather', 'alerts', 'news', 'events', 'storms', 'streamCheck', 'feedCheck', 'outlook', 'heatMap', 'rainForecast', 'pagasaHeat',
+    'earthquakes', 'weather', 'alerts', 'news', 'events', 'storms', 'streamCheck', 'feedCheck', 'outlook', 'heatMap', 'rainForecast', 'pagasaHeat', 'radioList', 'radioCheck',
   ]);
 });
 
@@ -72,12 +72,12 @@ test('jobsOnTick: the clock decides which jobs a tick wants', () => {
   assert.deepEqual(jobsOnTick(15), ['earthquakes', 'alerts', 'news']);
   assert.deepEqual(jobsOnTick(30), ['earthquakes', 'alerts', 'news', 'events', 'storms', 'streamCheck']);
   assert.deepEqual(jobsOnTick(0), [
-    'earthquakes', 'weather', 'alerts', 'news', 'events', 'storms', 'streamCheck', 'feedCheck', 'outlook', 'heatMap', 'rainForecast', 'pagasaHeat',
+    'earthquakes', 'weather', 'alerts', 'news', 'events', 'storms', 'streamCheck', 'feedCheck', 'outlook', 'heatMap', 'rainForecast', 'pagasaHeat', 'radioList', 'radioCheck',
   ]);
 });
 
 test('slow jobs: weather (every 2 hours), the outlook, the heat maps and the rain forecast must also be due when a tick wants them', () => {
-  assert.deepEqual(SLOW_JOBS, ['weather', 'outlook', 'heatMap', 'rainForecast', 'pagasaHeat']);
+  assert.deepEqual(SLOW_JOBS, ['weather', 'outlook', 'heatMap', 'rainForecast', 'pagasaHeat', 'radioList', 'radioCheck']);
 });
 
 test('dueJobs: the rain forecast runs every 12 hours, even when stamped minutes after the heat map', () => {
@@ -110,4 +110,20 @@ test('dueJobs: the PAGASA heat job runs every 3 hours', () => {
   assert.deepEqual(dueJobs(runs, now), []);
   runs.set('pagasa-heat', minutesAgo(3 * 60));
   assert.deepEqual(dueJobs(runs, now), ['pagasaHeat']);
+});
+
+test('dueJobs: the radio station list is downloaded once a day', () => {
+  const runs = allRecent();
+  runs.set('radio-browser', minutesAgo(23 * 60));
+  assert.deepEqual(dueJobs(runs, now), []);
+  runs.set('radio-browser', minutesAgo(24 * 60));
+  assert.deepEqual(dueJobs(runs, now), ['radioList']);
+});
+
+test('dueJobs: the radio stream check runs every 6 hours', () => {
+  const runs = allRecent();
+  runs.set('radio-check', minutesAgo(5 * 60));
+  assert.deepEqual(dueJobs(runs, now), []);
+  runs.set('radio-check', minutesAgo(6 * 60));
+  assert.deepEqual(dueJobs(runs, now), ['radioCheck']);
 });
