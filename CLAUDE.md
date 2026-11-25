@@ -16,6 +16,8 @@ Non-commercial. Plan and decisions: `PLAN.md`. Score formula: `METHODOLOGY.md`.
 Hazard views (`HAZARD_MAPS_PLAN.md`): a top bar view switch (Overall, Typhoon, Flood, Earthquake,
 Heat, and Storm surge under More; built steps 0 and 1); the other hazards are proposals.
 Display only: no view changes the score.
+Radio panel (built; `PLAN.md` "Radio panel"): live Philippine radio from Radio Browser in the right
+column, a hand-picked News & Emergency group first, our own stream check every 6 hours. Display only.
 
 ## Stack
 
@@ -48,23 +50,27 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    squares belong to each town),
                    heatMap.ts (heat map answer: each town's hottest point, per model or averaged),
                    rainForecast.ts (rain forecast grid over the PAR, 3-hour frames; Typhoon view),
-                   quakeMap.ts (quakes in the score's window, for the quake markers)
+                   quakeMap.ts (quakes in the score's window, for the quake markers),
+                   inBatches.ts (runs a job on many items, a few at a time)
   fetchers/        one file per feed (fetch + zod schema): usgs, openMeteo, gdacs, eonet,
                    jma, jtwc, openMeteoDaily, openMeteoFlood, openMeteoHeat (three models
                    for the heat map), pagasaHeat (PAGASA iHeatMAP: API + files),
                    openMeteoRain (7 days of ECMWF rain on the forecast grid), rss,
+                   radioBrowser (PH radio station list; mirrors from DNS),
                    pagasa (official alerts), retry (one more try for a failed download)
   jobs/            ingestEarthquakes, ingestWeather (weather grid), ingestEvents, ingestStorms,
                    ingestAlerts, ingestForecast, ingestNews, ingestHeatMap and
                    ingestRainForecast (every 12 h, one after the other; never read by
                    the score), ingestPagasaHeat (on its own: checks every 3 h, downloads
-                   only a new forecast; never read by the score), checkSources, computeScores
+                   only a new forecast; never read by the score), ingestRadio (radio
+                   station list, daily), checkRadio (opens every radio stream for its first
+                   audio bytes, every 6 h, own lane), checkSources, computeScores
                    (towns, then provinces = highest town), townInputs, scheduler,
                    due (which jobs are due; every job's interval), jobTries (when a
                    job last started; spaces out heat map retries)
   news/            keyword filter and kinds of disaster, province and town tagging,
                    checkHeadline (both together), storm names, same-story merging
-  checker/         link checks for feeds and YouTube streams
+  checker/         link checks for feeds and YouTube streams; checkRadio.ts (one radio stream)
   scoring/         scoring.ts (WEIGHTS + all formulas)
   replay/          replay.ts (archived records → score inputs for a past hour)
   routes/          provinces.ts (map data), point.ts (score for one spot),
@@ -72,7 +78,8 @@ server/src/        index.ts, config.ts, db.ts, heatIndex.ts, freshness.ts,
                    conditions.ts (events, quakes, storms, news, streams, bulletins),
                    hazards.ts (loaded hazard maps, hazard zone vector tiles),
                    heatmap.ts (heat index per town and province for one model),
-                   rainForecast.ts (the rain forecast field, GET /api/rainforecast)
+                   rainForecast.ts (the rain forecast field, GET /api/rainforecast),
+                   radio.ts (radio stations, GET /api/radio)
 server/test/       one test file per area, real feed samples in fixtures/
   db/              database tests (testDb.ts seeds a small map; import it first)
 web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (time, number
@@ -87,12 +94,15 @@ web/src/           App.tsx, api.ts, scoreScale.ts, mapSettings.ts, format.ts (ti
                    partColors.ts (Earthquake and Flood views: towns by one part of the score),
                    mapLook.ts (what each view's shapes show), mapNotes.ts (the map's note per view),
                    quakeGeo.ts + quakeOverlay.ts (quake markers),
+                   radioSearch.ts (the radio panel's search),
+                   feedTabs.ts (the right column's tabs: order, arrow keys, which one plays),
                    styles.css (all colours and layout), palette.ts (CSS
                    colours for the map), components/ (ViewSwitch.tsx: the top bar view switch;
                    HeatMapPanel.tsx: the heat map's source picker; HeatLegend.tsx: its band key;
                    HeatTimeBar.tsx: the Heat view's day and hour bar;
                    RainForecastPanel.tsx: the rain forecast's time slider;
-                   MapNote.tsx: a note on the map, e.g. "No tropical cyclone tracked right now")
+                   MapNote.tsx: a note on the map, e.g. "No tropical cyclone tracked right now";
+                   RadioPanel.tsx: the radio panel; FeedTabs.tsx: the right column's tabs)
   i18n/            en.ts and fil.ts (every string the reader sees), language switch
   theme/           light/dark choice (sets <html data-theme>), theme switch
 data/              downloaded boundary files (git-ignored)
@@ -118,6 +128,8 @@ npm run ingest:events | ingest:storms | ingest:forecast | ingest:news | ingest:a
 npm run ingest:heatmap   heat map for all three models (about 600 Open-Meteo calls)
 npm run ingest:pagasaheat   PAGASA iHeatMAP forecast (about 44 PAGASA API calls, 35 file downloads)
 npm run ingest:rainforecast   rain forecast field for the Typhoon view (256 Open-Meteo calls)
+npm run ingest:radio     radio station list from Radio Browser (one download, about 830 KB)
+npm run check:radio      check every radio stream (opens each for 1 KB), print the news group and totals
 npm run weather-points   pick extra weather points for big provinces (after load-places);
                          empties point_readings and heat_forecasts until the next runs
 npm run load-hazards -- stormSurge   load Project NOAH zones (or `landslide`); restart the server after
@@ -151,24 +163,26 @@ npm run sample-storm     load a sample storm track (add `-- remove` to delete it
   from `@fontsource` npm packages and ship with the app; never load a font from a font site.
 - Layout: top bar (with the view switch), then three columns: on the left the spot panel with the legend under it
   (its tick boxes switch map layers; its title folds it away), the map in the middle with
-  the place search (top left) and the zoom and locate buttons (top right), and live news
-  plus headlines on the right. Along the bottom the notice plus a link to the
+  the place search (top left) and the zoom and locate buttons (top right), and on the right
+  three tabs (Live news, Radio, Headlines; one shows at a time, a sound keeps playing in
+  the others). Along the bottom the notice plus a link to the
   credits page (`/credits`, `web/src/components/CreditsPage.tsx`). Under 900px wide it
   is one scrolling page.
-- The web app talks only to our own `/api`, with two exceptions: the basemap tiles come straight
-  from OpenFreeMap (switch: `SHOW_BASEMAP` in `web/src/mapSettings.ts`), and a video plays in
-  YouTube's own player, embedded from `youtube-nocookie.com` only after the reader clicks Play.
-  Raw TV feeds (`.m3u8`) are never re-streamed.
+- The web app talks only to our own `/api`, with three exceptions: the basemap tiles come straight
+  from OpenFreeMap (switch: `SHOW_BASEMAP` in `web/src/mapSettings.ts`), a video plays in
+  YouTube's own player, embedded from `youtube-nocookie.com` only after the reader clicks Play,
+  and a radio stream plays straight from the station's server, only after the reader clicks Play.
+  Raw TV feeds (`.m3u8`) and radio streams are never re-streamed.
 - `.env` is server-only and never committed. `YOUTUBE_API_KEY` is optional and never reaches
   the browser. The YouTube checker uses only 1-unit API calls (never `search.list`).
-- Every news feed and stream link lives in `server/src/sources.ts`.
+- Every news feed, stream link and curated radio station lives in `server/src/sources.ts`.
 - Unknown is never calm: a signal that could not be checked is `null`, the score is then
   "at least N" and the province is striped. Feed limits live in `server/src/freshness.ts`.
 - Official alerts (PAGASA) are shown above the score in the agency's own words and never
   change the score. Sections are tagged Official, Global assessment or Model estimate.
 - Data credits (USGS, Open-Meteo CC BY 4.0, NAMRIA/PSA via OCHA CC BY 3.0 IGO, OpenStreetMap,
   GDACS CC BY 4.0, NASA EONET, JMA, JTWC, GloFAS via Open-Meteo, PAGASA CC BY 4.0, Project NOAH ODbL,
-  ECMWF CC BY 4.0, DWD CC BY 4.0 and NOAA GFS public domain via Open-Meteo, PAGASA iHeatMAP (based on ECMWF data), the news outlets)
+  ECMWF CC BY 4.0, DWD CC BY 4.0 and NOAA GFS public domain via Open-Meteo, PAGASA iHeatMAP (based on ECMWF data), Radio Browser, the news outlets)
   must stay
   visible in the UI and README. A new source gets its credit line in both.
 - The "not an official warning service" notice must stay on the page footer, the status card

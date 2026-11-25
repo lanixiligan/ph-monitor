@@ -4,7 +4,7 @@ Every feed the server reads. None needs an API key. Each has one fetcher file in
 `server/src/fetchers/`, which downloads the data and checks it with zod before anything is
 saved. Records that fail the check are skipped and logged.
 
-News feeds and YouTube streams are on their own page: [news-and-streams.md](news-and-streams.md).
+News feeds, YouTube streams and radio are on their own page: [news-and-streams.md](news-and-streams.md).
 
 ## At a glance
 
@@ -24,6 +24,7 @@ News feeds and YouTube streams are on their own page: [news-and-streams.md](news
 | Boundaries | NAMRIA and PSA via OCHA | once, by hand | Used to measure distances |
 | Landslide and storm surge hazard maps | Project NOAH | once, by hand | No, shown only |
 | Basemap tiles | OpenFreeMap | by the browser | No |
+| Radio station list | Radio Browser (see [news-and-streams.md](news-and-streams.md#radio)) | once a day; streams checked every 6 hours | No, shown only |
 
 ## Earthquakes: USGS
 

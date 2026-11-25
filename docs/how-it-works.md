@@ -38,6 +38,8 @@ The scheduler (`server/src/jobs/scheduler.ts`) ticks every 15 minutes while the 
 | 7-day outlook | 6 hours | `npm run ingest:forecast` |
 | Heat map (`ingestHeatMap.ts`, all three models in one request) | 12 hours | `npm run ingest:heatmap` |
 | PAGASA iHeatMAP heat forecast (`ingestPagasaHeat.ts`; downloads only a new forecast) | 3 hours | `npm run ingest:pagasaheat` |
+| Radio station list (`ingestRadio.ts`) | 24 hours | `npm run ingest:radio` |
+| Radio stream check (`checkRadio.ts`; its own lane, takes about 1–2 minutes) | 6 hours | `npm run check:radio` |
 
 When the server starts, it runs only the jobs that are due: a job is skipped if it last
 succeeded less than its own interval ago (`server/src/jobs/due.ts` asks the database). So
@@ -75,6 +77,7 @@ All in `server/db/schema.sql`, applied by `npm run migrate` (safe to run again).
 | `pagasa_heat` | PAGASA's heat index per town and hour, from the newest forecast that has the hour. Never read by the score |
 | `pagasa_town_cells` | Which PAGASA squares (about 1 km) belong to each town; rebuilt when the grid changes or towns are reloaded |
 | `pagasa_grid` | The shape of PAGASA's grid, so we know when it changed (`load-places` clears it) |
+| `radio_stations` | Philippine radio stations from Radio Browser, with our own stream check (last checked, last OK, failing since, why). Never read by the score |
 | `job_tries` | When a job last started, even if it failed (the heat map, the rain forecast and PAGASA heat): a failed heat run waits 12 hours before the next try (PAGASA heat, 3 hours), even after a restart |
 
 `fetch_runs` is how the app tells "no earthquakes lately" apart from "the earthquake fetch has
@@ -99,6 +102,7 @@ The web page talks only to these addresses on our own server (port 3001).
 | `GET /api/storms` | Active storms with their tracks |
 | `GET /api/news` | Latest headlines; optional `type` (a kind of disaster or `general`), `category`, `psgc`, `limit` (1–100, default 30) |
 | `GET /api/streams` | Stream slots the page may show |
+| `GET /api/radio` | Radio stations the page may play: the News & Emergency group first, then the rest by votes; stations failing our check for 24 hours are left out |
 | `GET /api/bulletins` | Links to official PAGASA and PHIVOLCS pages |
 | `GET /api/alerts` | Official alerts in effect (PAGASA) |
 | `GET /api/status` | When each feed last succeeded, and which are out of date |
@@ -179,7 +183,7 @@ The web page talks only to these addresses on our own server (port 3001).
   headlines naming the province, and official bulletin links. A "Hazard map" block under the
   hazard rows says what the fixed NOAH maps show for the spot (landslide class, and storm
   surge level by level); it never changes the score.
-- **Headlines panel** and **live news panel** (streams): see [news-and-streams.md](news-and-streams.md).
+- **Headlines panel**, **live news panel** (streams) and **radio panel**: see [news-and-streams.md](news-and-streams.md).
 - **Language:** English or Filipino. Every string is in `web/src/i18n/en.ts` and `fil.ts`. The
   server sends score reasons as message keys plus numbers, and the page writes the sentence.
   The Filipino text is a draft until the owner reviews it.
