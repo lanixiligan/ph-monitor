@@ -16,6 +16,7 @@ import type {
   PointDetail,
   ProvinceMapProperties,
   QuakeMap,
+  RadioStation,
   RainForecastMap,
   StatusReport,
   Storm,
@@ -86,6 +87,11 @@ export async function fetchStorms(): Promise<Storm[]> {
 export async function fetchNews(type: string, limit: number): Promise<NewsItem[]> {
   const filter = type === 'all' ? '' : `&type=${encodeURIComponent(type)}`;
   return (await getJson(`/api/news?limit=${limit}${filter}`)) as NewsItem[];
+}
+
+/** Radio stations: the News & Emergency group first, then the rest by votes. */
+export async function fetchRadio(): Promise<RadioStation[]> {
+  return (await getJson('/api/radio')) as RadioStation[];
 }
 
 export async function fetchStreams(): Promise<StreamSlot[]> {

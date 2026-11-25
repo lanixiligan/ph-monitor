@@ -49,6 +49,8 @@ export const fil: Strings = {
     creditNews: 'Mga headline ng balita: ang mga news outlet na nakasaad sa tabi ng bawat headline, ang ilan ay nakuha sa pamamagitan ng Google News.', // REVIEW
     creditVideo: 'Video:', // REVIEW
     creditVideoEnd: ', mula sa sariling channel ng bawat outlet.', // REVIEW
+    creditRadio: 'Listahan ng istasyon ng radyo:', // REVIEW
+    creditRadioEnd: '. Pag-aari ng bawat istasyon ang stream nito at tumutugtog ito mula sa sariling server ng istasyon.', // REVIEW
     creditBasemap: 'Basemap:', // REVIEW
     creditBasemapMid: ', ©', // REVIEW
     creditBasemapData: ', data ©', // REVIEW
@@ -414,6 +416,35 @@ export const fil: Strings = {
     refresh: 'I-refresh', // REVIEW
     refreshing: 'Sinusuri…', // REVIEW
     refreshLabel: 'Suriin muli ang mga channel para sa bagong live stream at video', // REVIEW
+  },
+
+  // Ang mga tab sa kanang hanay (FeedTabs.tsx): isang panel lang ang nakikita.
+  feedTabs: {
+    groupLabel: 'Balita at radyo', // REVIEW
+    names: { streams: 'Live na balita', radio: 'Radyo', news: 'Mga balita' }, // REVIEW
+    playing: '(tumutugtog)', // REVIEW
+  },
+
+  // Ang radio panel (RadioPanel.tsx).
+  radio: {
+    title: 'Radyo', // REVIEW
+    note: 'Direktang tumutugtog ang audio mula sa sariling server ng bawat istasyon. Listahan ng istasyon: Radio Browser. Hindi opisyal na babala ang isang broadcast.', // REVIEW
+    newsGroup: 'Balita at Emergency', // REVIEW
+    searchLabel: 'Hanapin sa lahat ng istasyon', // REVIEW
+    searchPlaceholder: 'Istasyon o lugar, hal. Bombo o Cebu', // REVIEW
+    searchHint: '{count} pang istasyon: mag-type ng pangalan o lugar para mahanap.', // REVIEW
+    noMatch: 'Walang tugmang istasyon.', // REVIEW
+    moreMatches: 'Ipinapakita ang {shown} sa {total}. Mag-type pa para paliitin.', // REVIEW
+    play: 'I-play', // REVIEW
+    stop: 'Ihinto', // REVIEW
+    playLabel: 'I-play ang {name}', // REVIEW
+    stopLabel: 'Ihinto ang {name}', // REVIEW
+    playing: 'Tumutugtog: {name}', // REVIEW
+    connecting: 'Kumokonekta…', // REVIEW
+    playFailed: 'Hindi ma-play ang {name} ngayon. Subukan ang ibang istasyon.', // REVIEW
+    failed: 'Hindi ma-load ang listahan ng istasyon ngayon.', // REVIEW
+    none: 'Walang magagamit na istasyon ngayon.', // REVIEW
+    kbps: '{n} kbps', // REVIEW
   },
 
   // Kung saan galing ang impormasyon, ipinapakita bilang maliit na tatak.

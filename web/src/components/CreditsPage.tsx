@@ -89,6 +89,10 @@ export function CreditsPage() {
             {t.app.creditVideo} <a href="https://www.youtube.com/">YouTube</a>
             {t.app.creditVideoEnd}
           </li>
+          <li>
+            {t.app.creditRadio} <a href="https://www.radio-browser.info/">Radio Browser</a>
+            {t.app.creditRadioEnd}
+          </li>
           {/* The basemap credit is only needed when the basemap is shown. */}
           {SHOW_BASEMAP && (
             <li>
