@@ -19,6 +19,7 @@ roadmap** (making what exists more trustworthy, numbered on its own).
 | Product Phase 3: all kinds of news on the map | Idea only; needs the owner's answers first |
 | Product Phase 4: heat index map with switchable models | Design approved 2026-11-19 (see "Phase 4"). Built 2026-11-19 on `heat-index-map`: step 1 (three models: ECMWF, DWD ICON, NOAA GFS) and step 2 (their average). Added 2026-11-20 on `pagasa-heat-time-bar`: PAGASA iHeatMAP as a fourth source and a time bar (six days, 8 AM to 5 PM) |
 | Hazard map buttons (one per kind of disaster) | Steps 0 and 1 built 2026-11-20 on `hazard-map-buttons`: the top bar view switch (Overall, Typhoon, Flood, Earthquake, Heat; Storm surge under More). Next steps: [HAZARD_MAPS_PLAN.md](HAZARD_MAPS_PLAN.md) |
+| Radio panel (live Philippine radio) | Built 2026-11-25 on `radio-panel` (see "Radio panel"): station list from Radio Browser, our own stream check, a folded panel in the right column. No proxy yet |
 
 **Next:** NOAH landslide zones (same code as storm surge). First speed up reading the large
 landslide files (see "Build notes" under "NOAH hazard layer: design").
@@ -406,6 +407,35 @@ it. The cost is a forecast up to 12 h older than the newest model run.
 - How the 50-point requests are paced.
 - The wording of every string.
 - Unknown-model handling beyond returning a 400.
+
+## Radio panel (approved 2026-11-25, built)
+
+Live Philippine radio in the right column. Details: [docs/news-and-streams.md](docs/news-and-streams.md#radio).
+Display only: radio never changes the score.
+
+Decisions:
+
+- **Data:** Radio Browser (free, no key), `countrycode=PH`, `hidebroken=true`, `url_resolved`
+  as the stream. Mirrors from DNS, shuffled, `de1` as the fallback. A daily job saves the list in
+  one new table, `radio_stations`: `tsx watch` restarts on every save, `due.ts` decides from
+  `fetch_runs`, and "failing since" must survive restarts.
+- **No proxy (for now).** The `<audio>` tag plays the stream straight from the station, only
+  after Play: a third exception to "only /api", like the YouTube player. A proxy would keep that
+  rule, but costs bandwidth (every listener twice: 128 kbps is about 58 MB an hour each way),
+  turns us into a relay of the broadcast (a legal grey area, even non-commercial), and needs
+  SSRF guards, because the stream addresses are typed in by the public. Revisit before
+  going online on https, where browsers block the `http://` streams (about 309 of 670). If one
+  is built: `GET /api/radio/:id/stream`, id looked up in our table, never a URL; refuse private
+  and loopback addresses on every hop; at most 3 redirects; connect timeout; at most 5 at once;
+  pass on only an audio `Content-Type`; close the upstream when the listener leaves.
+- **Skipped:** HLS stations, logos (outside sites), map positions (about 20 of 715 have one),
+  Radio Browser's click reports.
+- **One sound at a time** across the live news and radio panels (state in `App.tsx`).
+- **DZRH and DZBB** keep their YouTube slots; DZRH is also in the radio group. DZBB Manila is
+  not on Radio Browser.
+- **Dead streams:** checked every 6 hours; only failures 24 hours in a row hide a station. A
+  401/403 or an `ICY 200 OK` reply (Node can't read it) is "could not check", which never
+  hides one. We don't pretend to be a browser.
 
 ## Reliability roadmap (from the audit of 2026-11-16)
 

@@ -80,7 +80,7 @@ export async function resetDb(): Promise<void> {
 export async function setFeedRuns(minutes = 1, sources?: string[]): Promise<void> {
   const all = [
     'usgs', 'open-meteo', 'pagasa', 'gdacs', 'eonet', 'jma', 'jtwc', 'open-meteo-daily', 'open-meteo-flood', 'news',
-    'open-meteo-heat', 'open-meteo-rain', 'pagasa-heat',
+    'open-meteo-heat', 'open-meteo-rain', 'pagasa-heat', 'radio-browser', 'radio-check',
   ];
   for (const source of sources ?? all) {
     await pool.query(

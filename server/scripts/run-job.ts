@@ -10,9 +10,12 @@
 //   npm run ingest:heatmap
 //   npm run ingest:rainforecast
 //   npm run ingest:pagasaheat
+//   npm run ingest:radio
+//   npm run check:radio
 // (The running server does the same jobs on a timer.)
 
 import { pool } from '../src/db.ts';
+import { checkRadio } from '../src/jobs/checkRadio.ts';
 import { computeScores } from '../src/jobs/computeScores.ts';
 import { ingestAlerts } from '../src/jobs/ingestAlerts.ts';
 import { ingestEarthquakes } from '../src/jobs/ingestEarthquakes.ts';
@@ -22,6 +25,7 @@ import { ingestForecast } from '../src/jobs/ingestForecast.ts';
 import { ingestHeatMap } from '../src/jobs/ingestHeatMap.ts';
 import { ingestNews } from '../src/jobs/ingestNews.ts';
 import { ingestPagasaHeat } from '../src/jobs/ingestPagasaHeat.ts';
+import { ingestRadio } from '../src/jobs/ingestRadio.ts';
 import { ingestRainForecast } from '../src/jobs/ingestRainForecast.ts';
 import { ingestWeather } from '../src/jobs/ingestWeather.ts';
 
@@ -39,6 +43,8 @@ const jobs: Record<string, () => Promise<void>> = {
   heatmap: ingestHeatMap,
   rainforecast: ingestRainForecast,
   pagasaheat: ingestPagasaHeat,
+  radio: ingestRadio,
+  radiocheck: checkRadio,
 };
 
 // process.argv holds the words typed on the command line; [2] is the first

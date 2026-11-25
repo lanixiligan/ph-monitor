@@ -13,6 +13,7 @@ import { heatmapRouter } from './routes/heatmap.ts';
 import { placesRouter } from './routes/places.ts';
 import { pointRouter } from './routes/point.ts';
 import { provincesRouter } from './routes/provinces.ts';
+import { radioRouter } from './routes/radio.ts';
 import { rainForecastRouter } from './routes/rainForecast.ts';
 
 const app = express();
@@ -31,6 +32,8 @@ app.use('/api/hazards', hazardsRouter);
 // The heat map (display only; never part of the score). Before /api, like the others.
 app.use('/api/heatmap', heatmapRouter);
 app.use('/api/rainforecast', rainForecastRouter);
+// The radio panel's station list (display only).
+app.use('/api/radio', radioRouter);
 // Phase 2: /api/events, /api/storms, /api/news, /api/streams, /api/bulletins
 app.use('/api', conditionsRouter);
 

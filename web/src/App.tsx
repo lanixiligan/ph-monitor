@@ -1,6 +1,6 @@
 // The whole page: a top bar, then three columns: on the left the panel for
 // the clicked spot with the map legend under it (the legend can fold away),
-// the map in the middle, and the live news and headlines on the right.
+// the map in the middle, and on the right three tabs: live news, radio and headlines.
 // The bottom line holds the "not official" notice and a link to the credits page.
 // The top bar's view switch picks what the page focuses on (Overall, Heat, …):
 // the map colours, the legend, the headline filter and the order of the status
@@ -21,6 +21,7 @@ import type {
 import { fetchHazards, fetchHeatMap, fetchPlaceScores, fetchProvinces, fetchQuakes, fetchStatus } from './api.ts';
 import type { ProvinceCollection, Spot } from './api.ts';
 import { Disclaimer } from './components/Disclaimer.tsx';
+import { feedPanelId, feedTabId, FeedTabs } from './components/FeedTabs.tsx';
 import { HeatMapPanel } from './components/HeatMapPanel.tsx';
 import { HeatTimeBar } from './components/HeatTimeBar.tsx';
 import { Legend } from './components/Legend.tsx';
@@ -33,11 +34,14 @@ import { Ladder } from './components/Ladder.tsx';
 import { SpotHint } from './components/SpotHint.tsx';
 import { StatusCard } from './components/StatusCard.tsx';
 import type { PickedArea } from './components/StatusCard.tsx';
+import { RadioPanel } from './components/RadioPanel.tsx';
 import { StreamsPanel } from './components/StreamsPanel.tsx';
 import { ViewSwitch } from './components/ViewSwitch.tsx';
 import { WarnIcon } from './components/WarnIcon.tsx';
 import { loadedMapKinds } from './hazardLabels.ts';
 import { heatForMap } from './heatColors.ts';
+import { playingTab } from './feedTabs.ts';
+import type { FeedTab, Playing } from './feedTabs.ts';
 import { keepOrDefault } from './heatTime.ts';
 import { useNow } from './useNow.ts';
 import { fill, LanguageSwitch, lookup, useStrings } from './i18n/index.ts';
@@ -74,6 +78,11 @@ export function App() {
   const [placeScores, setPlaceScores] = useState<PlaceScores | null>(null);
   // The town (or province) the picked spot is in, outlined on the map. null = none yet.
   const [picked, setPicked] = useState<PickedArea | null>(null);
+  // The one thing playing on the page: a live news video or a radio station.
+  // Starting one stops the other, so two sounds never play at once.
+  const [playing, setPlaying] = useState<Playing | null>(null);
+  // The right column's tab: live news first. The others stay loaded, so a sound keeps playing.
+  const [feedTab, setFeedTab] = useState<FeedTab>('streams');
   // true when the last load failed; the message is looked up when drawn.
   const [failed, setFailed] = useState(false);
   // How each feed is doing. null = not loaded yet; 'failed' = the check itself failed.
@@ -307,10 +316,15 @@ export function App() {
         </h1>
         <p className="topbar-intro">{t.app.intro}</p>
         <ViewSwitch view={mapView} onPress={chooseView} loadedMaps={loadedMaps} />
-        {/* Links that jump down the page on a small screen; `#news-title` is the id of a heading. */}
+        {/* Links that jump down the page on a small screen to the tabs (`#feed-tabs`),
+            opening the matching one. */}
         <nav className="topbar-jump">
-          <a href="#streams-title">{t.app.jumpStreams}</a>
-          <a href="#news-title">{t.app.jumpHeadlines}</a>
+          <a href="#feed-tabs" onClick={() => setFeedTab('streams')}>
+            {t.app.jumpStreams}
+          </a>
+          <a href="#feed-tabs" onClick={() => setFeedTab('news')}>
+            {t.app.jumpHeadlines}
+          </a>
         </nav>
         <LanguageSwitch />
         <ThemeSwitch />
@@ -434,8 +448,23 @@ export function App() {
         </div>
 
         <div className="side side-feeds">
-          <StreamsPanel />
-          <NewsPanel provinces={provinces} onShowOnMap={showOnMap} newsType={newsType} onNewsTypeChange={setNewsType} />
+          <FeedTabs tab={feedTab} onPick={setFeedTab} playing={playingTab(playing)} />
+          {/* All three stay in the page; `hidden` only hides the ones not chosen. */}
+          <div className="feed-pane" role="tabpanel" id={feedPanelId('streams')} aria-labelledby={feedTabId('streams')} hidden={feedTab !== 'streams'}>
+            <StreamsPanel
+              playingId={playing?.kind === 'video' ? playing.id : null}
+              onPlay={(id) => setPlaying(id === null ? null : { kind: 'video', id })}
+            />
+          </div>
+          <div className="feed-pane" role="tabpanel" id={feedPanelId('radio')} aria-labelledby={feedTabId('radio')} hidden={feedTab !== 'radio'}>
+            <RadioPanel
+              playingId={playing?.kind === 'radio' ? playing.id : null}
+              onPlay={(id) => setPlaying(id === null ? null : { kind: 'radio', id })}
+            />
+          </div>
+          <div className="feed-pane" role="tabpanel" id={feedPanelId('news')} aria-labelledby={feedTabId('news')} hidden={feedTab !== 'news'}>
+            <NewsPanel provinces={provinces} onShowOnMap={showOnMap} newsType={newsType} onNewsTypeChange={setNewsType} />
+          </div>
         </div>
       </div>
 

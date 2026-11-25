@@ -10,8 +10,9 @@ that exact spot, with the reasons and the raw events behind it.
 
 **Status: work in progress.** The map and score use earthquakes, weather and disaster event
 alert levels. The page also shows disaster events and storm tracks on the map, a 7-day outlook
-and links to official bulletins on the status card, disaster headlines, and live streams or
-latest videos from news channels. A view switch in the top bar puts the page's focus on one
+and links to official bulletins on the status card, disaster headlines, live streams or
+latest videos from news channels, and live Philippine radio (a News & Emergency group first, then a
+search over every station Radio Browser lists). A view switch in the top bar puts the page's focus on one
 hazard: Typhoon shows the storm tracks, the Philippine Area of Responsibility and a 7-day rain
 forecast (ECMWF) with a time slider; Flood colours the towns by the rain part of their
 score; Earthquake colours them by the earthquake part and draws the quakes; Storm surge shows
@@ -45,7 +46,8 @@ next hourly tick) fill them again.
 
 The server fetches earthquakes, official alerts and news every 15 minutes; weather every 2 hours;
 disaster events, storm tracks and the stream check every 30 minutes; the feed check every hour; the 7-day outlook every
-6 hours; and the heat map every 12 hours. At startup only the jobs that are due run, so a restart does not fetch fresh feeds again.
+6 hours; the heat map every 12 hours; the radio station list once a day; and the radio stream check every
+6 hours. At startup only the jobs that are due run, so a restart does not fetch fresh feeds again.
 Weather for a clicked spot is fetched when you click, and reused for 30 minutes.
 
 Optional: put a free YouTube Data API key in `.env` as `YOUTUBE_API_KEY` so the stream check can
@@ -64,6 +66,7 @@ A link can open a spot directly: `http://localhost:5173/?lat=10.3157&lon=123.885
 | `npm run ingest:earthquakes` / `ingest:weather` / `compute:scores` | Run one job by hand |
 | `npm run ingest:events` / `ingest:storms` / `ingest:forecast` / `ingest:news` / `ingest:alerts` / `ingest:heatmap` / `ingest:pagasaheat` | Run one of the newer jobs by hand |
 | `npm run check:sources` | Check every news feed and stream link and print a table |
+| `npm run ingest:radio` / `check:radio` | Download the radio station list / check every radio stream (opens each one for its first audio bytes) |
 | `npm run sample-storm` (add `-- remove` to delete it) | Load a sample storm track, clearly labelled as not real |
 | `npm run build` | Build the web app into `web/dist` |
 | `npm run db:psql` | Open a database prompt |
@@ -99,6 +102,7 @@ data flows through the app, and its limits.
 | Heat index map, PAGASA source (shown only, not in the score) | Heat index forecast: [DOST-PAGASA iHeatMAP](https://iheatmap.pagasa.dost.gov.ph/) (iheatmap.pagasa.dost.gov.ph), based on ECMWF data. Used without changes, for a non-commercial purpose | Philippine government work (RA 8293 Sec. 176); credit given, non-commercial use |
 | News headlines (headline, outlet, time and link only) | RSS feeds of the outlets listed in `server/src/sources.ts`, and [Google News](https://news.google.com/) search | Headlines belong to their outlets; each links to the original article |
 | Live streams and latest videos | [YouTube](https://www.youtube.com/) channels listed in `server/src/sources.ts` | Shown only in YouTube's own player |
+| Radio station list (name, place, codec, stream address) | [Radio Browser](https://www.radio-browser.info/), a community-run directory | No data licence stated; the API is "completely free and open source". Each stream belongs to its station and plays from the station's own server, never through ours |
 | Basemap: roads and place names (switch in `web/src/mapSettings.ts`) | [OpenFreeMap](https://openfreemap.org/), © OpenMapTiles, data © OpenStreetMap contributors | ODbL (OpenStreetMap data) |
 | Landslide and storm surge hazard maps (fixed maps, simplified; shown only, not in the score) | [Project NOAH](https://noah.up.edu.ph/) and its contributors (UP NOAH Center); landslide maps by UP NIGS, storm surge maps by PAGASA with UP NIGS. Downloaded from the Hugging Face mirror `bettergovph/project-noah-hazard-maps` | [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) |
 

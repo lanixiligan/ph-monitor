@@ -1,7 +1,7 @@
-# News and live streams
+# News, live streams and radio
 
-Every news feed and stream link lives in one file: `server/src/sources.ts`. A dead link is
-fixed there. Neither news nor streams change the score.
+Every news feed, stream link and curated radio station lives in one file:
+`server/src/sources.ts`. A dead link is fixed there. None of them change the score.
 
 ## Headlines
 
@@ -135,6 +135,72 @@ Each slot shows the channel's live stream when it is live ("LIVE"), otherwise it
   only after the reader clicks Play. Only one plays at a time.
 - Raw TV feeds (`.m3u8`) are never re-streamed.
 - Dead links and videos that may not be embedded are never sent to the page.
+
+## Radio
+
+### Where it comes from
+
+[Radio Browser](https://www.radio-browser.info/) (free, no key), a community-run directory:
+every Philippine station that its own check found working (`countrycode=PH`,
+`hidebroken=true`), downloaded once a day (`fetchers/radioBrowser.ts`, `jobs/ingestRadio.ts`)
+into the `radio_stations` table. The API runs on mirror servers: as its docs ask, the list of
+mirrors comes from DNS (`_api._tcp.radio-browser.info`), is shuffled, and a failing mirror is
+skipped for the next; `de1.api.radio-browser.info` is the last fallback. On 2026-11-25 there
+was only that one mirror, and 715 PH stations.
+
+Left out on the way in: HLS stations (`.m3u8`, about 10; the browser's audio player can't play
+them without a library), and the second of two stations that share one stream address (about 36;
+the one with more votes stays, unless the other is in the curated group). A list of fewer than 100
+stations is treated as a broken answer and the old list stays. Logos are not used: they load
+from outside sites.
+
+### News & Emergency group
+
+Hand-kept in `RADIO_NEWS` (`server/src/sources.ts`), by Radio Browser station id, shown first
+in that order: DZRH, Radyo Pilipinas 1, Radyo Pilipinas Davao, DWIZ 882, DZAS 702, DZRJ-AM,
+DZMM Radyo Patrol 630, DYHP RMN Cebu 612 and Brigada News FM Mega Manila. DZMM and RMN Cebu
+come through third-party relay servers, not the stations' own. Not on Radio Browser: DZBB
+Manila and Radyo Veritas. DZRH and DZBB also have YouTube slots in the live news panel; the
+radio is their live audio, and much lighter on data.
+
+### The stream check
+
+Every 6 hours (`checker/checkRadio.ts`, `jobs/checkRadio.ts`, `npm run check:radio`), 6
+stations at a time: open the stream (at most 3 redirects, 12 seconds in all), wait for the first
+1 KB of audio, hang up. Each station gets one of three answers:
+
+| Answer | When | Effect |
+|---|---|---|
+| ok | audio came | the "failing since" clock stops |
+| failed | an error, a web page, a playlist, or no audio | the clock starts (or keeps running) |
+| could not check | the server refused our checker (401, 403), or answers `ICY 200 OK` (old Shoutcast), which Node cannot read | the clock stops: we can't tell, and a browser may play it |
+
+A station is hidden only after **24 hours of failures in a row**, as with the YouTube links:
+one bad check never hides it. We never pretend to be a browser to get past a refusal. On
+2026-11-25: 557 ok, 64 failed, 48 could not be checked; all of the curated group ok. The reason
+for each answer is kept in `radio_stations.check_note`.
+
+### What the page shows
+
+The right column has three tabs: Live news, Radio and Headlines (Live news opens first). The
+Radio tab shows the News & Emergency group, then a search over every other station by name or place (up to 30
+matches). Under each name: the place the station gave (often missing), codec and bitrate.
+
+- A stream loads only after the reader clicks Play, and plays **straight from the station's
+  server**. Our server never relays it. Raw radio and TV feeds are never re-streamed.
+- Only one sound plays at a time: starting a radio stops a YouTube video, and the other way round.
+- A sound keeps playing when the reader switches to another tab; that tab shows a small dot.
+- While a station plays, its name and a Stop button stay at the top of the Radio tab.
+- A stream that will not start says so, with the warning icon.
+
+### Not done (yet)
+
+- **No proxy.** On an `https://` site, browsers block the `http://` streams (about 309 of
+  670). Today the page runs on `http://127.0.0.1`, so all play. Before going online:
+  hide those stations, or add a proxy (bandwidth on our server, and relaying a broadcast is a
+  legal grey area; see PLAN.md).
+- No station positions on the map: only about 20 of the 715 have one.
+- Radio Browser asks apps to report each click (`/json/url/<id>`); we don't yet.
 
 ## The link checker
 

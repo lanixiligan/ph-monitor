@@ -33,6 +33,8 @@
     "ingest:heatmap": "npm run ingest:heatmap --workspace server",
     "ingest:rainforecast": "npm run ingest:rainforecast --workspace server",
     "ingest:pagasaheat": "npm run ingest:pagasaheat --workspace server",
+    "ingest:radio": "npm run ingest:radio --workspace server",
+    "check:radio": "npm run check:radio --workspace server",
     "weather-points": "npm run weather-points --workspace server",
     "check:sources": "npm run check:sources --workspace server",
     "measure:news": "npm run measure:news --workspace server",

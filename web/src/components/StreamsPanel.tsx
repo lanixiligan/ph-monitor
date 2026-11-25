@@ -1,5 +1,6 @@
 // Live stream slots from the outlets' own YouTube channels.
-// A video loads only after the reader clicks "Play", and only one plays at a time.
+// A video loads only after the reader clicks "Play". Only one sound plays on the
+// page at a time: App.tsx keeps that choice for this panel and the radio panel.
 
 import { useEffect, useState } from 'react';
 import type { StreamSlot } from '@ph-monitor/shared';
@@ -20,14 +21,19 @@ function liveLabel(isLive: boolean | null, t: Strings): string {
   return t.streams.latestMaybeOffline;
 }
 
-export function StreamsPanel() {
+type Props = {
+  /** The slot playing now (its id), or null. */
+  playingId: string | null;
+  /** Starts a slot (its id) or stops it (null). */
+  onPlay: (id: string | null) => void;
+};
+
+export function StreamsPanel({ playingId, onPlay }: Props) {
   const { t } = useStrings();
   // Ticks every 10 seconds so "Uploaded … ago" stays right.
   const now = useNow();
   const [slots, setSlots] = useState<StreamSlot[] | null>(null);
   const [failed, setFailed] = useState(false);
-  // The id of the one slot that is playing, or null for none.
-  const [playingId, setPlayingId] = useState<string | null>(null);
   // True while the Refresh button waits for the server's fresh check.
   const [refreshing, setRefreshing] = useState(false);
 
@@ -124,11 +130,11 @@ export function StreamsPanel() {
                   {slot.publishedAt && <UploadedTime iso={slot.publishedAt} now={now} />}
                 </div>
                 {playingId === slot.id ? (
-                  <button className="filter" aria-pressed="true" onClick={() => setPlayingId(null)}>
+                  <button className="filter" aria-pressed="true" onClick={() => onPlay(null)}>
                     {t.streams.stop}
                   </button>
                 ) : (
-                  <button className="filter" onClick={() => setPlayingId(slot.id)}>
+                  <button className="filter" onClick={() => onPlay(slot.id)}>
                     {t.streams.play}
                   </button>
                 )}

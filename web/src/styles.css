@@ -1560,6 +1560,108 @@ label.legend-row {
   background: currentColor;
 }
 
+/* ---------- Right column tabs (FeedTabs.tsx) ----------
+   Three equal buttons across the column; the chosen one is filled with ink,
+   like a pressed filter. One panel shows under them at a time. */
+.feed-tabs {
+  display: flex;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--ink);
+}
+
+.feed-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 6px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  color: var(--ink);
+  background: transparent;
+  font-family: var(--font-title);
+  font-size: 18px;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.feed-tab:first-child {
+  border-left: 0;
+}
+
+.feed-tab:hover {
+  background: var(--sea);
+}
+
+.feed-tab[aria-selected='true'] {
+  color: var(--on-ink);
+  background: var(--ink);
+  font-weight: 700;
+}
+
+/* The tab whose sound is playing: a small dot in the text colour (never red). */
+.feed-tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* A finger needs a bigger target than a mouse pointer. */
+@media (pointer: coarse) {
+  .feed-tab {
+    min-height: 44px;
+  }
+}
+
+/* The panel's own top line is not needed under the tabs. */
+.feed-pane > .panel {
+  border-top: 0;
+}
+
+/* `hidden` must win over the wide screen's display: flex below. */
+.feed-pane[hidden] {
+  display: none;
+}
+
+/* Words for screen readers only: in the page, but not seen. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Radio (RadioPanel.tsx) ---------- */
+/* "Playing: DZRH": above the station list. */
+.radio-now {
+  margin: 0;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.radio-search h3 label {
+  cursor: pointer;
+}
+
+.radio-search input {
+  width: 100%;
+  padding: 6px 9px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+}
+
+.radio-search input::placeholder {
+  color: var(--ink-soft);
+}
+
 /* ---------- Footer ---------- */
 footer {
   padding: 6px 16px;
@@ -1708,15 +1810,27 @@ footer {
     min-height: 0;
   }
 
+  /* The tab row keeps its height; the chosen panel takes the rest of the column. */
+  .feed-tabs {
+    flex: none;
+    /* The column's top edge needs no line. */
+    border-top: 0;
+  }
+
+  .feed-pane {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
   .side-spot .panel,
-  .panel-news {
+  .feed-pane > .panel {
     flex: 1;
   }
 
-  /* The streams panel is as tall as it needs, up to a little over half. */
-  .panel-streams {
-    flex: 0 1 auto;
-    max-height: 58%;
+  .radio-now {
+    flex: none;
   }
 
   .panel-head,

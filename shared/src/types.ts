@@ -478,6 +478,25 @@ export type StreamSlot = {
   lastCheckedAt: string;
 };
 
+/**
+ * A radio station the page may play (from Radio Browser). Stations whose stream
+ * has failed our check for a day are never sent. Display only: never in the score.
+ */
+export type RadioStation = {
+  /** Radio Browser's stationuuid. */
+  id: string;
+  name: string;
+  /** The place the station gave, as typed on Radio Browser; often missing. */
+  place: string | null;
+  codec: string | null;
+  /** kbps; null when unknown. */
+  bitrate: number | null;
+  /** The stream; the browser plays it straight from the station's server. */
+  url: string;
+  /** true = in the hand-picked News & Emergency group (shown first). */
+  isNews: boolean;
+};
+
 /** A storm whose forecast track passes near a province or spot. */
 export type StormComing = {
   stormId: string;

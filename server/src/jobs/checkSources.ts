@@ -7,6 +7,7 @@ import { checkStream, settleUnknown } from '../checker/checkStream.ts';
 import type { PreviousRow } from '../checker/checkStream.ts';
 import { config } from '../config.ts';
 import { pool } from '../db.ts';
+import { inBatches } from '../inBatches.ts';
 import { NEWS_FEEDS, STREAM_SLOTS } from '../sources.ts';
 
 // How many links are checked at the same time. Small, to be polite.
@@ -29,22 +30,6 @@ type Row = {
   videoPublishedAt: string | null;
   failingSince: Date | null;
 };
-
-// Runs `work` on every item, but never more than `limit` at once.
-// `<T, R>` is a generic: "any type T in, any type R out".
-async function inBatches<T, R>(items: T[], limit: number, work: (item: T) => Promise<R>): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let next = 0;
-  async function worker(): Promise<void> {
-    while (next < items.length) {
-      const index = next;
-      next += 1;
-      results[index] = await work(items[index] as T);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, () => worker()));
-  return results;
-}
 
 // Saves one row. last_ok_at is set when a check just confirmed the link works
 // ('ok' or 'not-live', and not a kept status from a failed check); otherwise

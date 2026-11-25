@@ -62,6 +62,8 @@ export const en = {
     creditNews: 'News headlines: the outlets named beside each headline, some found through Google News.',
     creditVideo: 'Video:',
     creditVideoEnd: ", from each outlet's own channel.",
+    creditRadio: 'Radio station list:',
+    creditRadioEnd: ". Each stream belongs to its station and plays from the station's own server.",
     creditBasemap: 'Basemap:',
     creditBasemapMid: ', ©',
     creditBasemapData: ', data ©',
@@ -444,6 +446,36 @@ export const en = {
     refresh: 'Refresh',
     refreshing: 'Checking…',
     refreshLabel: 'Check the channels again for new live streams and videos',
+  },
+
+  // The right column's tabs (FeedTabs.tsx): one panel shows at a time.
+  feedTabs: {
+    groupLabel: 'News and radio',
+    names: { streams: 'Live news', radio: 'Radio', news: 'Headlines' },
+    // Read out after the name of the tab whose sound is playing (a dot shows it).
+    playing: '(playing)',
+  },
+
+  // The radio panel (RadioPanel.tsx).
+  radio: {
+    title: 'Radio',
+    note: "Audio plays straight from each station's own server. Station list: Radio Browser. A broadcast is not an official warning.",
+    newsGroup: 'News & Emergency',
+    searchLabel: 'Search all stations',
+    searchPlaceholder: 'Station or place, e.g. Bombo or Cebu',
+    searchHint: '{count} more stations: type a name or place to find one.',
+    noMatch: 'No station matches.',
+    moreMatches: 'Showing {shown} of {total}. Type more to narrow it down.',
+    play: 'Play',
+    stop: 'Stop',
+    playLabel: 'Play {name}',
+    stopLabel: 'Stop {name}',
+    playing: 'Playing: {name}',
+    connecting: 'Connecting…',
+    playFailed: '{name} could not be played right now. Try another station.',
+    failed: 'Could not load the station list right now.',
+    none: 'No stations are available right now.',
+    kbps: '{n} kbps',
   },
 
   // Where a piece of information comes from, shown as a small tag.

@@ -2,11 +2,14 @@
 
 ## What the reader's browser contacts
 
-The web page talks only to our own `/api`, with two exceptions:
+The web page talks only to our own `/api`, with three exceptions:
 
 1. **Basemap tiles** load straight from OpenFreeMap (switch: `SHOW_BASEMAP` in
    `web/src/mapSettings.ts`).
 2. **A video** loads from `youtube-nocookie.com`, and only after the reader clicks Play.
+3. **A radio stream** plays straight from the station's own server (its address comes from
+   Radio Browser), and only after the reader clicks Play. That server sees the reader's IP
+   address, as YouTube does. Our server never relays the audio.
 
 The browser never calls USGS, Open-Meteo, GDACS or any news site. The server does that.
 The hazard map tiles (Project NOAH zones) and the heat map come from our own `/api` too.
@@ -39,6 +42,8 @@ The hazard map tiles (Project NOAH zones) and the heat map come from our own `/a
 | Open-Meteo | about 10,000 calls a day | Weather job about 7,200 a day (about 600 points, every 2 hours); outlook about 700 a day; heat map about 1,200 a day (the same points, all three models in one request, every 12 hours); rain forecast field 512 a day (256 grid points, every 12 hours); together about 9,600, leaving about 400 for clicked spots (reused for 30 minutes per 5 km cell) |
 | PAGASA iHeatMAP | none stated | About 44 API calls a day (about 8 date checks, 1 file list, 35 download links) and 35 file downloads from PAGASA's storage bucket |
 | YouTube Data API | 10,000 units a day | About 1,900 units a day, at most about 7,500 (only 1-unit calls) |
+| Radio Browser | none stated | One station list download a day (about 830 KB) |
+| Radio stations | none | Every 6 hours, each stream is opened for its first 1 KB, then closed (about 670 stations, under 1 MB) |
 
 Open-Meteo's free tier is for non-commercial use. This project is non-commercial.
 

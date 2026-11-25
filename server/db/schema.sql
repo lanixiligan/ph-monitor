@@ -403,3 +403,28 @@ CREATE TABLE IF NOT EXISTS job_tries (
   job      TEXT PRIMARY KEY,                   -- a JobName from due.ts, e.g. 'heatMap'
   tried_at TIMESTAMPTZ NOT NULL
 );
+
+-- ---------- Radio panel ----------
+
+-- Philippine radio stations from Radio Browser, refreshed once a day
+-- (jobs/ingestRadio.ts), plus our own check of each stream (jobs/checkRadio.ts).
+-- Kept in the database, not in memory: the server restarts on every save
+-- (tsx watch) and "failing since" must survive restarts for the 24-hour rule.
+-- Display only: radio never changes the score.
+CREATE TABLE IF NOT EXISTS radio_stations (
+  id              TEXT PRIMARY KEY,            -- Radio Browser's stationuuid
+  name            TEXT NOT NULL,
+  state           TEXT,                        -- the place the station gave, as typed
+  tags            TEXT,
+  codec           TEXT,
+  bitrate         INTEGER,                     -- kbps; NULL = unknown
+  url             TEXT NOT NULL,               -- the stream (url_resolved)
+  homepage        TEXT,
+  votes           INTEGER NOT NULL DEFAULT 0,
+  seen_at         TIMESTAMPTZ NOT NULL,        -- last time Radio Browser listed it
+  last_checked_at TIMESTAMPTZ,                 -- our stream check; NULL = not checked yet
+  last_ok_at      TIMESTAMPTZ,
+  failing_since   TIMESTAMPTZ                  -- NULL = the last check heard audio
+);
+-- Why the last check failed, in a few words (NULL = it heard audio).
+ALTER TABLE radio_stations ADD COLUMN IF NOT EXISTS check_note TEXT;
